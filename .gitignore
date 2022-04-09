@@ -255,6 +255,9 @@ project/plugins/project/
 .cache
 .lib/
 
+.bsp/
+
+
 ### Scala ###
 *.class
 *.log
