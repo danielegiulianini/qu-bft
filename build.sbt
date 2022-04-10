@@ -10,6 +10,11 @@ lazy val root = (project in file("."))
   )
   .aggregate(quCommonPresentation, quClient, quService, quSystemTesting)
 
+
+lazy val commonDependencies = Seq(
+  "org.scalamock" %% "scalamock" % "5.2.0" % Test,
+  "org.scalatest" %% "scalatest" % "3.2.11" % Test)
+
 lazy val quCommonPresentation = (project in file("qu-common-presentation"))
   .settings(
     libraryDependencies ++= commonDependencies ++ Seq("io.grpc" % "grpc-netty" % "1.45.0",
@@ -41,9 +46,6 @@ lazy val quSystemTesting = (project in file("qu-system-testing"))
   .dependsOn(quClient)
   .dependsOn(quService)
 
-lazy val commonDependencies = Seq(
-  "org.scalatest" %% "scalatest" % "3.2.11" % "test"
-)
 
 
 
