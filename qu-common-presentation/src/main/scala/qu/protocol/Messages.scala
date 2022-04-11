@@ -1,11 +1,8 @@
 package qu.protocol
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-
 
 object Messages {
 
-  @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "className")
   trait Operation[ReturnValueT, ObjectT] {
     def compute(obj: ObjectT): ReturnValueT
   }
