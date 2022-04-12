@@ -34,3 +34,11 @@ trait MethodDescriptorFactory {
       .build
   }
 }
+
+trait MarshallerFactory {
+  type Marshallable[T]
+
+  def marshallerFor[T](implicit clz: Marshallable[T]): MethodDescriptor.Marshaller[T]
+}
+
+
