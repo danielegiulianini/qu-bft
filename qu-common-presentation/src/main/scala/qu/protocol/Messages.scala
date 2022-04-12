@@ -14,4 +14,5 @@ object Messages {
   final case class Request[ReturnValueT, ObjectT](operation: Messages.Operation[ReturnValueT, ObjectT])
 
   final case class Response[ReturnValueT](responseCode:Int, answer: ReturnValueT, order: Int)
+  
 }
