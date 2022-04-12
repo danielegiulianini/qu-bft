@@ -1,9 +1,9 @@
 package qu.protocol
 
 
-trait DataStructure {
+trait QuModel {
   type Operation
-  type Candidate
+  type Candidate = (LogicalTimestamp, LogicalTimestamp)
   type HistorySet
   type OHS
   type LogicalTimestamp
@@ -20,5 +20,9 @@ trait DataStructure {
   def compare(logicalTimestamp1: LogicalTimestamp, logicalTimestamp2: LogicalTimestamp) : Int
 
   def max(logicalTimestamp: LogicalTimestamp): Candidate
+
+}
+
+trait AbstractQuModel extends QuModel {
 
 }
