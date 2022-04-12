@@ -7,7 +7,7 @@ trait MethodDescriptorFactory {
   type Marshallable[T]
 
   //a deterministic function on parameter types...
-  def getGenericSignature[T: Marshallable, U: Marshallable](): String //type Signaturable[T, U] <: {def getGenericSignature: String}
+  def getGenericSignature[T: Marshallable, U: Marshallable]: String //type Signaturable[T, U] <: {def getGenericSignature: String}
 
   def marshallerFor[T: Marshallable](): MethodDescriptor.Marshaller[T]
 
@@ -26,25 +26,24 @@ trait MethodDescriptorFactory {
 
 //an optimization that leverages flyweight pattern to avoid regenerating method descriptors
 trait CachingMethodDescriptorFactory extends MethodDescriptorFactory {
-  //self: MethodDescriptorFactory =>
-  //mi serve un identificativo della coppia di metodi
+
+  //i need an identifier of the pair of methods
   override abstract def generateMethodDescriptor[T, U](methodName: String, serviceName: String)
-                                             (implicit enc: Marshallable[Request[T, U]],
-                                              enc3: Marshallable[Response[T]],
-                                              enc2: Marshallable[T], dec: Marshallable[U]):
+                                                      (implicit enc: Marshallable[Request[T, U]],
+                                                       enc3: Marshallable[Response[T]],
+                                                       enc2: Marshallable[T], dec: Marshallable[U]):
   MethodDescriptor[Messages.Request[T, U], Messages.Response[T]] = {
     //super referes to the next in the chain
-   MemoHelper.memoize((_:String) => super.generateMethodDescriptor(methodName, serviceName)).apply(super.getGenericSignature[T, U])
-    ///analogous to: this.methodDescriptors.computeIfAbsent(op.getClass, (c: Class[_]) => KvGson.generateMethodDescriptor(classOf[KvGson.Wrapping[_, _]]))
+    MemoHelper.memoize((_: String) =>
+      super.generateMethodDescriptor(methodName, serviceName)).apply(this.getGenericSignature[T, U])
   }
-  //memo helper def not put here as inner def since it could be reused elsewhere
 }
 
 
 trait MarshallerFactory {
   type Marshallable[T]
 
-  def marshallerFor[T:Marshallable]: MethodDescriptor.Marshaller[T]
+  def marshallerFor[T: Marshallable]: MethodDescriptor.Marshaller[T]
 }
 
 
