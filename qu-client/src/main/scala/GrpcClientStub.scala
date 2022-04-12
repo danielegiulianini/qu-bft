@@ -7,7 +7,7 @@ import qu.protocol.{Messages, MethodDescriptorFactory}
 
 
 //this is a grpc ClientStub
-abstract class GrpcClientStub[T](var chan: ManagedChannel) extends MethodDescriptorFactory {
+abstract class GrpcClientStub[T](var chan: ManagedChannel) { self:MethodDescriptorFactory =>
 
   //decide where to inject
   val methodName = "todo"
