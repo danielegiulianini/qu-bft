@@ -42,3 +42,7 @@ trait JacksonMarshallerFactory extends MarshallerFactory {
   //should I define a trait that implements Signaturable and implicitly import here?
   //override type Signaturable[T, U] = implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
 }
+
+//family polymorphism (one-shot extension):
+trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory with JacksonMarshallerFactory
+//example of use: class JacksonCLientSTub extends ClientStub with JacksonMethodDescriptorFactory

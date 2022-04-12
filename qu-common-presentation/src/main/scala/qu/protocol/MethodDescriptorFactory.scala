@@ -1,15 +1,8 @@
 package qu.protocol
 
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.databind.`type`.TypeFactory
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule, JavaTypeable}
 import io.grpc.MethodDescriptor
 import qu.protocol.Messages.{Request, Response}
-import java.io.{ByteArrayInputStream, InputStream}
 
-//family polymorphism (one-shot extension): trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory with JacksonMarshallerFactory
-//example of use: class JacksonCLientSTub extends ClientStub with JacksonMethodDescriptorFactory
 
 //fam pol
 trait MethodDescriptorFactory {
