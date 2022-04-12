@@ -7,19 +7,19 @@ import qu.protocol.{Messages, MethodDescriptorFactory}
 
 
 //this is a grpc ClientStub
-abstract class ClientStub[T](var chan: ManagedChannel) extends MethodDescriptorFactory {
+abstract class GrpcClientStub[T](var chan: ManagedChannel) extends MethodDescriptorFactory {
 
   //decide where to inject
   val methodName = "todo"
   val serviceName = "todo"
 
-  def generateMethodDescriptor[T, U](methodName: String, serviceName: String)
+  def generateMethodDescriptor[U](methodName: String, serviceName: String)
                                     (implicit enc: Marshallable[Request[T, U]],
                                      enc3: Marshallable[Response[T]],
                                      enc2: Marshallable[T], dec: Marshallable[U]):
   MethodDescriptor[Messages.Request[T, U], Messages.Response[T]]
 
-  def send[T, U](op: Messages.Request[T, U])
+  def send[U](op: Messages.Request[T, U])
                 (implicit enc: Marshallable[T], dec: Marshallable[U],
                  marshallable: Marshallable[Request[T, U]], marshallable3: Marshallable[Response[T]]):
     ListenableFuture[Messages.Response[T]] = {
