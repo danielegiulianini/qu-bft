@@ -8,7 +8,7 @@ import io.grpc.MethodDescriptor
 
 import java.io.{ByteArrayInputStream, InputStream}
 
-//potrei anche banalmente estendere MethodDescriptorFactory
+//could inherit from MethodDescriptorFactory
 trait JacksonMarshallerFactory extends MarshallerFactory {
   self: MethodDescriptorFactory =>
 
@@ -43,6 +43,5 @@ trait JacksonMarshallerFactory extends MarshallerFactory {
   //override type Signaturable[T, U] = implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
 }
 
-//family polymorphism (one-shot extension):
+//family polymorphism:
 trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory with JacksonMarshallerFactory
-//example of use: class JacksonCLientSTub extends ClientStub with JacksonMethodDescriptorFactory
