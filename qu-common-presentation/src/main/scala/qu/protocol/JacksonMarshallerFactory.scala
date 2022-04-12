@@ -17,13 +17,13 @@ trait JacksonMarshallerFactory extends MarshallerFactory {
   @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "className")
   class JacksonOperationMixin
 
-  val mapper = JsonMapper.builder()
+  private val mapper = JsonMapper.builder()
     .addModule(DefaultScalaModule)
     //this allows to plug jackson features to original class (technology-agnostic) class w/o editing it
     .addMixIn(classOf[Messages.Operation[_, _]], classOf[JacksonOperationMixin]) //.registerSubtypes(classOf[Messages.AInterface[_, _]], classOf[Messages.C1])    //not needed
     .build() :: ClassTagExtensions
 
-  override def marshallerFor[T](implicit clz: JavaTypeable[T]): MethodDescriptor.Marshaller[T] =
+  override def marshallerFor[T:JavaTypeable]: MethodDescriptor.Marshaller[T] =
     new MethodDescriptor.Marshaller[T]() {
       override def stream(value: T): InputStream = {
         new ByteArrayInputStream(mapper.writeValueAsBytes(value))
@@ -34,11 +34,8 @@ trait JacksonMarshallerFactory extends MarshallerFactory {
       }
     }
 
-  //can move in another file
-  def getGenericSignature[T, U](implicit javaTypeable: JavaTypeable[T],
-                                javaTypeable2: JavaTypeable[U]): String =
+  override def getGenericSignature[T, U](implicit clz: JavaTypeable[T], clz2: JavaTypeable[U]): String =
     implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
-
   //should I define a trait that implements Signaturable and implicitly import here?
   //override type Signaturable[T, U] = implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
 }
