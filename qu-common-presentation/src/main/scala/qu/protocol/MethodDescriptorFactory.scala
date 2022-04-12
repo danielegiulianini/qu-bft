@@ -24,11 +24,11 @@ trait MethodDescriptorFactory {
   }
 }
 
-//an optimization that leverages flyweight pattern to avoid regenerating
+//an optimization that leverages flyweight pattern to avoid regenerating method descriptors
 trait CachingMethodDescriptorFactory extends MethodDescriptorFactory {
   //self: MethodDescriptorFactory =>
   //mi serve un identificativo della coppia di metodi
-  override def generateMethodDescriptor[T, U](methodName: String, serviceName: String)
+  override abstract def generateMethodDescriptor[T, U](methodName: String, serviceName: String)
                                              (implicit enc: Marshallable[Request[T, U]],
                                               enc3: Marshallable[Response[T]],
                                               enc2: Marshallable[T], dec: Marshallable[U]):
