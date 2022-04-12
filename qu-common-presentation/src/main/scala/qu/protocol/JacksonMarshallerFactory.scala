@@ -34,7 +34,7 @@ trait JacksonMarshallerFactory extends MarshallerFactory {
       }
     }
 
-  override def getGenericSignature[T, U](implicit clz: JavaTypeable[T], clz2: JavaTypeable[U]): String =
+  def getGenericSignature[T:JavaTypeable, U:JavaTypeable]: String =
     implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
   //should I define a trait that implements Signaturable and implicitly import here?
   //override type Signaturable[T, U] = implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
