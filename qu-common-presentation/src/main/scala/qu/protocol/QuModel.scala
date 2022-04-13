@@ -3,16 +3,17 @@ package qu.protocol
 
 trait QuModel {
   type Operation
-  type Candidate = (LogicalTimestamp, LogicalTimestamp)
   type ReplicaHistory
   type HistorySet
   type OHS
   type ClientId
+  type ServerId
   type Time
   type LogicalTimestamp = (Time, /*Boolean, */String, ClientId, OHS)
+  type Candidate = (LogicalTimestamp, LogicalTimestamp)
 
-  //or:   type LogicalTimestamp = (Time, /*Boolean, */String, ClientId, OHS)
 
+  //or:   type LogicalTimestamp <: { val time; val barrierFlag;
 
   type OperationType
   type α  //authenticator
@@ -23,10 +24,10 @@ trait QuModel {
 
   def latestTime(rh: ReplicaHistory): LogicalTimestamp
 
-  def latestTime(ohs: OHS): LogicalTimestamp
+  //def latestTime(ohs: OHS): LogicalTimestamp
 
   def classify(ohs: OHS): (OperationType, Candidate, Candidate) //barrierflag to add
-  // return tuples or  case classes (c.c. that extends ? it depends if i want to access them?
+  // return tuples or  case classes (c.c. that extends ? it depends if i want to access them...
 
   def compare(logicalTimestamp1: LogicalTimestamp, logicalTimestamp2: LogicalTimestamp): Int
 
@@ -36,13 +37,19 @@ trait QuModel {
 
 //what is self-independent can be put as other trait/class and plugged by mixin
 
-trait AbstractQuModel extends QuModel {
-  override type ReplicaHistory = Set[LogicalTimestamp]
+case class MyLogicalTimestamp(a:String)
 
-  type Time = Int
+trait AbstractQuModel extends QuModel {
+  //cyclic dep: ReplicaHistory depends on LogicalTimestamp that depends on OHS that depends on ReplicaHistory
+  override type OHS = ServerId => ReplicaHistory
+
+  override type ReplicaHistory = Set[Candidate]
+
+  override type Time = Int
   override type ClientId = String
 
+  //since RH is a ordered set must define ordering for LogicalTimestamp
+
+
   //def latestTime(rh: ReplicaHistory): LogicalTimestamp = rh.
-
-
 }
