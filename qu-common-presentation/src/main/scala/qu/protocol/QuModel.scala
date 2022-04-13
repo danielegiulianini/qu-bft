@@ -58,10 +58,14 @@ trait AbstractQuModel extends QuModel {
 
 trait AnstractAbstractQuModel extends AbstractQuModel {
   override type OHS = Map[ServerId, (ReplicaHistory, α)] //cyclic dep: ReplicaHistory depends on LogicalTimestamp that depends on OHS that depends on ReplicaHistory
-
   implicit val OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.toString compare y.toString
 
   override type LogicalTimestamp = MyLogicalTimestamp
+  //what is self-independent can be put as other trait/class and plugged by mixin
+  case class MyLogicalTimestamp(time: Int, val barrierFlag: Boolean, val clientId: ClientId, val ohs: OHS) extends Ordered[MyLogicalTimestamp] {
+    //a compare method here or a (implicit) ordering in companion object
+    override def compare(that: MyLogicalTimestamp): Int = ???
+  }
 
   def latestTime(ohs: OHS): LogicalTimestamp = {
     ohs
@@ -71,14 +75,8 @@ trait AnstractAbstractQuModel extends AbstractQuModel {
       .max
   }
 
-  //what is self-independent can be put as other trait/class and plugged by mixin
-  case class MyLogicalTimestamp(a: String, val barrierFlag: Boolean, val clientId: ClientId, val ohs: OHS) extends Ordered[MyLogicalTimestamp] {
-    //a compare method here or a (implicit) ordering in companion object
-    override def compare(that: MyLogicalTimestamp): Int = ???
-  }
-
   def latestTime(rh: ReplicaHistory): LogicalTimestamp = rh
-    .flatMap(x => Set(x._1, x._2)) //or can use ordered/ing of candid here
+    .flatMap(x => Set(x._1, x._2))
     .max
 }
 
