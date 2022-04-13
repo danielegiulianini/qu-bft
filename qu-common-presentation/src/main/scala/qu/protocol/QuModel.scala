@@ -61,10 +61,20 @@ trait AnstractAbstractQuModel extends AbstractQuModel {
   implicit val OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) =>
     x.values.toString compare y.toString
 
-  case class MyLogicalTimestamp(time: Int, barrierFlag: Boolean, clientId: ClientId, ohs: OHS) extends Ordered[MyLogicalTimestamp] {
+  case class MyLogicalTimestamp(time: Int, barrierFlag: Boolean, clientId: ClientId, ohs: OHS) /*extends Ordered[MyLogicalTimestamp] {
     //a compare method here or a (implicit) ordering in companion object
-    override def compare(that: MyLogicalTimestamp): Int = ???
-  }
+    override def compare(that: MyLogicalTimestamp): Int =
+      (self.last compare that.last) match {
+        case 0 =>
+          (self.first compare that.first) match {
+            case 0 => self.middle compare that.middle
+            case c => c
+          }
+        case c => c
+      }
+  }*/
+  implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] =
+    Ordering.by(lt => (lt.time, lt.barrierFlag, lt.clientId, lt.ohs))
 
   def latestTime(ohs: OHS): LogicalTimestamp = {
     ohs
