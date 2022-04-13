@@ -43,26 +43,25 @@ trait AbstractQuModel extends QuModel {
   override type ReplicaHistory = SortedSet[Candidate]
 
   //or structural type? so I can name
-  override type OHS = ServerId => (ReplicaHistory, α) //cyclic dep: ReplicaHistory depends on LogicalTimestamp that depends on OHS that depends on ReplicaHistory
-
-  //now I can add it
-  //def latestTime(ohs: OHS): LogicalTimestamp = ohs.
-
+  //override type OHS = ServerId => (ReplicaHistory, α)
 
   //since RH is a ordered set must define ordering for LogicalTimestamp, that actually requires
-
-
-  //def latestTime(rh: ReplicaHistory): LogicalTimestamp = rh.
 }
 
 
 trait AnstractAbstractQuModel extends AbstractQuModel {
-  override type OHS = Map[ServerId, (ReplicaHistory, α)] //cyclic dep: ReplicaHistory depends on LogicalTimestamp that depends on OHS that depends on ReplicaHistory
-  implicit val OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.toString compare y.toString
+  //the ones of the following that are self-independent can be put in separate trait/class and plugged by mixin
+  override type OHS = Map[ServerId, (ReplicaHistory, α)]
 
+  //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
   override type LogicalTimestamp = MyLogicalTimestamp
-  //what is self-independent can be put as other trait/class and plugged by mixin
-  case class MyLogicalTimestamp(time: Int, val barrierFlag: Boolean, val clientId: ClientId, val ohs: OHS) extends Ordered[MyLogicalTimestamp] {
+
+  //clean but not considers if rh are not ordered by server...
+  //implicit val OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.values.toString compare y.toString
+  implicit val OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) =>
+    x.values.toString compare y.toString
+
+  case class MyLogicalTimestamp(time: Int, barrierFlag: Boolean, clientId: ClientId, ohs: OHS) extends Ordered[MyLogicalTimestamp] {
     //a compare method here or a (implicit) ordering in companion object
     override def compare(that: MyLogicalTimestamp): Int = ???
   }
@@ -71,7 +70,7 @@ trait AnstractAbstractQuModel extends AbstractQuModel {
     ohs
       .values
       .map(_._1)
-      .map(latestTime(_))
+      .map(latestTime)
       .max
   }
 
