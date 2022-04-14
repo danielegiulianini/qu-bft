@@ -113,19 +113,24 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   (OperationType,
     (MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U]),
     (MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])) = {
-    val latestObjectVersion = latestCandidate(ohs, false, repairableThreshold)
-    val latestBarrierVersion = latestCandidate(ohs, true, repairableThreshold)
+    val latestObjectVersion = latestCandidate(ohs, barrierFlag = false, repairableThreshold)
+    val latestBarrierVersion = latestCandidate(ohs, barrierFlag = true, repairableThreshold)
     val ltLatest = latestTime(ohs)
     //without using custom case class instead of tuples...
     val (latestObjectVersionLT, _) = latestObjectVersion
     val (latestBarrierVersionLT, _) = latestBarrierVersion
-    val operationType = (latestObjectVersionLT, latestBarrierVersionLT) match {
+
+    /*val operationType = (latestObjectVersionLT, latestBarrierVersionLT) match {
       case (`ltLatest`, _) if order(latestObjectVersion, ohs) > quorumThreshold => 1
       case (`ltLatest`, _) if order(latestObjectVersion, ohs) > repairableThreshold => 2
       case (_, `ltLatest`) if order(latestObjectVersion, ohs) > quorumThreshold => 3
       case (_, `ltLatest`) if order(latestObjectVersion, ohs) > repairableThreshold => 4
       case _ => 5
-    }
+    }*/
+    val operationType = if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) > quorumThreshold) 3
+    else if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) > repairableThreshold) 2
+    else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) > quorumThreshold) 3
+    else 4
     (operationType, latestObjectVersion, latestBarrierVersion)
   }
 
