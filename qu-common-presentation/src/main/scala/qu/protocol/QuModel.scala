@@ -46,6 +46,22 @@ trait AbstractQuModel extends QuModel {
   //since RH is a ordered set must define ordering for LogicalTimestamp, that actually requires
 }
 
+//trait instead of object for mixin it (could be at the same level of OperationType1, instead of having it
+//nested
+
+/*sealed trait OperationType1
+object OperationType1 {
+  case object METHOD extends OperationType1
+  case object INLINE_METHOD extends OperationType1
+  case object COPY extends OperationType1
+  case object BARRIER extends OperationType1
+  case object INLINE_BARRIER extends OperationType1
+}
+
+trait OperationTypes { self: AbstractAbstractQuModel =>
+  override type OperationType = OperationType1
+}*/
+
 
 trait AbstractAbstractQuModel extends AbstractQuModel {
   //the ones of the following that are self-independent can be put in separate trait/class and plugged by mixin
@@ -104,8 +120,18 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
       .max
   }
 
-  //TODO to correct
-  type OperationType = Int
+
+
+  sealed trait OperationType1
+  object OperationType1 {
+    case object METHOD extends OperationType1
+    case object INLINE_METHOD extends OperationType1
+    case object COPY extends OperationType1
+    case object BARRIER extends OperationType1
+    case object INLINE_BARRIER extends OperationType1
+  }
+
+  override type OperationType = OperationType1
 
   override def classify[U](ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])], α)],
                            repairableThreshold: Int,
@@ -116,10 +142,9 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
     val latestObjectVersion = latestCandidate(ohs, barrierFlag = false, repairableThreshold)
     val latestBarrierVersion = latestCandidate(ohs, barrierFlag = true, repairableThreshold)
     val ltLatest = latestTime(ohs)
-    //without using custom case class instead of tuples...
+    //renaming without using custom case class instead of tuples...
     val (latestObjectVersionLT, _) = latestObjectVersion
     val (latestBarrierVersionLT, _) = latestBarrierVersion
-
     /*val operationType = (latestObjectVersionLT, latestBarrierVersionLT) match {
       case (`ltLatest`, _) if order(latestObjectVersion, ohs) > quorumThreshold => 1
       case (`ltLatest`, _) if order(latestObjectVersion, ohs) > repairableThreshold => 2
@@ -127,10 +152,11 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
       case (_, `ltLatest`) if order(latestObjectVersion, ohs) > repairableThreshold => 4
       case _ => 5
     }*/
-    val operationType = if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) > quorumThreshold) 3
-    else if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) > repairableThreshold) 2
-    else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) > quorumThreshold) 3
-    else 4
+    val operationType = if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) >= quorumThreshold) OperationType1.METHOD
+    else if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) >= repairableThreshold) OperationType1.INLINE_METHOD
+    else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) >= quorumThreshold) OperationType1.COPY
+    else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) >= repairableThreshold) OperationType1.INLINE_BARRIER
+    else OperationType1.BARRIER
     (operationType, latestObjectVersion, latestBarrierVersion)
   }
 
