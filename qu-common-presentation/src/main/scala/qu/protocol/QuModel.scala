@@ -25,7 +25,9 @@ trait QuModel {
   def latestTime[U](rh: ReplicaHistory[U]): LogicalTimestamp[_, U]
 
   // return tuples or  case classes (c.c. that extends ? it depends if i want to access them...
-  def classify[U](ohs: OHS[U]): (OperationType, Candidate[U], Candidate[U]) //barrierflag to add
+  def classify[U](ohs: OHS[U],
+                  repairableThreshold: Int,
+                  quorumThreshold: Int): (OperationType, Candidate[U], Candidate[U]) //barrierflag to add
 
   //def compare[U](logicalTimestamp1: LogicalTimestamp[_, U], logicalTimestamp2: LogicalTimestamp[_, U]): Int
   //def max[U](logicalTimestamp: LogicalTimestamp[_, U]): Candidate[U]
@@ -92,7 +94,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   (MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U]) = {
     /*ohs
       .values
-      .map(rh => rh._1.max) //I can filter by order > r first first (and taking the max then) or viceversa
+      .map(rh => rh._1.max) //I can filter by order > repairableThreshold first first (and taking the max then) or viceversa
       .filter(candidate => order(candidate, ohs) > repairableThreshold)
       .max*/
     ohs
@@ -100,6 +102,31 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
       .flatMap(rh => rh._1)
       .filter(order(_, ohs) >= repairableThreshold)
       .max
+  }
+
+  //TODO to correct
+  type OperationType = Int
+
+  override def classify[U](ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])], α)],
+                           repairableThreshold: Int,
+                           quorumThreshold: Int):
+  (OperationType,
+    (MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U]),
+    (MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])) = {
+    val latestObjectVersion = latestCandidate(ohs, false, repairableThreshold)
+    val latestBarrierVersion = latestCandidate(ohs, true, repairableThreshold)
+    val ltLatest = latestTime(ohs)
+    //without using custom case class instead of tuples...
+    val (latestObjectVersionLT, _) = latestObjectVersion
+    val (latestBarrierVersionLT, _) = latestBarrierVersion
+    val operationType = (latestObjectVersionLT, latestBarrierVersionLT) match {
+      case (`ltLatest`, _) if order(latestObjectVersion, ohs) > quorumThreshold => 1
+      case (`ltLatest`, _) if order(latestObjectVersion, ohs) > repairableThreshold => 2
+      case (_, `ltLatest`) if order(latestObjectVersion, ohs) > quorumThreshold => 3
+      case (_, `ltLatest`) if order(latestObjectVersion, ohs) > repairableThreshold => 4
+      case _ => 5
+    }
+    (operationType, latestObjectVersion, latestBarrierVersion)
   }
 
 }
