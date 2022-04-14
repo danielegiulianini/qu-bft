@@ -13,9 +13,7 @@ trait QuModel {
   //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
   type Candidate[U] = (LogicalTimestamp[_, U], LogicalTimestamp[_, U])
   type LogicalTimestamp[T, U] <: {val time: Int; val barrierFlag: Boolean; val clientId: ClientId; val operation: Operation[T, U]; val ohs: OHS[U]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
-
   type OperationType
-
   type α //authenticator
 
   //number of replica histories in the object history set in which it appears
@@ -58,6 +56,7 @@ trait AnstractAbstractQuModel extends AbstractQuModel {
 
   //clean but not considers if rh are not ordered by server...
   //implicit val OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.values.toString compare y.toString
+  //a def is required (instead of a val) because (generic) type params are required
   implicit def OHSOrdering[U]: Ordering[OHS[U]] = (x: OHS[U], y: OHS[U]) => x.values.toString compare y.toString
 
   case class MyLogicalTimestamp[T, U](time: Int,
@@ -77,8 +76,12 @@ trait AnstractAbstractQuModel extends AbstractQuModel {
       .max
   }
 
-  def latestTime[U](rh: ReplicaHistory[U]): LogicalTimestamp[_, U] = rh
+  override def latestTime[U](rh: ReplicaHistory[U]): LogicalTimestamp[_, U] = rh
     .flatMap(x => Set(x._1, x._2))
     .max
-}
 
+  override def order[U](candidate: (MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U]),
+                        ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])], α)]): Int =
+  //foreach replicahistpory count if it contains the given candidate
+    ohs.values.count(_._1.contains(candidate))
+}
