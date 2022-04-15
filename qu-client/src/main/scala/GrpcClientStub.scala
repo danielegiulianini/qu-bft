@@ -13,17 +13,20 @@ abstract class GrpcClientStub[T](var chan: ManagedChannel) {
   val methodName = "todo"
   val serviceName = "todo"
 
-  def send[U](op: Messages.Request[T, U])
-             (implicit enc: Marshallable[T], dec: Marshallable[U],
+  def send[U](op: Messages.Request[T, U],
+              callOptions: CallOptions = CallOptions.DEFAULT)
+             (implicit enc: Marshallable[T],
+              dec: Marshallable[U],
               marshallable: Marshallable[Request[T, U]],
               marshallable3: Marshallable[Response[T]]):
   ListenableFuture[Messages.Response[T]] = {
     val md2 = generateMethodDescriptor[T, U](methodName, serviceName)
-    ClientCalls.futureUnaryCall(chan.newCall(md2, CallOptions.DEFAULT), op)
+    ClientCalls.futureUnaryCall(chan.newCall(md2, callOptions), op)
   }
 }
 
-class JacksonClientStub(channel: ManagedChannel) extends GrpcClientStub(channel) with JacksonMethodDescriptorFactory
+abstract class JacksonClientStub(channel: ManagedChannel)
+  extends GrpcClientStub(channel) with JacksonMethodDescriptorFactory
 
 
 //example of use:
