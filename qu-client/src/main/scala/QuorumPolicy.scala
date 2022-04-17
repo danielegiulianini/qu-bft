@@ -1,4 +1,4 @@
-import qu.protocol.ConcreteQuModel
+import qu.protocol.{ConcreteQuModel, Messages}
 import qu.protocol.ConcreteQuModel.OHS
 import qu.protocol.Messages.Response
 
@@ -6,7 +6,7 @@ import scala.collection.SortedSet
 import scala.concurrent.Future
 
 trait QuorumPolicy[U] {
-  def quorum[T](servers: Servers, ohs:OHS[U]): Future[(Response[T], Int, OHS[U])]
+  def quorum[T](servers: Servers[U], operation: Messages.Operation[T, U]): Future[(Response[T], Int, OHS[U])]
 }
 
 //there are "quorumPolicy"s that actually require obj pref quorum is defined
