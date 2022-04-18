@@ -27,7 +27,7 @@ trait QuModel {
   // return tuples or  case classes (c.c. that extends ? it depends if i want to access them...
   def classify[U](ohs: OHS[U],
                   repairableThreshold: Int,
-                  quorumThreshold: Int): (OperationType, Candidate[U], Candidate[U]) //barrierflag to add
+                  quorumThreshold: Int): (OperationType, Candidate[U], Candidate[U])
 
   //def compare[U](logicalTimestamp1: LogicalTimestamp[_, U], logicalTimestamp2: LogicalTimestamp[_, U]): Int
   //def max[U](logicalTimestamp: LogicalTimestamp[_, U]): Candidate[U]
@@ -65,7 +65,13 @@ trait OperationTypes { self: AbstractAbstractQuModel =>
 
 trait AbstractAbstractQuModel extends AbstractQuModel {
   //the ones of the following that are self-independent can be put in separate trait/class and plugged by mixin
-  override type OHS[U] = Map[ServerId, (ReplicaHistory[U], α)]
+  override type OHS[U] = Map[ServerId, AuthenticatedReplicaHistory[U]]
+
+  //refactored since used in responses also...
+  type AuthenticatedReplicaHistory[U] = (ReplicaHistory[U], α)
+
+  def emptyOhs[U] = Map.empty[ServerId, U]
+
   override type Operation[T, U] = Messages.Operation[T, U]
 
   //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
@@ -103,7 +109,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //foreach replicahistory count if it contains the given candidate
     ohs.values.count(_._1.contains(candidate))
 
-  //here I need dependency injection of q and r values
+  //here I need dependency injection of q
   override def latestCandidate[U](ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])], α)],
                                   barrierFlag: Boolean,
                                   repairableThreshold: Int):
@@ -121,13 +127,18 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   }
 
 
-
+  //classify can be plugged after definition of operationTypes instances
   sealed trait OperationType1
+
   object OperationType1 {
     case object METHOD extends OperationType1
+
     case object INLINE_METHOD extends OperationType1
+
     case object COPY extends OperationType1
+
     case object BARRIER extends OperationType1
+
     case object INLINE_BARRIER extends OperationType1
   }
 
@@ -160,4 +171,17 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
     (operationType, latestObjectVersion, latestBarrierVersion)
   }
 
+  type ProbingPolicy = Object => Set[ServerId]
+
 }
+
+trait AObj {
+  def id: Int
+}
+
+object ProbingPolicies {
+  //val simpleModuleProbingPolicy : (AObj, Seq[String]) => Set[String]= (obj, setOfServ) => obj.id % 2
+}
+
+//still to define authenticator
+object ConcreteQuModel extends AbstractAbstractQuModel
