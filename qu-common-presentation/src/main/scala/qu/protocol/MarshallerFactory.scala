@@ -10,7 +10,7 @@ import java.io.{ByteArrayInputStream, InputStream}
 
 //could inherit from MethodDescriptorFactory
 trait JacksonMarshallerFactory extends MarshallerFactory {
-  self: MethodDescriptorFactory =>
+  //self: MethodDescriptorFactory =>
 
   type Marshallable[T] = JavaTypeable[T]
 
