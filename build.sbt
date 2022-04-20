@@ -29,6 +29,7 @@ lazy val quClient = (project in file("qu-client"))
       "org.scala-lang" % "scala-reflect" % "2.13.8",
       "com.thesamet.scalapb" % "scalapb-runtime-grpc_2.13" % "0.11.10",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2",
+      "io.monix" %% "monix" % "3.4.0"
     )
   )
   .dependsOn(quCommonPresentation)
