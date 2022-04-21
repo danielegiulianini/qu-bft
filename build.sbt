@@ -21,7 +21,7 @@ lazy val quCommonPresentation = (project in file("qu-common-presentation"))
       "org.scala-lang" % "scala-reflect" % "2.13.8",
       "com.thesamet.scalapb" % "scalapb-runtime-grpc_2.13" % "0.11.10",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2",
-      "com.roundeights" %% "hasher" % "1.2.1"
+      "com.roundeights" % "hasher_2.12" % "1.2.0"
     )
   )
 lazy val quClient = (project in file("qu-client"))
