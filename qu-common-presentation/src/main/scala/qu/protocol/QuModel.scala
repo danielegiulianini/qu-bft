@@ -142,6 +142,15 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
     case object INLINE_BARRIER extends OperationType1
   }
 
+  sealed trait StatusCode
+
+  object StatusCode {
+    case object SUCCESS extends StatusCode
+
+    case object FAIL extends StatusCode
+  }
+
+
   override type OperationType = OperationType1
 
   override def classify[U](ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])], α)],
@@ -173,10 +182,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   type ProbingPolicy = Object => Set[ServerId]
 
-}
-
-trait AObj {
-  def id: Int
 }
 
 object ProbingPolicies {
