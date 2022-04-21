@@ -1,5 +1,7 @@
 package qu.protocol
 
+import com.roundeights.hasher.Digest.digest2string
+
 import scala.collection.SortedSet
 
 
@@ -184,8 +186,16 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
 }
 
-object ProbingPolicies {
-  //val simpleModuleProbingPolicy : (AObj, Seq[String]) => Set[String]= (obj, setOfServ) => obj.id % 2
+trait CryptoAuthenticator {
+  self: AbstractQuModel =>
+  
+  override type α = String
+
+  import com.roundeights.hasher.Implicits._
+
+  def hmac(key: String, replicaHistory: ReplicaHistory[_]): α = {
+    replicaHistory.toString().hmac(key).md5
+  }
 }
 
 //still to define authenticator
