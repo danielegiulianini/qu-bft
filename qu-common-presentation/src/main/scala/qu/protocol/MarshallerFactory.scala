@@ -8,11 +8,17 @@ import io.grpc.MethodDescriptor
 
 import java.io.{ByteArrayInputStream, InputStream}
 
-//could inherit from MethodDescriptorFactory
-trait JacksonMarshallerFactory extends MarshallerFactory {
-  //self: MethodDescriptorFactory =>
+trait MarshallerFactory {
+  type Marshallable[T]
 
-  type Marshallable[T] = JavaTypeable[T]
+  def marshallerFor[T: Marshallable]: MethodDescriptor.Marshaller[T]
+}
+
+
+//could inherit from MethodDescriptorFactory
+trait JacksonMarshallerFactory extends MarshallerFactory {  //self: MethodDescriptorFactory =>
+
+  override type Marshallable[T] = JavaTypeable[T]
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "className")
   class JacksonOperationMixin
@@ -23,7 +29,7 @@ trait JacksonMarshallerFactory extends MarshallerFactory {
     .addMixIn(classOf[Messages.Operation[_, _]], classOf[JacksonOperationMixin]) //.registerSubtypes(classOf[Messages.AInterface[_, _]], classOf[Messages.C1])    //not needed
     .build() :: ClassTagExtensions
 
-  override def marshallerFor[T:JavaTypeable]: MethodDescriptor.Marshaller[T] =
+  override def marshallerFor[T: JavaTypeable]: MethodDescriptor.Marshaller[T] =
     new MethodDescriptor.Marshaller[T]() {
       override def stream(value: T): InputStream = {
         new ByteArrayInputStream(mapper.writeValueAsBytes(value))
@@ -34,8 +40,8 @@ trait JacksonMarshallerFactory extends MarshallerFactory {
       }
     }
 
-  def getGenericSignature[T:JavaTypeable, U:JavaTypeable]: String =
-    implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
+  def getGenericSignature[T: JavaTypeable, U: JavaTypeable]: String =
+    implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature.replace("/", "")  //todo
   //should I define a trait that implements Signaturable and implicitly import here?
   //override type Signaturable[T, U] = implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
 }
