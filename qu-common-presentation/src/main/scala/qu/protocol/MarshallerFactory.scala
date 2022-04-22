@@ -40,11 +40,12 @@ trait JacksonMarshallerFactory extends MarshallerFactory {  //self: MethodDescri
       }
     }
 
-  def getGenericSignature[T: JavaTypeable, U: JavaTypeable]: String =
-    implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature.replace("/", "")  //todo
-  //should I define a trait that implements Signaturable and implicitly import here?
-  //override type Signaturable[T, U] = implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
 }
 
 //family polymorphism:
-trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory with JacksonMarshallerFactory
+trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory with JacksonMarshallerFactory {
+  override def getGenericSignature[T: JavaTypeable, U: JavaTypeable]: String = //todo to be refactored
+    (implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature + implicitly[JavaTypeable[U]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature).replace("/", "")  //todo
+  //should I define a trait that implements Signaturable and implicitly import here?
+  //override type Signaturable[T, U] = implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
+}
