@@ -45,6 +45,9 @@ lazy val quService = (project in file("qu-service"))
   .dependsOn(quCommonPresentation)
 
 lazy val quSystemTesting = (project in file("qu-system-testing"))
+  .settings(
+    libraryDependencies ++= commonDependencies
+  )
   .dependsOn(quClient)
   .dependsOn(quService)
 
