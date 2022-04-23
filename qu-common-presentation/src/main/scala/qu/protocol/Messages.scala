@@ -13,6 +13,9 @@ object Messages {
 
   final case class Request[ReturnValueT, ObjectT](operation: Operation[ReturnValueT, ObjectT])
 
-  final case class Response[ReturnValueT, ObjectT](responseCode:Int, answer: ReturnValueT, order: Int, authenticatedRh: ConcreteQuModel.AuthenticatedReplicaHistory[ObjectT])
+  final case class Response[ReturnValueT, ObjectT](responseCode:ConcreteQuModel.StatusCode,
+                                                   answer: ReturnValueT,
+                                                   order: Int,
+                                                   authenticatedRh: ConcreteQuModel.AuthenticatedReplicaHistory[ObjectT])
 
 }
