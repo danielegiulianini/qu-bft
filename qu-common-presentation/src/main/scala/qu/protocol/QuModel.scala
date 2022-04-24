@@ -184,19 +184,31 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   type ProbingPolicy = Object => Set[ServerId]
 
+
+
 }
 
-trait CryptoAuthenticator {
-  self: AbstractQuModel =>
-  
+trait CryptoMd5Authenticator {
+  self: AbstractQuModel =>  //needs the ordering defined by SortedSet
+
   override type α = String
 
   import com.roundeights.hasher.Implicits._
 
-  def hmac(key: String, replicaHistory: ReplicaHistory[_]): α = {
+  //leveraging sortedSet ordering here
+  def hmac(key: String, replicaHistory: ReplicaHistory[_]): α =
     replicaHistory.toString().hmac(key).md5
-  }
+
+}
+
+trait Persistence {
+  self: AbstractQuModel =>
+
+  def store[T, U](logicalTimestamp: LogicalTimestamp[T, U], myObject: U) : Unit
+
+  def retrieve[T, U](logicalTimestamp: LogicalTimestamp[T, U]) : Unit
+
 }
 
 //still to define authenticator
-object ConcreteQuModel extends AbstractAbstractQuModel
+object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator
