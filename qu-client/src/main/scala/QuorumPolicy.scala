@@ -1,11 +1,10 @@
 import monix.execution.Scheduler
 import monix.execution.schedulers.SchedulerService
-import qu.protocol.{ConcreteQuModel, JacksonMarshallerFactory, MarshallerFactory, MethodDescriptorFactory}
-
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
+//import that declares specific dependency
 import qu.protocol.ConcreteQuModel._
 
 
@@ -24,7 +23,7 @@ trait SimpleBroadcastPolicy[U, MarshallableA[_]] extends QuorumPolicy[U] {
   }
 
   type AType = A
-  private val servers: Map[ConcreteQuModel.ServerId, AType] = Map()
+  private val servers: Map[ServerId, AType] = Map()
 
   //protected for not exposing quorum def to client (for emulating costructor with private field)...it's not allowed otherwise!
   override def quorum[T](operation: Operation[T, U], ohs: OHS[U]):
@@ -47,7 +46,7 @@ trait SimpleBroadcastPolicy[U, MarshallableA[_]] extends QuorumPolicy[U] {
           //PUNTO DOVE ESPONGO IMPLEMENTAZIONE!
           kv._2.send[T](operation = Request[T, U](operation, ohs)))) //why this (more readable) nt working??:  .map((k: ServerId, s: JacksonClientStub[U]) => (k, s.send[T](operation = Request(operation), callOptions = CallOptions.DEFAULT)(enc = a, implicitly, implicitly,implicitly)))
         .foreach(kv => kv._2.onComplete({
-          case Success(response) if response.responseCode == ConcreteQuModel.StatusCode.SUCCESS =>
+          case Success(response) if response.responseCode == StatusCode.SUCCESS =>
             //here a mutex...
             currentSuccessSet = currentSuccessSet + ((kv._1, response))
             myOhs = myOhs + (kv._1 -> response.authenticatedRh)
