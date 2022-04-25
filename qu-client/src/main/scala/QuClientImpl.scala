@@ -1,12 +1,11 @@
 import qu.protocol.ConcreteQuModel._
-import qu.protocol.{ConcreteQuModel, Messages}
 
 import scala.concurrent.{Future, Promise}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 abstract class QuClientImpl[U](policy: QuorumPolicy[U], protected var ohs: OHS[U]) extends QuClient[U] {//with Servers[U]
 
-  override def submit[T](op: Messages.Operation[T, U]): Future[T] = {
+  override def submit[T](op: Operation[T, U]): Future[T] = {
     for {
       response <- policy.quorum(op, ohs)
       answer <- if (response._2 < 5) for {
@@ -21,7 +20,7 @@ abstract class QuClientImpl[U](policy: QuorumPolicy[U], protected var ohs: OHS[U
 
 //companion object: consider putting utilities in QuClient if they are reusable at a higher level
 object QuClientImpl {
-  type ServerRefs[U] = Map[ServerId, JacksonClientStub[U]]
+  //type ServerRefs[U] = Map[ServerId, JacksonClientStub[U]]
   //val io = new QuClientImpl[Int] with SimpleBroadcastPolicy[Int]
 
   //grpc-aware factory:
