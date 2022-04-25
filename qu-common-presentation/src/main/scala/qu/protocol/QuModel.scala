@@ -1,6 +1,7 @@
 package qu.protocol
 
 import com.roundeights.hasher.Digest.digest2string
+import qu.protocol.ConcreteQuModel.{AuthenticatedReplicaHistory, LogicalTimestamp, OHS}
 
 import scala.collection.SortedSet
 
@@ -12,8 +13,7 @@ trait QuModel {
   type ClientId
   type ServerId
   type Time
-  //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
-  type Candidate[U] = (LogicalTimestamp[_, U], LogicalTimestamp[_, U])
+  type Candidate[U] = (LogicalTimestamp[_, U], LogicalTimestamp[_, U])  //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
   type Flag = Boolean
   type LogicalTimestamp[T, U] <: {val time: Int; val barrierFlag: Flag; val clientId: ClientId; val operation: Operation[T, U]; val ohs: OHS[U]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
   type OperationType
@@ -48,22 +48,6 @@ trait AbstractQuModel extends QuModel {
   //since RH is a ordered set must define ordering for LogicalTimestamp, that actually requires
 }
 
-//trait instead of object for mixin it (could be at the same level of OperationType1, instead of having it
-//nested
-
-/*sealed trait OperationType1
-object OperationType1 {
-  case object METHOD extends OperationType1
-  case object INLINE_METHOD extends OperationType1
-  case object COPY extends OperationType1
-  case object BARRIER extends OperationType1
-  case object INLINE_BARRIER extends OperationType1
-}
-
-trait OperationTypes { self: AbstractAbstractQuModel =>
-  override type OperationType = OperationType1
-}*/
-
 
 trait AbstractAbstractQuModel extends AbstractQuModel {
   //the ones of the following that are self-independent can be put in separate trait/class and plugged by mixin
@@ -74,7 +58,39 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   def emptyOhs[U] = Map.empty[ServerId, U]
 
-  override type Operation[T, U] = Messages.Operation[T, U]
+  trait OperationA[ReturnValueT, ObjectT] {
+    def compute(obj: ObjectT): ReturnValueT
+  }
+
+  trait Query[ReturnValueT, ObjectT] extends OperationA[ReturnValueT, ObjectT]
+
+  trait Update[ReturnValueT, ObjectT] extends OperationA[ReturnValueT, ObjectT]
+
+  final case class Request[ReturnValueT, ObjectT](operation: OperationA[ReturnValueT, ObjectT],
+                                                  ohs: OHS[ObjectT])
+
+  final case class Response[ReturnValueT, ObjectT](responseCode: StatusCode,
+                                                   answer: ReturnValueT,
+                                                   order: Int,
+                                                   authenticatedRh: AuthenticatedReplicaHistory[ObjectT])
+
+
+  //object sync request:
+  //1. LogicalTimestamp only
+  //2.
+  case class LogicalTimestampOperation[ReturnValueObjectT](logicalTimestamp:
+                                                           LogicalTimestamp[ReturnValueObjectT, ReturnValueObjectT])
+    extends Query[ReturnValueObjectT, ReturnValueObjectT] {
+    override def compute(obj: ReturnValueObjectT): ReturnValueObjectT = obj
+  }
+
+  //object sync response:
+  //1. reuse response (some fields are null)
+  //2.
+  final case class ObjectSyncResponse[ObjectT](responseCode: StatusCode,
+                                               answer: ObjectT)
+
+  override type Operation[T, U] = OperationA[T, U]
 
   //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
   override type LogicalTimestamp[T, U] = MyLogicalTimestamp[T, U]
@@ -87,7 +103,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   case class MyLogicalTimestamp[T, U](time: Int,
                                       barrierFlag: Boolean,
                                       clientId: ClientId,
-                                      operation: Messages.Operation[T, U],
+                                      operation: OperationA[T, U],
                                       ohs: OHS[U])
 
   implicit def MyLogicalTimestampOrdering[U]: Ordering[MyLogicalTimestamp[_, U]] =
@@ -182,10 +198,8 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
     (operationType, latestObjectVersion, latestBarrierVersion)
   }
 
+  //to be del
   type ProbingPolicy = Object => Set[ServerId]
-
-
-
 }
 
 trait CryptoMd5Authenticator {
@@ -210,5 +224,22 @@ trait Persistence {
 
 }
 
-//still to define authenticator
 object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator
+
+
+
+//trait instead of object for mixin it (could be at the same level of OperationType1, instead of having it
+//nested
+
+/*sealed trait OperationType1
+object OperationType1 {
+  case object METHOD extends OperationType1
+  case object INLINE_METHOD extends OperationType1
+  case object COPY extends OperationType1
+  case object BARRIER extends OperationType1
+  case object INLINE_BARRIER extends OperationType1
+}
+
+trait OperationTypes { self: AbstractAbstractQuModel =>
+  override type OperationType = OperationType1
+}*/
