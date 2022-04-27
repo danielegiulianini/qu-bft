@@ -8,8 +8,9 @@ import io.grpc.MethodDescriptor
 import qu.protocol.ConcreteQuModel._
 
 
-trait MethodDescriptorFactory {
-  self: MarshallerFactory =>
+trait MethodDescriptorFactory[Marshallable[_]] {
+  self: MarshallerFactory[Marshallable] =>
+
   //a deterministic function on parameter types...//todo can also be refactored to be only on 1 type parameter
   def getGenericSignature[T: Marshallable, U: Marshallable]: String //type Signaturable[T, U] <: {def getGenericSignature: String}
 
@@ -71,7 +72,8 @@ trait MethodDescriptorFactory {
 }
 
 //an optimization that leverages flyweight pattern to avoid regenerating method descriptors
-trait CachingMethodDescriptorFactory extends MethodDescriptorFactory with MarshallerFactory {
+trait CachingMethodDescriptorFactory[Marshallable[_]] extends MethodDescriptorFactory[Marshallable]
+  with MarshallerFactory[Marshallable] {
   //i need an identifier of the pair of methods
   //override abstract is required here?
   override def generateMethodDescriptor[T, U](methodName: String, serviceName: String)
@@ -86,7 +88,7 @@ trait CachingMethodDescriptorFactory extends MethodDescriptorFactory with Marsha
 
 
 //family polymorphism:
-trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory with JacksonMarshallerFactory {
+trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory[JavaTypeable] with JacksonMarshallerFactory {
   override def getGenericSignature[T: JavaTypeable, U: JavaTypeable]: String = //todo to be refactored
     (implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature +
       implicitly[JavaTypeable[U]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature).replace("/", "") //todo
