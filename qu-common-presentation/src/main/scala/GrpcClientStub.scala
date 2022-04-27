@@ -1,4 +1,5 @@
 import GrpcClientStub.{methodName, serviceName}
+import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{CallOptions, ManagedChannel}
 import qu.protocol.{CostantiMomentanee, JacksonMethodDescriptorFactory, MarshallerFactory, MethodDescriptorFactory}
 import scalapb.grpc.ClientCalls
@@ -8,8 +9,11 @@ import scala.concurrent.Future
 //import that declares specific dependency
 import qu.protocol.ConcreteQuModel._
 
-abstract class GrpcClientStub[U](var chan: ManagedChannel) extends MethodDescriptorFactory with MarshallerFactory {
+abstract class GrpcClientStub[U, Marshallable[_]](var chan: ManagedChannel) extends MethodDescriptorFactory[Marshallable]
+  with MarshallerFactory[Marshallable] {
   //with grpc-java (listenableFuture) API
+
+
   def send[T](operation: Request[T, U],
               callOptions: CallOptions = CallOptions.DEFAULT) //default parameter value
              (implicit enc: Marshallable[T],
@@ -31,7 +35,7 @@ object GrpcClientStub {
 }
 
 class JacksonClientStub[A](channel: ManagedChannel)
-  extends GrpcClientStub[A](channel) with JacksonMethodDescriptorFactory
+  extends GrpcClientStub[A, JavaTypeable](channel) with JacksonMethodDescriptorFactory
 
 
 //example of use:
