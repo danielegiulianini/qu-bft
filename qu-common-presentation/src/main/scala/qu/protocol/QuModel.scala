@@ -1,8 +1,5 @@
 package qu.protocol
 
-import com.roundeights.hasher.Digest.digest2string
-import qu.protocol.ConcreteQuModel.{AuthenticatedReplicaHistory, LogicalTimestamp, OHS}
-
 import scala.collection.SortedSet
 
 
@@ -30,9 +27,6 @@ trait QuModel {
   def classify[U](ohs: OHS[U],
                   repairableThreshold: Int,
                   quorumThreshold: Int): (OperationType, Candidate[U], Candidate[U])
-
-  //def compare[U](logicalTimestamp1: LogicalTimestamp[_, U], logicalTimestamp2: LogicalTimestamp[_, U]): Int
-  //def max[U](logicalTimestamp: LogicalTimestamp[_, U]): Candidate[U]
 }
 
 trait AbstractQuModel extends QuModel {
@@ -56,6 +50,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //refactored since used in responses also...
   type AuthenticatedReplicaHistory[U] = (ReplicaHistory[U], α)
 
+  //todo required??
   def emptyOhs[U] = Map.empty[ServerId, U]
 
   trait OperationA[ReturnValueT, ObjectT] {
@@ -106,6 +101,11 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
                                       operation: OperationA[T, U],
                                       ohs: OHS[U])
 
+  def startingLogicalTimestamp[U]() = MyLogicalTimestamp[_, U](0, false, null, null, null)
+  def startingCandidate[U]() : Candidate[U] = (startingLogicalTimestamp, startingLogicalTimestamp)
+  def startingRh = SortedSet(startingCandidate())
+
+  //candidate ordering leverages the implicit ordering of tuples and of MyLogicalTimestamp
   implicit def MyLogicalTimestampOrdering[U]: Ordering[MyLogicalTimestamp[_, U]] =
     Ordering.by(lt => (lt.time, lt.barrierFlag, lt.clientId, lt.ohs))
 
@@ -208,6 +208,7 @@ trait CryptoMd5Authenticator {
   override type α = String
 
   import com.roundeights.hasher.Implicits._
+ // import com.roundeights.hasher.Digest.digest2string
 
   //leveraging sortedSet ordering here
   def hmac(key: String, replicaHistory: ReplicaHistory[_]): α =
@@ -225,21 +226,3 @@ trait Persistence {
 }
 
 object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator
-
-
-
-//trait instead of object for mixin it (could be at the same level of OperationType1, instead of having it
-//nested
-
-/*sealed trait OperationType1
-object OperationType1 {
-  case object METHOD extends OperationType1
-  case object INLINE_METHOD extends OperationType1
-  case object COPY extends OperationType1
-  case object BARRIER extends OperationType1
-  case object INLINE_BARRIER extends OperationType1
-}
-
-trait OperationTypes { self: AbstractAbstractQuModel =>
-  override type OperationType = OperationType1
-}*/
