@@ -10,7 +10,7 @@ trait QuModel {
   type ClientId
   type ServerId
   type Time
-  type Candidate[U] = (LogicalTimestamp[_, U], LogicalTimestamp[_, U])  //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
+  type Candidate[U] = (LogicalTimestamp[_, U], LogicalTimestamp[_, U]) //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
   type Flag = Boolean
   type LogicalTimestamp[T, U] <: {val time: Int; val barrierFlag: Flag; val clientId: ClientId; val operation: Operation[T, U]; val ohs: OHS[U]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
   type OperationType
@@ -101,13 +101,20 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
                                       operation: OperationA[T, U],
                                       ohs: OHS[U])
 
-  def startingLogicalTimestamp[U]() = MyLogicalTimestamp[_, U](0, false, null, null, null)
-  def startingCandidate[U]() : Candidate[U] = (startingLogicalTimestamp, startingLogicalTimestamp)
-  def startingRh = SortedSet(startingCandidate())
+  val startingTime = 0
+
+  def startingLogicalTimestamp[U]() =
+    MyLogicalTimestamp[Null, U](startingTime, false, null, null, null)
+
+  def startingCandidate[U](): Candidate[U] = (startingLogicalTimestamp[U], startingLogicalTimestamp[U])
+
+  def startingRh[U]: SortedSet[(MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])] = SortedSet(startingCandidate[U]())
 
   //candidate ordering leverages the implicit ordering of tuples and of MyLogicalTimestamp
   implicit def MyLogicalTimestampOrdering[U]: Ordering[MyLogicalTimestamp[_, U]] =
     Ordering.by(lt => (lt.time, lt.barrierFlag, lt.clientId, lt.ohs))
+
+  //todo ordering must consider null values (starting contains null values)
 
   def latestTime[U](ohs: OHS[U]): LogicalTimestamp[_, U] =
     ohs
@@ -200,15 +207,71 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   //to be del
   type ProbingPolicy = Object => Set[ServerId]
+
+  def setup[T, U](operation: Operation[T, U],
+                  ohs: OHS[U],
+                  quorumThreshold: Int,
+                  repairableThreshold: Int,
+                  clientId: String): (OperationType, Candidate[U], LogicalTimestamp[_, U]) = {
+    val (opType, latestObjectVersion, latestBarrierVersion) = classify(ohs, quorumThreshold, repairableThreshold)
+    val conditionedOnLogicalTimestamp = latestObjectVersion._1 //._1 stands for lt
+    if (opType == OperationType1.METHOD)
+      ( //opType
+        opType,
+        //candidate
+        (MyLogicalTimestamp(
+          time = latestTime(ohs).time + 1,
+          barrierFlag = false,
+          clientId = clientId,
+          operation = operation,
+          ohs = ohs),
+          conditionedOnLogicalTimestamp),
+        //ltCurrent
+        conditionedOnLogicalTimestamp)
+    else if (opType == OperationType1.BARRIER) {
+      val lt = MyLogicalTimestamp(
+        time = latestTime(ohs).time + 1,
+        barrierFlag = true,
+        clientId = clientId,
+        operation = null,
+        ohs = ohs)
+      (opType,
+        //candidate
+        (lt, conditionedOnLogicalTimestamp),
+        //ltCurrent
+        lt)
+    } else if (opType == OperationType1.COPY)
+      (opType,
+        (MyLogicalTimestamp(
+          time = latestTime(ohs).time + 1,
+          barrierFlag = false,
+          clientId = clientId,
+          operation = conditionedOnLogicalTimestamp.operation,
+          ohs = ohs), conditionedOnLogicalTimestamp),
+        //ltCurrent
+        latestBarrierVersion._1)
+    else if (opType == OperationType1.INLINE_METHOD)
+      (opType,
+        //candidate
+        latestObjectVersion,
+        //ltCurrent
+        latestObjectVersion._1)
+    else /*OperationType1.INLINE_BARRIER*/
+      (opType,
+        //candidate
+        latestBarrierVersion,
+        //ltCurrent
+        latestBarrierVersion._2)
+  }
 }
 
 trait CryptoMd5Authenticator {
-  self: AbstractQuModel =>  //needs the ordering defined by SortedSet
+  self: AbstractQuModel => //needs the ordering defined by SortedSet
 
   override type α = String
 
   import com.roundeights.hasher.Implicits._
- // import com.roundeights.hasher.Digest.digest2string
+  // import com.roundeights.hasher.Digest.digest2string
 
   //leveraging sortedSet ordering here
   def hmac(key: String, replicaHistory: ReplicaHistory[_]): α =
@@ -219,10 +282,12 @@ trait CryptoMd5Authenticator {
 trait Persistence {
   self: AbstractQuModel =>
 
-  def store[T, U](logicalTimestamp: LogicalTimestamp[T, U], myObject: U) : Unit
+  def store[T, U](logicalTimestamp: LogicalTimestamp[T, U], myObject: U): Unit
 
-  def retrieve[T, U](logicalTimestamp: LogicalTimestamp[T, U]) : Unit
+  def retrieve[T, U](logicalTimestamp: LogicalTimestamp[T, U]): Unit
 
 }
 
+
+//maybe more implementations (that with compact authenticators...)
 object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator
