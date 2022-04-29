@@ -123,6 +123,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
       .map(latestTime[U])
       .max
 
+def contains[U](replicaHistory: ReplicaHistory[U], candidate: Candidate[U]) = replicaHistory(candidate)
 
   override def latestTime[U](rh: ReplicaHistory[U]): LogicalTimestamp[_, U] =
     rh
@@ -279,6 +280,7 @@ trait CryptoMd5Authenticator {
 
 }
 
+//could be a class separated from QUModel, bound to a ConcreteImplementation
 trait Persistence {
   self: AbstractQuModel =>
 
