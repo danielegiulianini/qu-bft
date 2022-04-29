@@ -50,6 +50,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //refactored since used in responses also...
   type AuthenticatedReplicaHistory[U] = (ReplicaHistory[U], α)
 
+
   //todo required??
   def emptyOhs[U] = Map.empty[ServerId, U]
 
@@ -123,7 +124,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
       .map(latestTime[U])
       .max
 
-def contains[U](replicaHistory: ReplicaHistory[U], candidate: Candidate[U]) = replicaHistory(candidate)
+  def contains[U](replicaHistory: ReplicaHistory[U], candidate: Candidate[U]) = replicaHistory(candidate)
 
   override def latestTime[U](rh: ReplicaHistory[U]): LogicalTimestamp[_, U] =
     rh
@@ -269,13 +270,15 @@ def contains[U](replicaHistory: ReplicaHistory[U], candidate: Candidate[U]) = re
 trait CryptoMd5Authenticator {
   self: AbstractQuModel => //needs the ordering defined by SortedSet
 
-  override type α = String
+  type α = SortedSet[HMAC] //or map?
 
-  import com.roundeights.hasher.Implicits._
-  // import com.roundeights.hasher.Digest.digest2string
+  type HMAC = String
+
+  import com.roundeights.hasher.Implicits._  // import com.roundeights.hasher.Digest.digest2string
 
   //leveraging sortedSet ordering here
-  def hmac[U](key: String, replicaHistory: ReplicaHistory[U]): α =
+  def hmac[U](key: String, replicaHistory: ReplicaHistory[U]): HMAC =
+  //should be taken over the hash of a replicahistory
     replicaHistory.toString().hmac(key).md5
 
 }
