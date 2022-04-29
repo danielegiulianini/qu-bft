@@ -274,7 +274,7 @@ trait CryptoMd5Authenticator {
   // import com.roundeights.hasher.Digest.digest2string
 
   //leveraging sortedSet ordering here
-  def hmac(key: String, replicaHistory: ReplicaHistory[_]): α =
+  def hmac[U](key: String, replicaHistory: ReplicaHistory[U]): α =
     replicaHistory.toString().hmac(key).md5
 
 }
@@ -282,12 +282,21 @@ trait CryptoMd5Authenticator {
 trait Persistence {
   self: AbstractQuModel =>
 
-  def store[T, U](logicalTimestamp: LogicalTimestamp[T, U], myObject: U): Unit
+  def store[T, U](logicalTimestamp: LogicalTimestamp[T, U], objectAndAnswer: (U, T)): Unit
 
-  def retrieve[T, U](logicalTimestamp: LogicalTimestamp[T, U]): Unit
+  def retrieve[T, U](logicalTimestamp: LogicalTimestamp[T, U]): (U, T)
+
+}
+
+trait PersistenceImpl extends Persistence {
+  self: AbstractQuModel =>
+
+  def store[T, U](logicalTimestamp: LogicalTimestamp[T, U], objectAndAnswer: (U, T)): Unit = {}
+
+  def retrieve[T, U](logicalTimestamp: LogicalTimestamp[T, U]): (U, T) = null
 
 }
 
 
 //maybe more implementations (that with compact authenticators...)
-object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator
+object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator with PersistenceImpl
