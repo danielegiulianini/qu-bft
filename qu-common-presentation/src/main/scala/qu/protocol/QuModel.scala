@@ -8,11 +8,16 @@ trait QuModel {
   type ReplicaHistory[U]
   type OHS[U]
   type ClientId
-  type ServerId
+  type ServerId = String
   type Time
-  type Candidate[U] = (LogicalTimestamp[_, U], LogicalTimestamp[_, U]) //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
   type Flag = Boolean
+
+  //before TimeStamp as generic
   type LogicalTimestamp[T, U] <: {val time: Int; val barrierFlag: Flag; val clientId: ClientId; val operation: Operation[T, U]; val ohs: OHS[U]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
+  type Candidate[U] = (LogicalTimestamp[_, U], LogicalTimestamp[_, U]) //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
+
+
+
   type OperationType
   type α //authenticator
 
@@ -47,8 +52,12 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //the ones of the following that are self-independent can be put in separate trait/class and plugged by mixin
   override type OHS[U] = Map[ServerId, AuthenticatedReplicaHistory[U]]
 
+
+  //tuples are difficult to read...
+  case class MyAuthenticatedReplicaHistory[U](serverId:ServerId, authenticator: α)
+
   //refactored since used in responses also...
-  type AuthenticatedReplicaHistory[U] = (ReplicaHistory[U], α)
+  type AuthenticatedReplicaHistory[U] = (ReplicaHistory[U], α) //MyAuthenticatedReplicaHistory[U]//
 
 
   //todo required??
@@ -62,13 +71,14 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   trait Update[ReturnValueT, ObjectT] extends OperationA[ReturnValueT, ObjectT]
 
-  final case class Request[ReturnValueT, ObjectT](operation: OperationA[ReturnValueT, ObjectT],
-                                                  ohs: OHS[ObjectT])
+  //final removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
+  case class Request[ReturnValueT, ObjectT](operation: OperationA[ReturnValueT, ObjectT],
+                                            ohs: OHS[ObjectT])
 
-  final case class Response[ReturnValueT, ObjectT](responseCode: StatusCode,
-                                                   answer: ReturnValueT,
-                                                   order: Int,
-                                                   authenticatedRh: AuthenticatedReplicaHistory[ObjectT])
+  case class Response[ReturnValueT, ObjectT](responseCode: StatusCode,
+                                             answer: ReturnValueT,
+                                             order: Int,
+                                             authenticatedRh: AuthenticatedReplicaHistory[ObjectT])
 
   //object sync request:
   //1. LogicalTimestamp only
@@ -82,7 +92,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //object sync response:
   //1. reuse response (some fields are null)
   //2.
-  final case class ObjectSyncResponse[ObjectT](responseCode: StatusCode,
+  case class ObjectSyncResponse[ObjectT](responseCode: StatusCode,
                                                answer: ObjectT)
 
   override type Operation[T, U] = OperationA[T, U]
@@ -275,7 +285,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 trait CryptoMd5Authenticator {
   self: AbstractQuModel => //needs the ordering defined by SortedSet
 
-  type α = SortedSet[HMAC] //or map?
+  type α = Map[ServerId, HMAC]//SortedSet[HMAC] //or map?
 
   type HMAC = String
 
@@ -285,6 +295,9 @@ trait CryptoMd5Authenticator {
   def hmac[U](key: String, replicaHistory: ReplicaHistory[U]): HMAC =
   //should be taken over the hash of a replicahistory
     replicaHistory.toString().hmac(key).md5
+
+
+  //def represent()
 
 }
 
@@ -298,6 +311,14 @@ trait Storage {
 
 }
 
+
+trait GeneralStorage {
+  def store[T, U](logicalTimestamp: T, objectAndAnswer: U): Unit
+
+  def retrieve[T, U](logicalTimestamp: T): U
+
+}
+
 trait InMemoryStorage extends Storage {
   self: AbstractQuModel =>
 
@@ -307,7 +328,7 @@ trait InMemoryStorage extends Storage {
 
 }
 
-trait PersistentStorage extends Storage{
+trait PersistentStorage extends Storage {
   self: AbstractQuModel =>
 
 }
