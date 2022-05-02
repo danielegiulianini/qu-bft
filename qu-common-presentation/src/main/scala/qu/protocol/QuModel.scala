@@ -70,7 +70,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
                                                    order: Int,
                                                    authenticatedRh: AuthenticatedReplicaHistory[ObjectT])
 
-
   //object sync request:
   //1. LogicalTimestamp only
   //2.
@@ -207,8 +206,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
     (operationType, latestObjectVersion, latestBarrierVersion)
   }
 
-  //to be del
-  type ProbingPolicy = Object => Set[ServerId]
+  //to be del  type ProbingPolicy = Object => Set[ServerId]
 
   def setup[T, U](operation: Operation[T, U],
                   ohs: OHS[U],
@@ -265,6 +263,13 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
         //ltCurrent
         latestBarrierVersion._2)
   }
+
+  case class MyNone()
+
+  def nullOperation[U] = new OperationA[MyNone, U] {
+    override def compute(obj: U): MyNone = MyNone()
+  }
+
 }
 
 trait CryptoMd5Authenticator {
@@ -274,7 +279,7 @@ trait CryptoMd5Authenticator {
 
   type HMAC = String
 
-  import com.roundeights.hasher.Implicits._  // import com.roundeights.hasher.Digest.digest2string
+  import com.roundeights.hasher.Implicits._ // import com.roundeights.hasher.Digest.digest2string
 
   //leveraging sortedSet ordering here
   def hmac[U](key: String, replicaHistory: ReplicaHistory[U]): HMAC =
@@ -283,8 +288,8 @@ trait CryptoMd5Authenticator {
 
 }
 
-//could be a class separated from QUModel, bound to a ConcreteImplementation
-trait Persistence {
+//could be a class separated from QUModel, bound (for LogicalTimestamp) to a ConcreteImplementation
+trait Storage {
   self: AbstractQuModel =>
 
   def store[T, U](logicalTimestamp: LogicalTimestamp[T, U], objectAndAnswer: (U, T)): Unit
@@ -293,7 +298,7 @@ trait Persistence {
 
 }
 
-trait PersistenceImpl extends Persistence {
+trait InMemoryStorage extends Storage {
   self: AbstractQuModel =>
 
   def store[T, U](logicalTimestamp: LogicalTimestamp[T, U], objectAndAnswer: (U, T)): Unit = {}
@@ -302,6 +307,16 @@ trait PersistenceImpl extends Persistence {
 
 }
 
+trait PersistentStorage extends Storage{
+  self: AbstractQuModel =>
+
+}
+
+trait PersistentCachingStorage extends Storage {
+  self: AbstractQuModel =>
+
+}
+
 
 //maybe more implementations (that with compact authenticators...)
-object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator with PersistenceImpl
+object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator with InMemoryStorage
