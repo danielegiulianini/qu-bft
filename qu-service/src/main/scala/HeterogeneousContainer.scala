@@ -1,3 +1,4 @@
+import java.util.Objects
 import scala.reflect.runtime.universe._
 
 object HeterogeneousContainer { // Typesafe heterogeneous container pattern - client
@@ -27,14 +28,14 @@ class HeterogeneousContainer {
   private var favorites: Map[TypeTag[_], Any] = Map()
 
   def putFavorite[T](instance: T)(implicit `type`: TypeTag[T]): Unit = {
-    if (`type` == null) throw new NullPointerException("Type is null")
-    favorites = favorites + (`type` -> instance)
+    //if (`type` == null) throw new NullPointerException("Type is null")
+    favorites = favorites + (Objects.requireNonNull(`type`) -> instance)
   }
 
-  //se c'è ritorna quello che c'è tipato, altrimenti deve ritornare un option
+  //se c'è ritorna quello che c'è tipato, altrimenti deve ritornare un option vutoo
   def getFavorite[T](implicit `type`: TypeTag[T]): Option[T] = {
     println("la map is: " + favorites)
-    println("cio refeprito is:" + favorites.get(`type`).get)
+    println("cio refeprito is:" + favorites(`type`))
     favorites.get(`type`).map(_.asInstanceOf[T])
   }
 
