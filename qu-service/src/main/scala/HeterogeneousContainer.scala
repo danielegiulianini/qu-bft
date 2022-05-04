@@ -6,6 +6,8 @@ object HeterogeneousContainer { // Typesafe heterogeneous container pattern - cl
     val a = new HeterogeneousContainer
     a.putFavorite[Int](2)
     a.putFavorite[String]("ciao")
+    a.putFavorite[List[String]](List("ciao"))
+
     val c = a.getFavorite[Int]
     println("c " + c)
     /*val f: Favorites = new Favorites
@@ -33,7 +35,7 @@ class HeterogeneousContainer {
   def getFavorite[T](implicit `type`: TypeTag[T]): Option[T] = {
     println("la map is: " + favorites)
     println("cio refeprito is:" + favorites.get(`type`).get)
-    favorites.get(`type`).map(a => a.asInstanceOf[T])
+    favorites.get(`type`).map(_.asInstanceOf[T])
   }
 
   // def cast[A](a: Any, tag: TypeTag[A]): A = a.asInstanceOf[A]
