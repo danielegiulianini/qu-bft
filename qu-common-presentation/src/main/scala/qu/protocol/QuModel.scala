@@ -5,33 +5,37 @@ import scala.collection.SortedSet
 
 trait QuModel {
   type Operation[T, U]
-  type ReplicaHistory[U]
-  type OHS[U]
+  type ReplicaHistory
+  type OHS
   type ClientId
   type ServerId = String
   type Time
   type Flag = Boolean
 
-  //before TimeStamp as generic
-  type LogicalTimestamp[T, U] <: {val time: Int; val barrierFlag: Flag; val clientId: ClientId; val operation: Operation[T, U]; val ohs: OHS[U]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
-  type Candidate[U] = (LogicalTimestamp[_, U], LogicalTimestamp[_, U]) //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
+  //before TimeStampRepr as generic
+  //type LogicalTimestamp[T, U] <: {val time: Int; val barrierFlag: Flag; val clientId: ClientId; val operation: Operation[T, U]; val ohs: OHS[U]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
+  //type Candidate[U] = (LogicalTimestamp[_, U], LogicalTimestamp[_, U]) //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
 
+  type OperationRepresentation
+  type OHSRepresentation
+  type LogicalTimestamp <: {val time: Int; val barrierFlag: Flag; val clientId: ClientId; val operation: OperationRepresentation; val ohs: OHSRepresentation} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
 
 
   type OperationType
   type α //authenticator
+  type Candidate = (LogicalTimestamp, LogicalTimestamp) //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
 
   //number of replica histories in the object history set in which it appears
-  def order[U](candidate: Candidate[U], ohs: OHS[U]): Int
+  def order(candidate: Candidate, ohs: OHS): Int
 
-  def latestCandidate[U](ohs: OHS[U], barrierFlag: Flag, repairableThreshold: Int): Candidate[U]
+  def latestCandidate(ohs: OHS, barrierFlag: Flag, repairableThreshold: Int): Candidate
 
-  def latestTime[U](rh: ReplicaHistory[U]): LogicalTimestamp[_, U]
+  def latestTime(rh: ReplicaHistory): LogicalTimestamp
 
   // return tuples or  case classes (c.c. that extends ? it depends if i want to access them...
-  def classify[U](ohs: OHS[U],
-                  repairableThreshold: Int,
-                  quorumThreshold: Int): (OperationType, Candidate[U], Candidate[U])
+  def classify(ohs: OHS,
+               repairableThreshold: Int,
+               quorumThreshold: Int): (OperationType, Candidate, Candidate)
 }
 
 trait AbstractQuModel extends QuModel {
@@ -40,7 +44,7 @@ trait AbstractQuModel extends QuModel {
 
   override type ClientId = String
 
-  override type ReplicaHistory[U] = SortedSet[Candidate[U]]
+  override type ReplicaHistory = SortedSet[Candidate]
 
   //or structural type? so I can name...
   //override type OHS = ServerId => (ReplicaHistory, α)
@@ -50,18 +54,20 @@ trait AbstractQuModel extends QuModel {
 
 trait AbstractAbstractQuModel extends AbstractQuModel {
   //the ones of the following that are self-independent can be put in separate trait/class and plugged by mixin
-  override type OHS[U] = Map[ServerId, AuthenticatedReplicaHistory[U]]
+  override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
+  type OperationRepresentation = String
+  type OHSRepresentation = String
 
   //tuples are difficult to read...
-  case class MyAuthenticatedReplicaHistory[U](serverId:ServerId, authenticator: α)
+  case class MyAuthenticatedReplicaHistory(serverId: ServerId, authenticator: α)
 
   //refactored since used in responses also...
-  type AuthenticatedReplicaHistory[U] = (ReplicaHistory[U], α) //MyAuthenticatedReplicaHistory[U]//
+  type AuthenticatedReplicaHistory = (ReplicaHistory, α) //MyAuthenticatedReplicaHistory[U]//
 
 
   //todo required??
-  def emptyOhs[U] = Map.empty[ServerId, U]
+  def emptyOhs = Map.empty[ServerId, AuthenticatedReplicaHistory]
 
   trait OperationA[ReturnValueT, ObjectT] {
     def compute(obj: ObjectT): ReturnValueT
@@ -73,18 +79,18 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   //final removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
   case class Request[ReturnValueT, ObjectT](operation: OperationA[ReturnValueT, ObjectT],
-                                            ohs: OHS[ObjectT])
+                                            ohs: OHS)
 
   case class Response[ReturnValueT, ObjectT](responseCode: StatusCode,
                                              answer: ReturnValueT,
                                              order: Int,
-                                             authenticatedRh: AuthenticatedReplicaHistory[ObjectT])
+                                             authenticatedRh: AuthenticatedReplicaHistory)
 
   //object sync request:
   //1. LogicalTimestamp only
   //2.
   case class LogicalTimestampOperation[ReturnValueObjectT](logicalTimestamp:
-                                                           LogicalTimestamp[ReturnValueObjectT, ReturnValueObjectT])
+                                                           LogicalTimestamp)
     extends Query[ReturnValueObjectT, ReturnValueObjectT] {
     override def compute(obj: ReturnValueObjectT): ReturnValueObjectT = obj
   }
@@ -93,63 +99,63 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //1. reuse response (some fields are null)
   //2.
   case class ObjectSyncResponse[ObjectT](responseCode: StatusCode,
-                                               answer: ObjectT)
+                                         answer: ObjectT)
 
   override type Operation[T, U] = OperationA[T, U]
 
   //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
-  override type LogicalTimestamp[T, U] = MyLogicalTimestamp[T, U]
+  override type LogicalTimestamp = MyLogicalTimestamp
 
   //clean but not considers if rh are not ordered by server...
   //implicit val OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.values.toString compare y.toString
   //a def is required (instead of a val) because (generic) type params are required
-  implicit def OHSOrdering[U]: Ordering[OHS[U]] = (x: OHS[U], y: OHS[U]) => x.values.toString compare y.toString
+  implicit def OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.values.toString compare y.toString
 
-  case class MyLogicalTimestamp[T, U](time: Int,
-                                      barrierFlag: Boolean,
-                                      clientId: ClientId,
-                                      operation: OperationA[T, U],
-                                      ohs: OHS[U])
+  case class MyLogicalTimestamp(time: Int,
+                                barrierFlag: Boolean,
+                                clientId: ClientId,
+                                operation: OperationRepresentation,
+                                ohs: OHSRepresentation)
 
   val startingTime = 0
 
-  def startingLogicalTimestamp[U]() =
-    MyLogicalTimestamp[Null, U](startingTime, false, null, null, null)
+  def startingLogicalTimestamp() =
+    MyLogicalTimestamp(startingTime, false, null, null, null)
 
-  def startingCandidate[U](): Candidate[U] = (startingLogicalTimestamp[U], startingLogicalTimestamp[U])
+  def startingCandidate(): Candidate = (startingLogicalTimestamp, startingLogicalTimestamp)
 
-  def startingRh[U]: SortedSet[(MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])] = SortedSet(startingCandidate[U]())
+  def startingRh: SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)] = SortedSet(startingCandidate())
 
   //candidate ordering leverages the implicit ordering of tuples and of MyLogicalTimestamp
-  implicit def MyLogicalTimestampOrdering[U]: Ordering[MyLogicalTimestamp[_, U]] =
+  implicit def MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] =
     Ordering.by(lt => (lt.time, lt.barrierFlag, lt.clientId, lt.ohs))
 
   //todo ordering must consider null values (starting contains null values)
 
-  def latestTime[U](ohs: OHS[U]): LogicalTimestamp[_, U] =
+  def latestTime(ohs: OHS): LogicalTimestamp =
     ohs
       .values
       .map(_._1)
-      .map(latestTime[U])
+      .map(latestTime)
       .max
 
-  def contains[U](replicaHistory: ReplicaHistory[U], candidate: Candidate[U]) = replicaHistory(candidate)
+  def contains(replicaHistory: ReplicaHistory, candidate: Candidate) = replicaHistory(candidate)
 
-  override def latestTime[U](rh: ReplicaHistory[U]): LogicalTimestamp[_, U] =
+  override def latestTime(rh: ReplicaHistory): LogicalTimestamp =
     rh
       .flatMap(x => Set(x._1, x._2)) //flattening
       .max
 
-  override def order[U](candidate: (MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U]),
-                        ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])], α)]): Int =
+  override def order(candidate: (MyLogicalTimestamp, MyLogicalTimestamp),
+                     ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)], α)]): Int =
   //foreach replicahistory count if it contains the given candidate
     ohs.values.count(_._1.contains(candidate))
 
   //here I need dependency injection of q
-  override def latestCandidate[U](ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])], α)],
-                                  barrierFlag: Boolean,
-                                  repairableThreshold: Int):
-  (MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U]) = {
+  override def latestCandidate(ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)], α)],
+                               barrierFlag: Boolean,
+                               repairableThreshold: Int):
+  (MyLogicalTimestamp, MyLogicalTimestamp) = {
     /*ohs
       .values
       .map(rh => rh._1.max) //I can filter by order > repairableThreshold first first (and taking the max then) or viceversa
@@ -189,12 +195,12 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   override type OperationType = OperationType1
 
-  override def classify[U](ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])], α)],
-                           repairableThreshold: Int,
-                           quorumThreshold: Int):
+  override def classify(ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)], α)],
+                        repairableThreshold: Int,
+                        quorumThreshold: Int):
   (OperationType,
-    (MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U]),
-    (MyLogicalTimestamp[_, U], MyLogicalTimestamp[_, U])) = {
+    (MyLogicalTimestamp, MyLogicalTimestamp),
+    (MyLogicalTimestamp, MyLogicalTimestamp)) = {
     val latestObjectVersion = latestCandidate(ohs, barrierFlag = false, repairableThreshold)
     val latestBarrierVersion = latestCandidate(ohs, barrierFlag = true, repairableThreshold)
     val ltLatest = latestTime(ohs)
@@ -216,13 +222,16 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
     (operationType, latestObjectVersion, latestBarrierVersion)
   }
 
-  //to be del  type ProbingPolicy = Object => Set[ServerId]
+  //todo are type param really needed?
+  def represent[T, U](operation: Option[Operation[T, U]]): OperationRepresentation
 
-  def setup[T, U](operation: Operation[T, U],
-                  ohs: OHS[U],
+  def represent(OHSRepresentation: OHS): OHSRepresentation
+
+  def setup[T, U](operation: Option[Operation[T, U]],
+                  ohs: OHS,
                   quorumThreshold: Int,
                   repairableThreshold: Int,
-                  clientId: String): (OperationType, Candidate[U], LogicalTimestamp[_, U]) = {
+                  clientId: String): (OperationType, Candidate, LogicalTimestamp) = {
     val (opType, latestObjectVersion, latestBarrierVersion) = classify(ohs, quorumThreshold, repairableThreshold)
     val conditionedOnLogicalTimestamp = latestObjectVersion._1 //._1 stands for lt
     if (opType == OperationType1.METHOD)
@@ -233,8 +242,8 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
           time = latestTime(ohs).time + 1,
           barrierFlag = false,
           clientId = clientId,
-          operation = operation,
-          ohs = ohs),
+          operation = represent[T, U](operation),
+          ohs = represent(ohs)),
           conditionedOnLogicalTimestamp),
         //ltCurrent
         conditionedOnLogicalTimestamp)
@@ -243,8 +252,8 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
         time = latestTime(ohs).time + 1,
         barrierFlag = true,
         clientId = clientId,
-        operation = null,
-        ohs = ohs)
+        operation = represent(operation),
+        ohs = represent(ohs))
       (opType,
         //candidate
         (lt, conditionedOnLogicalTimestamp),
@@ -257,7 +266,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
           barrierFlag = false,
           clientId = clientId,
           operation = conditionedOnLogicalTimestamp.operation,
-          ohs = ohs), conditionedOnLogicalTimestamp),
+          ohs = represent(ohs)), conditionedOnLogicalTimestamp),
         //ltCurrent
         latestBarrierVersion._1)
     else if (opType == OperationType1.INLINE_METHOD)
@@ -283,21 +292,28 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 }
 
 trait CryptoMd5Authenticator {
-  self: AbstractQuModel => //needs the ordering defined by SortedSet
+  self: AbstractAbstractQuModel => //needs the ordering defined by SortedSet
 
-  type α = Map[ServerId, HMAC]//SortedSet[HMAC] //or map?
+  type α = Map[ServerId, HMAC] //SortedSet[HMAC] //or map?
 
   type HMAC = String
 
   import com.roundeights.hasher.Implicits._ // import com.roundeights.hasher.Digest.digest2string
 
   //leveraging sortedSet ordering here
-  def hmac[U](key: String, replicaHistory: ReplicaHistory[U]): HMAC =
+  def hmac(key: String, replicaHistory: ReplicaHistory): HMAC =
   //should be taken over the hash of a replicahistory
     replicaHistory.toString().hmac(key).md5
 
+  override type OperationRepresentation = String
 
-  //def represent()
+  override def represent[T, U](operation: Option[Operation[T, U]]): OperationRepresentation =
+    hashObject(operation)
+
+  override def represent(ohs: OHS): OHSRepresentation =
+    hashObject(ohs)
+
+  private def hashObject(obj: Any) = obj.toString().md5.hex
 
 }
 
@@ -305,9 +321,9 @@ trait CryptoMd5Authenticator {
 trait Storage {
   self: AbstractQuModel =>
 
-  def store[T, U](logicalTimestamp: LogicalTimestamp[T, U], objectAndAnswer: (U, T)): Unit
+  def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, T)): Unit
 
-  def retrieve[T, U](logicalTimestamp: LogicalTimestamp[T, U]): (U, T)
+  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): (U, T)
 
 }
 
@@ -322,9 +338,9 @@ trait GeneralStorage {
 trait InMemoryStorage extends Storage {
   self: AbstractQuModel =>
 
-  def store[T, U](logicalTimestamp: LogicalTimestamp[T, U], objectAndAnswer: (U, T)): Unit = {}
+  def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, T)): Unit = ???
 
-  def retrieve[T, U](logicalTimestamp: LogicalTimestamp[T, U]): (U, T) = null
+  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): (U, T) =  ???
 
 }
 
