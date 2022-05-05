@@ -77,11 +77,11 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   trait Update[ReturnValueT, ObjectT] extends OperationA[ReturnValueT, ObjectT]
 
-  //final removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
-  case class Request[ReturnValueT, ObjectT](operation: OperationA[ReturnValueT, ObjectT],
+  //final keyword removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
+  case class Request[ReturnValueT, ObjectT](operation: Option[OperationA[ReturnValueT, ObjectT]],
                                             ohs: OHS)
 
-  case class Response[ReturnValueT, ObjectT](responseCode: StatusCode,
+  case class Response[ReturnValueT](responseCode: StatusCode,
                                              answer: ReturnValueT,
                                              order: Int,
                                              authenticatedRh: AuthenticatedReplicaHistory)
