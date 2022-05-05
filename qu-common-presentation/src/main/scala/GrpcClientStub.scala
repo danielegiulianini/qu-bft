@@ -1,7 +1,8 @@
 import GrpcClientStub.{methodName, serviceName}
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{CallOptions, ManagedChannel}
-import qu.protocol.{CostantiMomentanee, JacksonMethodDescriptorFactory, MarshallerFactory, MethodDescriptorFactory}
+import play.api.libs.json.Format
+import qu.protocol.{JacksonMethodDescriptorFactory, MarshallerFactory, MethodDescriptorFactory, PlayJsonMethodDescriptorFactory, TemporaryConstants}
 import scalapb.grpc.ClientCalls
 
 import scala.concurrent.Future
@@ -9,20 +10,22 @@ import scala.concurrent.Future
 //import that declares specific dependency
 import qu.protocol.ConcreteQuModel._
 
-abstract class GrpcClientStub[U, Marshallable[_]](var chan: ManagedChannel) extends MethodDescriptorFactory[Marshallable]
-  with MarshallerFactory[Marshallable] {
-  //with grpc-java (listenableFuture) API
+//a stub reusable between client and server sides
+abstract class GrpcClientStub[Marshallable[_]](var chan: ManagedChannel)
+  extends MethodDescriptorFactory[Marshallable] with MarshallerFactory[Marshallable] {
+  def send2[InputT, OutputT](toBeSent: InputT, callOptions: CallOptions = CallOptions.DEFAULT) //default parameter value
+                            (implicit
+                             enc: Marshallable[InputT],
+                             dec: Marshallable[OutputT]):
+  Future[OutputT] = {
+    val md = generateMethodDescriptor5[InputT, OutputT](methodName, serviceName)
+    ClientCalls.asyncUnaryCall(chan, md, callOptions, toBeSent)
+  }
 
+  def aa(): Unit = {
+    val o = List[AnyRef]()
+    val u = o.appended(5)
 
-  def send[T](operation: Request[T, U],
-              callOptions: CallOptions = CallOptions.DEFAULT) //default parameter value
-             (implicit enc: Marshallable[T],
-              dec: Marshallable[U],
-              marshallable: Marshallable[Request[T, U]],
-              marshallable3: Marshallable[Response[T,U]]):
-  Future[Response[T,U]] = {
-    val md = generateMethodDescriptor[T, U](methodName, serviceName)
-    ClientCalls.asyncUnaryCall(chan, md, callOptions, operation)
   }
 }
 
@@ -30,13 +33,24 @@ object GrpcClientStub {
   //decide where to inject (are grpc-specific constants)
   /*val methodName = "request"
   val serviceName = "io.grpc.KeyValueService"*/
-  val methodName = CostantiMomentanee.METHOD_NAME
-  val serviceName = CostantiMomentanee.SERVICE_NAME
-}
+  val methodName = TemporaryConstants.METHOD_NAME
+  val serviceName = TemporaryConstants.SERVICE_NAME
 
+  class JacksonClientStub(channel: ManagedChannel)
+    extends GrpcClientStub[JavaTypeable](channel) with JacksonMethodDescriptorFactory
+
+  //esempio di metodo di conversione degli impliciti (send2 li richiede, prova no)
+  def prova[T, U]() = {
+    val a = new JacksonClientStub(null)
+    a.send2[Request[T, U], Response[Option[T]]](new Request[T, U](null, null))
+  }
+}
+/*
 class JacksonClientStub[A](channel: ManagedChannel)
   extends GrpcClientStub[A, JavaTypeable](channel) with JacksonMethodDescriptorFactory
 
+class PlayJsonClientStub[A](channel: ManagedChannel)
+  extends GrpcClientStub[A, Format](channel) with PlayJsonMethodDescriptorFactory*/
 
 //example of use:
 //class JacksonCLientStub extends GrpcClientStub(null) with JacksonMethodDescriptorFactory
