@@ -44,31 +44,42 @@ trait AbstractQuModel extends QuModel {
 
   override type ClientId = String
 
+  //since RH is a ordered set must define ordering for LogicalTimestamp, that actually requires
   override type ReplicaHistory = SortedSet[Candidate]
 
   //or structural type? so I can name...
   //override type OHS = ServerId => (ReplicaHistory, α)
-  //since RH is a ordered set must define ordering for LogicalTimestamp, that actually requires
 }
 
 
 trait AbstractAbstractQuModel extends AbstractQuModel {
   //the ones of the following that are self-independent can be put in separate trait/class and plugged by mixin
-  override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
+  type HMAC
+  override type α = Map[ServerId, HMAC] //SortedSet[HMAC] //or map?
 
-  type OperationRepresentation = String
-  type OHSRepresentation = String
-
-  //tuples are difficult to read...
-  case class MyAuthenticatedReplicaHistory(serverId: ServerId, authenticator: α)
 
   //refactored since used in responses also...
   type AuthenticatedReplicaHistory = (ReplicaHistory, α) //MyAuthenticatedReplicaHistory[U]//
+  //tuples are difficult to read...
+  case class MyAuthenticatedReplicaHistory(serverId: ServerId, authenticator: α)
+  override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
 
   //todo required??
-  def emptyOhs = Map.empty[ServerId, AuthenticatedReplicaHistory]
+  val startingTime = 0
+  val emptyLT = MyLogicalTimestamp(startingTime, false, "", "", "")
+  //val emptyLT = MyLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty)
+  val startingRh = null
 
+  val emptyCandidate : Candidate = (emptyLT, emptyLT)
+  val emptyRh: ReplicaHistory = SortedSet(emptyCandidate)
+  val nullHMAC: HMAC//hash del null timestamp (emptyLT)
+  def nullAuthenticator(serverIds: Set[ServerId]):α = serverIds.map(_ -> nullHMAC).toMap
+  //could be private (nested)
+  
+/*  def emptyOhs(serverIds: Set[ServerId]):OHS =
+    Map.empty[ServerId, AuthenticatedReplicaHistory]("is" -> emptyCandidate)
+*/
   trait OperationA[ReturnValueT, ObjectT] {
     def compute(obj: ObjectT): ReturnValueT
   }
@@ -82,18 +93,19 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
                                             ohs: OHS)
 
   case class Response[ReturnValueT](responseCode: StatusCode,
-                                             answer: ReturnValueT,
-                                             order: Int,
-                                             authenticatedRh: AuthenticatedReplicaHistory)
+                                    answer: ReturnValueT,
+                                    order: Int,
+                                    authenticatedRh: AuthenticatedReplicaHistory)
 
+  //todo not used:
   //object sync request:
   //1. LogicalTimestamp only
-  //2.
-  case class LogicalTimestampOperation[ReturnValueObjectT](logicalTimestamp:
+  //2.:
+  /*case class LogicalTimestampOperation[ReturnValueObjectT](logicalTimestamp:
                                                            LogicalTimestamp)
     extends Query[ReturnValueObjectT, ReturnValueObjectT] {
     override def compute(obj: ReturnValueObjectT): ReturnValueObjectT = obj
-  }
+  }*/
 
   //object sync response:
   //1. reuse response (some fields are null)
@@ -111,20 +123,14 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //a def is required (instead of a val) because (generic) type params are required
   implicit def OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.values.toString compare y.toString
 
+  type OperationRepresentation = String
+  type OHSRepresentation = String
   case class MyLogicalTimestamp(time: Int,
                                 barrierFlag: Boolean,
                                 clientId: ClientId,
                                 operation: OperationRepresentation,
                                 ohs: OHSRepresentation)
 
-  val startingTime = 0
-
-  def startingLogicalTimestamp() =
-    MyLogicalTimestamp(startingTime, false, null, null, null)
-
-  def startingCandidate(): Candidate = (startingLogicalTimestamp, startingLogicalTimestamp)
-
-  def startingRh: SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)] = SortedSet(startingCandidate())
 
   //candidate ordering leverages the implicit ordering of tuples and of MyLogicalTimestamp
   implicit def MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] =
@@ -283,20 +289,18 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
         latestBarrierVersion._2)
   }
 
-  case class MyNone()
-
+  /*case class MyNone()
   def nullOperation[U] = new OperationA[MyNone, U] {
     override def compute(obj: U): MyNone = MyNone()
-  }
+  }*/
 
 }
 
 trait CryptoMd5Authenticator {
   self: AbstractAbstractQuModel => //needs the ordering defined by SortedSet
 
-  type α = Map[ServerId, HMAC] //SortedSet[HMAC] //or map?
 
-  type HMAC = String
+  override type HMAC = String
 
   import com.roundeights.hasher.Implicits._ // import com.roundeights.hasher.Digest.digest2string
 
@@ -340,7 +344,7 @@ trait InMemoryStorage extends Storage {
 
   def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, T)): Unit = ???
 
-  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): (U, T) =  ???
+  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): (U, T) = ???
 
 }
 
