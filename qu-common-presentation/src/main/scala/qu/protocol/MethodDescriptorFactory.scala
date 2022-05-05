@@ -16,17 +16,18 @@ trait MethodDescriptorFactory[Marshallable[_]] {
 
   //todo: here I require Marhallable of Response instead of only a marshaller of U and T
   // so marshallerForResponse etc. are not needed in MDFactory
-  def generateMethodDescriptor[T, U](methodName: String, serviceName: String)
+  /*def generateMethodDescriptor[T, U](methodName: String, serviceName: String)
                                     (implicit enc: Marshallable[Request[T, U]],
-                                     enc3: Marshallable[Response[T, U]],
+                                     enc3: Marshallable[Response[Option[T]]],
+                                     //the following are really needed?
                                      enc2: Marshallable[T],
                                      dec: Marshallable[U]):
-  MethodDescriptor[Request[T, U], Response[T, U]] =
+  MethodDescriptor[Request[T, U], Response[Option[T]]] =
     MethodDescriptor.newBuilder(
       marshallerFor[Request[T, U]],
-      marshallerFor[Response[T, U]])
-      .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, // methodName + implicitly[Signaturable[T, U]].getGenericSignature))
-        methodName + getGenericSignature[T, U]))
+      marshallerFor[Response[Option[T]]])
+      .setFullMethodName(MethodDescriptor.
+        generateFullMethodName(serviceName, methodName + getGenericSignature[T, U]))// methodName + implicitly[Signaturable[T, U]].getGenericSignature))
       .setType(MethodDescriptor.MethodType.UNARY)
       .setSampledToLocalTracing(true)
       .build
@@ -46,6 +47,41 @@ trait MethodDescriptorFactory[Marshallable[_]] {
       .setSampledToLocalTracing(true)
       .build
 
+  def generateMethodDescriptor4[InputT1, InputT2, OutputT1, OutputT2](methodName: String, serviceName: String)
+                                                                     (implicit enc: Marshallable[OutputT2],
+                                                                      enc3: Marshallable[OutputT1],
+                                                                      enc2: Marshallable[InputT1],
+                                                                      dec: Marshallable[InputT2]):
+  MethodDescriptor[OutputT1, OutputT2] = //MethodDescriptor[Messages.Request[T, U], Messages.Response[T, U]] = {
+    MethodDescriptor.newBuilder(
+      marshallerFor[OutputT1],
+      marshallerFor[OutputT2])
+      .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, // methodName + implicitly[Signaturable[T, U]].getGenericSignature))
+        methodName + getGenericSignature[InputT1, InputT2]))
+      .setType(MethodDescriptor.MethodType.UNARY)
+      .setSampledToLocalTracing(true)
+      .build*/
+
+  def generateMethodDescriptor5[OutputT1, OutputT2](methodName: String, serviceName: String)
+                                                   (implicit enc: Marshallable[OutputT1],
+                                                    enc3: Marshallable[OutputT2]):
+  MethodDescriptor[OutputT1, OutputT2] = //MethodDescriptor[Messages.Request[T, U], Messages.Response[T, U]] = {
+    MethodDescriptor.newBuilder(
+      marshallerFor[OutputT1],
+      marshallerFor[OutputT2])
+      .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, // methodName + implicitly[Signaturable[T, U]].getGenericSignature))
+        methodName + "ciaociao"))// getGenericSignature[InputT1, InputT2]))
+      .setType(MethodDescriptor.MethodType.UNARY)
+      .setSampledToLocalTracing(true)
+      .build
+
+
+  /*def ciao[T, U, X, Z](methodName: String, serviceName: String)
+          (implicit enc: Marshallable[Z],
+           enc3: Marshallable[X],
+           enc2: Marshallable[T],
+           dec: Marshallable[U]) =
+    generateMethodDescriptor4[T, U, Request[T, U], Response[T, U]](methodName, serviceName)*/
   /* should and could here, but put in subclasses for passing them the burden (instead of lib user)
   of definig marshaller for Response and Request
   def generateRequestResponseMethodDescriptor[T, U](methodName: String, serviceName: String)
@@ -72,19 +108,19 @@ trait MethodDescriptorFactory[Marshallable[_]] {
 }
 
 //an optimization that leverages flyweight pattern to avoid regenerating method descriptors
-trait CachingMethodDescriptorFactory[Marshallable[_]] extends MethodDescriptorFactory[Marshallable]
+/*trait CachingMethodDescriptorFactory[Marshallable[_]] extends MethodDescriptorFactory[Marshallable]
   with MarshallerFactory[Marshallable] {
   //i need an identifier of the pair of methods
   //override abstract is required here?
   override def generateMethodDescriptor[T, U](methodName: String, serviceName: String)
                                              (implicit enc: Marshallable[Request[T, U]],
-                                              enc3: Marshallable[Response[T, U]],
+                                              enc3: Marshallable[Response[Option[T]]],
                                               enc2: Marshallable[T], dec: Marshallable[U]):
-  MethodDescriptor[Request[T, U], Response[T, U]] =
+  MethodDescriptor[Request[T, U], Response[Option[T]]] =
   //super refers to the next in the chain
     MemoHelper.memoize((_: String) =>
       super.generateMethodDescriptor(methodName, serviceName))(getGenericSignature[T, U])
-}
+}*/
 
 
 //family polymorphism:
