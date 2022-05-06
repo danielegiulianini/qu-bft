@@ -18,7 +18,7 @@ trait QuModel {
 
   type OperationRepresentation
   type OHSRepresentation
-  type LogicalTimestamp <: {val time: Int; val barrierFlag: Flag; val clientId: ClientId; val operation: OperationRepresentation; val ohs: OHSRepresentation} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
+  type LogicalTimestamp <: {val time: Int; val barrierFlag: Flag; val clientId: Option[ClientId]; val operation: Option[OperationRepresentation]; val ohs: Option[OHSRepresentation]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
 
 
   type OperationType
