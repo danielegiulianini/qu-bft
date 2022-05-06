@@ -67,7 +67,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   //todo required??
   val startingTime = 0
-  val emptyLT = MyLogicalTimestamp(startingTime, false, "", "", "") //or as Nil
+  val emptyLT = MyLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty) //or as Nil
   //val emptyLT = MyLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty)
   val startingRh = null
 
@@ -129,9 +129,9 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   type OHSRepresentation = String
   case class MyLogicalTimestamp(time: Int,
                                 barrierFlag: Boolean,
-                                clientId: ClientId,
-                                operation: OperationRepresentation,
-                                ohs: OHSRepresentation)
+                                clientId: Option[ClientId],
+                                operation: Option[OperationRepresentation],
+                                ohs: Option[OHSRepresentation])
 
 
   //candidate ordering leverages the implicit ordering of tuples and of MyLogicalTimestamp
@@ -249,9 +249,9 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
         (MyLogicalTimestamp(
           time = latestTime(ohs).time + 1,
           barrierFlag = false,
-          clientId = clientId,
-          operation = represent[T, U](operation),
-          ohs = represent(ohs)),
+          clientId = Some(clientId),
+          operation = Some(represent[T, U](operation)),
+          ohs = Some(represent(ohs))),
           conditionedOnLogicalTimestamp),
         //ltCurrent
         conditionedOnLogicalTimestamp)
@@ -259,9 +259,9 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
       val lt = MyLogicalTimestamp(
         time = latestTime(ohs).time + 1,
         barrierFlag = true,
-        clientId = clientId,
-        operation = represent(operation),
-        ohs = represent(ohs))
+        clientId = Some(clientId),
+        operation = Some(represent(operation)),
+        ohs = Some(represent(ohs)))
       (opType,
         //candidate
         (lt, conditionedOnLogicalTimestamp),
@@ -272,9 +272,9 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
         (MyLogicalTimestamp(
           time = latestTime(ohs).time + 1,
           barrierFlag = false,
-          clientId = clientId,
+          clientId = Some(clientId),
           operation = conditionedOnLogicalTimestamp.operation,
-          ohs = represent(ohs)), conditionedOnLogicalTimestamp),
+          ohs = Some(represent(ohs))), conditionedOnLogicalTimestamp),
         //ltCurrent
         latestBarrierVersion._1)
     else if (opType == OperationType1.INLINE_METHOD)
