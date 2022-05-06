@@ -67,19 +67,21 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   //todo required??
   val startingTime = 0
-  val emptyLT = MyLogicalTimestamp(startingTime, false, "", "", "")
+  val emptyLT = MyLogicalTimestamp(startingTime, false, "", "", "") //or as Nil
   //val emptyLT = MyLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty)
   val startingRh = null
 
   val emptyCandidate : Candidate = (emptyLT, emptyLT)
   val emptyRh: ReplicaHistory = SortedSet(emptyCandidate)
-  val nullHMAC: HMAC//hash del null timestamp (emptyLT)
-  def nullAuthenticator(serverIds: Set[ServerId]):α = serverIds.map(_ -> nullHMAC).toMap
-  //could be private (nested)
-  
-/*  def emptyOhs(serverIds: Set[ServerId]):OHS =
-    Map.empty[ServerId, AuthenticatedReplicaHistory]("is" -> emptyCandidate)
-*/
+  //todo could be a functional val
+  def nullHMAC(key:String): HMAC //hash of null(empty)timestamp (emptyLT)
+  def nullAuthenticator(keys: Map[ServerId, String]):α = keys.view.mapValues(nullHMAC(_)).toMap //or keys.map(idKey => idKey._1->nullHMAC(idKey._2))
+  //todo could be private (nested) to emptyAuthenticatedRh, a functional val
+  def emptyAuthenticatedRh(serverKeys: Map[ServerId, String]): AuthenticatedReplicaHistory =
+    SortedSet(emptyCandidate) -> nullAuthenticator(serverKeys)
+  def emptyOhs(serverKeys: Map[ServerId, String]):OHS =
+    serverKeys.view.mapValues(_ => emptyAuthenticatedRh(serverKeys)).toMap
+
   trait OperationA[ReturnValueT, ObjectT] {
     def compute(obj: ObjectT): ReturnValueT
   }
@@ -301,7 +303,7 @@ trait CryptoMd5Authenticator {
 
 
   override type HMAC = String
-
+  override def nullHMAC(key:String) = hmac(key, emptyRh)
   import com.roundeights.hasher.Implicits._ // import com.roundeights.hasher.Digest.digest2string
 
   //leveraging sortedSet ordering here
