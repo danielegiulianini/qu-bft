@@ -65,12 +65,8 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
 
-  //todo required??
   val startingTime = 0
   val emptyLT = MyLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty) //or as Nil
-  //val emptyLT = MyLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty)
-  val startingRh = null
-
   val emptyCandidate : Candidate = (emptyLT, emptyLT)
   val emptyRh: ReplicaHistory = SortedSet(emptyCandidate)
   //todo could be a functional val
@@ -96,7 +92,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   case class Response[ReturnValueT](responseCode: StatusCode,
                                     answer: ReturnValueT,
-                                    order: Int,
                                     authenticatedRh: AuthenticatedReplicaHistory)
 
   //todo not used:
@@ -137,8 +132,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //candidate ordering leverages the implicit ordering of tuples and of MyLogicalTimestamp
   implicit def MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] =
     Ordering.by(lt => (lt.time, lt.barrierFlag, lt.clientId, lt.ohs))
-
-  //todo ordering must consider null values (starting contains null values)
 
   def latestTime(ohs: OHS): LogicalTimestamp =
     ohs
@@ -328,7 +321,7 @@ trait Storage {
 
   def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, T)): Unit
 
-  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): (U, T)
+  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): Option[(T, U)]
 
 }
 
@@ -345,7 +338,7 @@ trait InMemoryStorage extends Storage {
 
   def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, T)): Unit = ???
 
-  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): (U, T) = ???
+  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): Option[(T, U)] = ???
 
 }
 
