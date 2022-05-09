@@ -71,7 +71,9 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   val emptyRh: ReplicaHistory = SortedSet(emptyCandidate)
   //todo could be a functional val
   def nullHMAC(key:String): HMAC //hash of null(empty)timestamp (emptyLT)
-  def nullAuthenticator(keys: Map[ServerId, String]):α = keys.view.mapValues(nullHMAC(_)).toMap //or keys.map(idKey => idKey._1->nullHMAC(idKey._2))
+  //todo could be a functional val
+  def fillAuthenticator(keys: Map[ServerId, String])(fun: String => HMAC):α = keys.view.mapValues(fun(_)).toMap
+  def nullAuthenticator(keys: Map[ServerId, String]):α = fillAuthenticator(keys)(nullHMAC(_)) //or keys.map(idKey => idKey._1->nullHMAC(idKey._2))
   //todo could be private (nested) to emptyAuthenticatedRh, a functional val
   def emptyAuthenticatedRh(serverKeys: Map[ServerId, String]): AuthenticatedReplicaHistory =
     SortedSet(emptyCandidate) -> nullAuthenticator(serverKeys)
