@@ -60,24 +60,39 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   //refactored since used in responses also...
   type AuthenticatedReplicaHistory = (ReplicaHistory, α) //MyAuthenticatedReplicaHistory[U]//
+
   //tuples are difficult to read...
   case class MyAuthenticatedReplicaHistory(serverId: ServerId, authenticator: α)
+
   override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
 
   val startingTime = 0
   val emptyLT = MyLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty) //or as Nil
-  val emptyCandidate : Candidate = (emptyLT, emptyLT)
+  val emptyCandidate: Candidate = (emptyLT, emptyLT)
   val emptyRh: ReplicaHistory = SortedSet(emptyCandidate)
+
   //todo could be a functional val
-  def nullHMAC(key:String): HMAC //hash of null(empty)timestamp (emptyLT)
+  def nullHMAC(key: String): HMAC //hash of null(empty)timestamp (emptyLT)
+
   //todo could be a functional val
-  def fillAuthenticator(keys: Map[ServerId, String])(fun: String => HMAC):α = keys.view.mapValues(fun(_)).toMap
-  def nullAuthenticator(keys: Map[ServerId, String]):α = fillAuthenticator(keys)(nullHMAC(_)) //or keys.map(idKey => idKey._1->nullHMAC(idKey._2))
+  //def fillAuthenticator(keys: Map[ServerId, String])(replicaHistory: ReplicaHistory)(fun: (String, ReplicaHistory) => HMAC): α =
+
+//most general
+  def fillAuthenticator(keys: Map[ServerId, String])(fun: (String) => HMAC): α =
+    keys.view.mapValues(fun(_)).toMap
+
+  def fillAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(fun: (String) => HMAC): α =
+    fillAuthenticator(keys.filter(_ == serverIdToUpdate))(fun)
+
+  //todo could use partial application
+  def nullAuthenticator(keys: Map[ServerId, String]): α = fillAuthenticator(keys)(nullHMAC(_)) //or keys.map(idKey => idKey._1->nullHMAC(idKey._2))
+
   //todo could be private (nested) to emptyAuthenticatedRh, a functional val
   def emptyAuthenticatedRh(serverKeys: Map[ServerId, String]): AuthenticatedReplicaHistory =
     SortedSet(emptyCandidate) -> nullAuthenticator(serverKeys)
-  def emptyOhs(serverKeys: Map[ServerId, String]):OHS =
+
+  def emptyOhs(serverKeys: Map[ServerId, String]): OHS =
     serverKeys.view.mapValues(_ => emptyAuthenticatedRh(serverKeys)).toMap
 
   trait OperationA[ReturnValueT, ObjectT] {
@@ -124,6 +139,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   type OperationRepresentation = String
   type OHSRepresentation = String
+
   case class MyLogicalTimestamp(time: Int,
                                 barrierFlag: Boolean,
                                 clientId: Option[ClientId],
@@ -297,13 +313,18 @@ trait CryptoMd5Authenticator {
   self: AbstractAbstractQuModel => //needs the ordering defined by SortedSet
 
   override type HMAC = String
-  override def nullHMAC(key:String) = hmac(key, emptyRh)
+
+  override def nullHMAC(key: String) = hmac(key, emptyRh)
+
   import com.roundeights.hasher.Implicits._ // import com.roundeights.hasher.Digest.digest2string
 
   //leveraging sortedSet ordering here
   def hmac(key: String, replicaHistory: ReplicaHistory): HMAC =
   //should be taken over the hash of a replicahistory
     replicaHistory.hashCode().toString().hmac(key).md5
+
+  def updateAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(replicaHistory: ReplicaHistory): α =
+    fillAuthenticatorFor(keys)(serverIdToUpdate)(hmac(_, replicaHistory))
 
   override type OperationRepresentation = String
 
@@ -313,7 +334,7 @@ trait CryptoMd5Authenticator {
   override def represent(ohs: OHS): OHSRepresentation =
     hashObject(ohs)
 
-  private def hashObject(obj: Any) = obj.hashCode().toString//obj.toString().md5.hex
+  private def hashObject(obj: Any) = obj.hashCode().toString //obj.toString().md5.hex
 
 }
 
