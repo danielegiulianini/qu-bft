@@ -1,22 +1,68 @@
-import qu.protocol.ConcreteQuModel._
+//import that declares specific dependency
 
+import monix.execution.Scheduler
+import monix.execution.schedulers.SchedulerService
+import qu.protocol.ConcreteQuModel.{classify, _}
+
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
-import scala.concurrent.ExecutionContext.Implicits.global
 
-abstract class QuClientImpl[U](policy: QuorumPolicy[U], protected var ohs: OHS[U]) extends QuClient[U] {//with Servers[U]
+class QuClientImpl[U](private var policy: QuorumPolicy[U], private var ohs: OHS) extends QuClient[U] {
+
+  //values to inject
+  val q = 2
+  val r = 3
+
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   override def submit[T](op: Operation[T, U]): Future[T] = {
     for {
-      response <- policy.quorum(op, ohs)
-      answer <- if (response._2 < 5) for {
-        _ <- repair(response._3) //tis updates ohs
-        a <- submit(op)
-      } yield a else Future(response._1)
+      (answer, order, ohs) <- policy.quorum(Some(op), ohs)
+      answer <- if (order < q) for {
+        _ <- repair(ohs) //this updates ohs
+        newAnswer <- submit(op)
+      } yield newAnswer else Future(answer.getOrElse(throw new RuntimeException("illegal protocol State exception..."))) //when using option: Future(answer.get)
     } yield answer
   }
 
-  def repair(ohs: OHS[U]): Future[Unit] = ???
+  def repair(ohs: OHS): Future[OHS] = {
+    def backOffAndRetry(operationType: OperationType1): Future[OHS] = for {
+      _ <- backOff()
+      //perform a barrier or a copy
+      (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, U]], ohs) //here Object is fundamental as server could return other than T
+      (operationType, _, _) <- classifyAsync(ohs)
+      ohs <- backOffAndRetryUntilMethod(operationType)
+    } yield ohs
+
+    def classifyAsync(ohs: OHS) = Future {
+      classify(ohs, r, q)
+    }
+
+    def backOffAndRetryUntilMethod(operationType: OperationType1) =
+      if (operationType != OperationType1.METHOD) backOffAndRetry(operationType) else Future {
+        ohs
+      }
+
+    //actual logic
+    for {
+      (operationType, _, _) <- classifyAsync(ohs)
+      ohs <- backOffAndRetryUntilMethod(operationType)
+    } yield ohs
+  }
+
+  private implicit val scheduler: SchedulerService = Scheduler.singleThread("") //concurrency level configurable by user??
+
+  //to move in scheduler class
+  private def scheduleOnceWithPromise(duration: FiniteDuration): Future[Void] = {
+    val promise = Promise()
+    scheduler.scheduleOnce(3.seconds)(())
+    promise.future
+  }
+
+  //doing nothing
+  private def backOff() = scheduleOnceWithPromise(3.seconds)
 }
+
 
 //companion object: consider putting utilities in QuClient if they are reusable at a higher level
 object QuClientImpl {
@@ -46,10 +92,6 @@ object QuClientImpl {
   //una factory di QUClient... istanziando lo specifico
   //un oggetto per creare il quClient
 }
-/*
-trait Servers[U] {
-  val servers: Map[ConcreteQuModel.ServerId, JacksonClientStub[U]] = Map[ServerId, JacksonClientStub[U]]()
-}*/
 
 object ProvaUserSide {
 
