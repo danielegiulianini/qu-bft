@@ -78,12 +78,12 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //todo could be a functional val
   //def fillAuthenticator(keys: Map[ServerId, String])(replicaHistory: ReplicaHistory)(fun: (String, ReplicaHistory) => HMAC): α =
 
-//most general
+  //most general
   def fillAuthenticator(keys: Map[ServerId, String])(fun: (String) => HMAC): α =
     keys.view.mapValues(fun(_)).toMap
 
   def fillAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(fun: (String) => HMAC): α =
-    fillAuthenticator(keys.filter(_ == serverIdToUpdate))(fun)
+    fillAuthenticator(keys.view.filterKeys(_ == serverIdToUpdate).toMap)(fun) //fillAuthenticator(keys.filter(kv => kv._1  == serverIdToUpdate))(fun)
 
   //todo could use partial application
   def nullAuthenticator(keys: Map[ServerId, String]): α = fillAuthenticator(keys)(nullHMAC(_)) //or keys.map(idKey => idKey._1->nullHMAC(idKey._2))
@@ -345,14 +345,6 @@ trait Storage {
   def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, T)): Unit
 
   def retrieve[T, U](logicalTimestamp: LogicalTimestamp): Option[(T, U)]
-
-}
-
-
-trait GeneralStorage {
-  def store[T, U](logicalTimestamp: T, objectAndAnswer: U): Unit
-
-  def retrieve[T, U](logicalTimestamp: T): U
 
 }
 
