@@ -23,24 +23,15 @@ object HeterogeneousContainer { // Typesafe heterogeneous container pattern - cl
   }
 }
 
-
+//it 's not thred safe (must use a mutable collection...)
 class HeterogeneousContainer {
   private var favorites: Map[TypeTag[_], Any] = Map()
 
-  def putFavorite[T](instance: T)(implicit `type`: TypeTag[T]): Unit = {
-    //if (`type` == null) throw new NullPointerException("Type is null")
-    favorites = favorites + (Objects.requireNonNull(`type`) -> instance)
-  }
+  def putFavorite[T](instance: T)(implicit `type`: TypeTag[T]): Unit =
+    favorites = favorites + (Objects.requireNonNull(`type`) -> instance)    //if (`type` == null) throw new NullPointerException("Type is null")
 
   //se c'è ritorna quello che c'è tipato, altrimenti deve ritornare un option vutoo
-  def getFavorite[T](implicit `type`: TypeTag[T]): Option[T] = {
-    println("la map is: " + favorites)
-    println("cio refeprito is:" + favorites(`type`))
-    favorites.get(`type`).map(_.asInstanceOf[T])
-  }
-
-  // def cast[A](a: Any, tag: TypeTag[A]): A = a.asInstanceOf[A]
-  //`type`.cast(favorites.get(`type`))
+  def getFavorite[T](implicit `type`: TypeTag[T]): Option[T] = favorites.get(`type`).map(_.asInstanceOf[T])
 }
 
 /*

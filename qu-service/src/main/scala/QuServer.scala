@@ -1,4 +1,5 @@
-import Implementations.jacksonService
+//import Implementations.jacksonService
+import qu.protocol.ConcreteQuModel._
 
 
 trait QuServer {
@@ -9,7 +10,7 @@ trait QuServer {
 
 //companion object
 object QuServer {
-  def apply() : QuServer = null
+  def apply[U](quService: QuService[U]): QuServer = null
 }
 
 //a facade that hides grpc internals
@@ -19,19 +20,26 @@ class QuServerImpl {
 }
 
 //alternative to apply in companion object
-class QuServerBuilder {
+class QuServerBuilder[MyMarshallable[_], U](
+                                             /*how do I inject this dependency?? factory as parameter or actual service as parameter or use inheritance (protected methods)?*/
+                                             private val myService: QuServiceImpl[U, MyMarshallable]) {
 
-  //how I inject this dependency?? factory as parameter or actual service as parameter?
-  val myService = jacksonService()
-
-  def addOperation(): Unit = {
-    myService.addOperation()
+  def addOperation[T]()(implicit 
+                        marshallableRequest: MyMarshallable[Request[T, U]],
+                        marshallableResponse: MyMarshallable[Response[Option[T]]],
+                        marshallableLogicalTimestamp: MyMarshallable[LogicalTimestamp],
+                        marshallableObjectSyncResponse: MyMarshallable[ObjectSyncResponse[U]]): Unit = {
+    //myService.addOperation[T]()
   }
 
-  def addServer(): Unit = {
+  def addServer(/*server description*/): Unit = {
 
   }
 
-  def build(): QuServer = QuServer()
+  def addCluster(): Unit = {
+
+  }
+
+  def build(): QuServer = ??? // QuServer(myService)
 }
 

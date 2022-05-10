@@ -301,12 +301,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
         //ltCurrent
         latestBarrierVersion._2)
   }
-
-  /*case class MyNone()
-  def nullOperation[U] = new OperationA[MyNone, U] {
-    override def compute(obj: U): MyNone = MyNone()
-  }*/
-
 }
 
 trait CryptoMd5Authenticator {
@@ -334,6 +328,7 @@ trait CryptoMd5Authenticator {
   override def represent(ohs: OHS): OHSRepresentation =
     hashObject(ohs)
 
+  //or Objects.hash ...??
   private def hashObject(obj: Any) = obj.hashCode().toString //obj.toString().md5.hex
 
 }
@@ -351,9 +346,9 @@ trait Storage {
 trait InMemoryStorage extends Storage {
   self: AbstractQuModel =>
 
-  def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, T)): Unit = ???
+  override def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, T)): Unit = ???
 
-  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): Option[(T, U)] = ???
+  override def retrieve[T, U](logicalTimestamp: LogicalTimestamp): Option[(T, U)] = ???
 
 }
 

@@ -1,21 +1,24 @@
 //import that declares specific dependency
-
-import monix.execution.Scheduler
-import monix.execution.schedulers.SchedulerService
 import qu.protocol.ConcreteQuModel.{classify, _}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
 
-class QuClientImpl[U](private var policy: QuorumPolicy[U], private var ohs: OHS) extends QuClient[U] {
+class QuClientImpl[U, Marshallable[_]](private var policy: QuorumPolicy[U, Marshallable], private var ohs: OHS) extends QuClient[U, Marshallable] {
 
   //values to inject
   val q = 2
   val r = 3
+  private val scheduler = new OneShotAsyncScheduler(2) //concurrency level configurable by user??
 
+  //temporneous
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  override def submit[T](op: Operation[T, U]): Future[T] = {
+  override def submit[T](op: Operation[T, U])(implicit
+                                              marshallableRequest: Marshallable[Request[T, U]],
+                                              marshallableResponse: Marshallable[Response[Option[T]]],
+                                              marshallableRequestObj: Marshallable[Request[Object, U]],
+                                              marshallableResponseObj: Marshallable[Response[Option[Object]]]): Future[T] = {
     for {
       (answer, order, ohs) <- policy.quorum(Some(op), ohs)
       answer <- if (order < q) for {
@@ -25,8 +28,14 @@ class QuClientImpl[U](private var policy: QuorumPolicy[U], private var ohs: OHS)
     } yield answer
   }
 
-  def repair(ohs: OHS): Future[OHS] = {
-    def backOffAndRetry(operationType: OperationType1): Future[OHS] = for {
+
+  def repair(ohs: OHS)(implicit
+                       marshallableRequest: Marshallable[Request[Object, U]],
+                       marshallableResponse: Marshallable[Response[Option[Object]]]): Future[OHS] = {
+    //utilities
+    def backOff(): Future[Void] = scheduler.scheduleOnceAsPromise(3.seconds)
+
+    def backOffAndRetry(): Future[OHS] = for {
       _ <- backOff()
       //perform a barrier or a copy
       (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, U]], ohs) //here Object is fundamental as server could return other than T
@@ -38,8 +47,8 @@ class QuClientImpl[U](private var policy: QuorumPolicy[U], private var ohs: OHS)
       classify(ohs, r, q)
     }
 
-    def backOffAndRetryUntilMethod(operationType: OperationType1) =
-      if (operationType != OperationType1.METHOD) backOffAndRetry(operationType) else Future {
+    def backOffAndRetryUntilMethod(operationType: OperationType1): Future[OHS] =
+      if (operationType != OperationType1.METHOD) backOffAndRetry() else Future {
         ohs
       }
 
@@ -50,17 +59,6 @@ class QuClientImpl[U](private var policy: QuorumPolicy[U], private var ohs: OHS)
     } yield ohs
   }
 
-  private implicit val scheduler: SchedulerService = Scheduler.singleThread("") //concurrency level configurable by user??
-
-  //to move in scheduler class
-  private def scheduleOnceWithPromise(duration: FiniteDuration): Future[Void] = {
-    val promise = Promise()
-    scheduler.scheduleOnce(3.seconds)(())
-    promise.future
-  }
-
-  //doing nothing
-  private def backOff() = scheduleOnceWithPromise(3.seconds)
 }
 
 
@@ -70,12 +68,12 @@ object QuClientImpl {
   //val io = new QuClientImpl[Int] with SimpleBroadcastPolicy[Int]
 
   //grpc-aware factory:
-  def apply[U](quorumThreshold: Int,
+  def apply[U, Marshallable[_]](quorumThreshold: Int,
                repairableThreshold: Int,
                ips: Set[String] //serverRefs: ServerRefs[U] //here i need IPs
 
                //grpc's callOptions , key management??  (to pass to clientStub...)
-              ): QuClientImpl[U] = {
+              ): QuClientImpl[U, Marshallable] = {
     //istanzio i servers (client stub) da passare alla quorumPolicy
 
     null

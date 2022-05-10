@@ -5,8 +5,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
 
 //a class exposing a promise-based and a callback-based API (monix scheduler has callback only)
-//scheduler.scheduleOnce(3.seconds)(/*callback based API*/)
-class MyScheduler(poolSize: Int) {
+class OneShotAsyncScheduler(poolSize: Int) {
   private implicit val scheduler: SchedulerService = Scheduler.fixedPool("schedulerService", poolSize)
 
   def scheduleOnceAsPromise(duration: FiniteDuration): Future[Void] = {

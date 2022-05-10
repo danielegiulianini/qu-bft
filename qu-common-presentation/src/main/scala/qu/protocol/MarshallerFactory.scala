@@ -6,13 +6,13 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule, JavaTypeable}
 import io.grpc.MethodDescriptor
 import play.api.libs.json.{Format, Json}
+import java.io.{ByteArrayInputStream, InputStream}
 
 import java.nio.charset.StandardCharsets
 
 //import that declares specific dependency
 import qu.protocol.ConcreteQuModel._
 
-import java.io.{ByteArrayInputStream, InputStream}
 
 trait MarshallerFactory[Marshallable[_]] {
   def marshallerFor[T: Marshallable]: MethodDescriptor.Marshaller[T]
@@ -53,6 +53,8 @@ trait PlayJsonMarshallerFactory extends MarshallerFactory[Format] {  //self: Met
     }
 }
 
+
+/*
 trait PlayJsonMethodDescriptorFactory extends MethodDescriptorFactory[Format] with PlayJsonMarshallerFactory {
   override def getGenericSignature[T: Format, U: Format]: String = "ciaociao"//todo to be refactored
    /*(implicitly[Format[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature +
@@ -67,6 +69,5 @@ trait PlayJsonMethodDescriptorFactory extends MethodDescriptorFactory[Format] wi
 
   /*override def generateObjectSyncMethodDescriptor[T, U](methodName: String, serviceName: String)(implicit enc2: JavaTypeable[T], dec: JavaTypeable[U]) =
     this.generateMethodDescriptor3[T, U, MyLogicalTimestamp, ObjectSyncResponse](methodName, serviceName)*/
-
 }
-
+*/

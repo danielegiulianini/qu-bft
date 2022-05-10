@@ -1,3 +1,5 @@
+import qu.protocol.ConcreteQuModel
+
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
@@ -22,12 +24,10 @@ trait SimpleBroadcastPolicy[U, Marshallable[_]] extends QuorumPolicy[U, Marshall
   //vakues to inject
   val q = 2
   val r = 3
-
-  //concurrency level configurable by user??
-  //is it possible to have overlapping calls to schedule
+  //is it possible to have overlapping calls to schedule?
   // (only so it's convenient to use >1 threads)?? no, actually!
   //dependencies shared with QuClient
-  val scheduler = new OneShotAsyncScheduler(2)
+  val scheduler = new OneShotAsyncScheduler(2)  //concurrency level configurable by user??
   protected val servers: Map[ServerId, GrpcClientStub[Marshallable]]
 
   override def quorum[T](operation: Option[Operation[T, U]],
@@ -36,14 +36,15 @@ trait SimpleBroadcastPolicy[U, Marshallable[_]] extends QuorumPolicy[U, Marshall
                          marshallableRequest: Marshallable[Request[T, U]],
                          marshallableResponse: Marshallable[Response[Option[T]]]): Future[(Option[T], Int, OHS)] = {
     //private nested method
-    def quorumImpl2(completionPromise: Promise[(Set[Response[Option[T]]], OHS)],
+    def gatherResponses(completionPromise: Promise[(Set[Response[Option[T]]], OHS)],
                     successSet: Map[ServerId, Response[Option[T]]])
                    (implicit
                     marshallableRequest: Marshallable[Request[T, U]],
                     marshallableResponse: Marshallable[Response[Option[T]]]): Future[(Set[Response[Option[T]]], OHS)] = {
       var myOhs: OHS = ohs
+      //new set need for preventing reassignment to val
       var currentSuccessSet = successSet
-      val cancelable = scheduler.scheduleOnceAsCallback(3.seconds)(quorumImpl2(completionPromise, successSet)) //passing all the servers  the first time
+      val cancelable = scheduler.scheduleOnceAsCallback(3.seconds)(gatherResponses(completionPromise, successSet)) //passing all the servers  the first time
 
       (servers -- successSet.keySet)
         .map(kv => (kv._1,
@@ -65,7 +66,7 @@ trait SimpleBroadcastPolicy[U, Marshallable[_]] extends QuorumPolicy[U, Marshall
       completionPromise.future
     }
 
-    def getElected(responses: Set[Response[Option[T]]]) = Future {
+    def scrutinize(responses: Set[Response[Option[T]]]): Future[(ConcreteQuModel.Response[Option[T]], Int)] = Future {
       responses
         .groupMapReduce(identity)(_ => 1)(_ + _)
         .maxByOption(_._2)
@@ -74,9 +75,8 @@ trait SimpleBroadcastPolicy[U, Marshallable[_]] extends QuorumPolicy[U, Marshall
 
     //actual logic
     for {
-      (responses, ohs) <- quorumImpl2(Promise(), successSet = Map())
-      (response, voteCount) <- getElected(responses)
+      (responses, ohs) <- gatherResponses(Promise(), successSet = Map())
+      (response, voteCount) <- scrutinize(responses)
     } yield (response.answer, voteCount, ohs)
   }
-
 }

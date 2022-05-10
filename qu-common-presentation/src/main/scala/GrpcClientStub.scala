@@ -1,8 +1,7 @@
 import GrpcClientStub.{methodName, serviceName}
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{CallOptions, ManagedChannel}
-import play.api.libs.json.Format
-import qu.protocol.{JacksonMethodDescriptorFactory, MarshallerFactory, MethodDescriptorFactory, PlayJsonMethodDescriptorFactory, TemporaryConstants}
+import qu.protocol.{JacksonMethodDescriptorFactory, MarshallerFactory, MethodDescriptorFactory, TemporaryConstants}
 import scalapb.grpc.ClientCalls
 
 import scala.concurrent.Future
@@ -18,14 +17,9 @@ abstract class GrpcClientStub[Marshallable[_]](var chan: ManagedChannel)
                              enc: Marshallable[InputT],
                              dec: Marshallable[OutputT]):
   Future[OutputT] = {
+    //must add timeout
     val md = generateMethodDescriptor5[InputT, OutputT](methodName, serviceName)
     ClientCalls.asyncUnaryCall(chan, md, callOptions, toBeSent)
-  }
-
-  def aa(): Unit = {
-    val o = List[AnyRef]()
-    val u = o.appended(5)
-
   }
 }
 
