@@ -1,16 +1,17 @@
 import io.grpc.MethodDescriptor
 import io.grpc.stub.StreamObserver
-import qu.protocol.{ConcreteQuModel, MethodDescriptorFactory}
+import qu.protocol.MethodDescriptorFactory
+import qu.protocol.model.ConcreteQuModel
 
+import java.security.InvalidParameterException
 import scala.Option
 import scala.collection.SortedSet
 import scala.concurrent.Future
 import scala.math.Ordered.orderingToOrdered
-import scala.reflect.internal.Flags.METHOD
 import scala.util.Success
 
 //import that declares specific dependency
-import qu.protocol.ConcreteQuModel._
+import qu.protocol.model.ConcreteQuModel._
 
 
 class QuServiceImpl[U, Marshallable[_]] extends MyNewServiceImplBase[Marshallable, U] {
@@ -27,77 +28,76 @@ class QuServiceImpl[U, Marshallable[_]] extends MyNewServiceImplBase[Marshallabl
 
   //initialization (todo could have destructured tuple here instead
   var authenticatedReplicaHistory = emptyAuthenticatedRh(keys)
+  //must add to store the initial object
 
   override def sRequest[T](request: Request[T, U], responseObserver: StreamObserver[Response[Option[T]]]): Unit = {
+    val (replicaHistory, authenticator) = authenticatedReplicaHistory
+    val answer = Option.empty[T]
+
     def replyWith(response: Response[Option[T]]) = {
       responseObserver.onNext(response)
     }
 
+    //todo not need to pass request if nested def
+    def executeOperation[T](request: Request[T, U]): (U, T) = {
+      //todo can actually happen that a malevolent client can make this exception happen?
+      request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state: if classify returns a (inline) method then operation should be defined (not none)")).compute(obj) //for {operation <- request.operation} operation.compute(obj)
+    }
+
     println("received request!")
-
-    val (replicaHistory, authenticator) = authenticatedReplicaHistory
-
-    val answer = Option.empty[T]
 
     //culling invalid Replica histories
     val updatedOhs = request.
       ohs. //todo map access like this (to authenticator) could raise exception
       map { case (serverId, (rh, authenticator)) => if (authenticator("mioServerId") != hmac(keys(serverId), rh))
-        (serverId, (emptyRh, authenticator)) else (serverId, (rh, authenticator))//keep authentictor untouched (as in paper)
+        (serverId, (emptyRh, authenticator)) else (serverId, (rh, authenticator)) //keep authentictor untouched (as in paper)
       }
 
     val (opType, (lt, ltCo), ltCurrent) = setup(request.operation, updatedOhs, q, r, clientId)
 
     //repeated request
     if (contains(replicaHistory, (lt, ltCo))) {
-      val objAnswer = retrieve[T, U](lt)
-      replyWith(Response(StatusCode.SUCCESS, objAnswer.map(_._1), authenticatedReplicaHistory))
+      val (_, answer) = retrieve[T, U](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if in replica history must be in store too."))
+      replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
       return //todo put attention if it's possible to express this with a chain of if e.se and only one return
     }
 
-    if (latestTime(authenticatedReplicaHistory._1) > ltCurrent) {
+    //validating if ohs current
+    if (latestTime(replicaHistory) > ltCurrent) {
       // optimistic query execution
       if (request.operation.isInstanceOf[Query[_, _]]) {
-        //Option.empty.getOrElse(throw new InconsistentProtocolState("Can't."))
-        /*request.operation match {
-            case _: Query[_, _] =>
-              val answer = for {
-                ab <- retrieve[T, U](latestTime(authenticatedReplicaHistory._1))
-                op <- request.operation
-              } yield op.compute(ab._2)
-          }*/
+        val (obj, _) = retrieve[T, U](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if replica history has lt older than ltcur store must contain ltcur too."))
+        val (newObj, answer) = executeOperation(request)
+        if (newObj != obj) {
+          //todo here what to do?
+          throw new InvalidParameterException("user sent an update operation as query")
+        }
       }
       replyWith(Response(StatusCode.FAIL, answer, authenticatedReplicaHistory))
       return
     }
 
     if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
-      //retrieve,,,
-      if (true) {
+      val objAndAnswer = retrieve[T, U](lt)
+      if (objAndAnswer.isEmpty) {
         /*for {
           obj <- quorumPolicy.objectSync[T]()
         } yield*/
 
         import scala.concurrent.ExecutionContext.Implicits.global
         quorumPolicy.objectSync[T]().onComplete({
-          //here I know that a quorum is found
+          //here I know that a quorum is found...
           case Success(response) => sharedCode()
-          case _ => //this can be removed by pecifying other...)
+          case _ => //what can actually happen here? (malformed json, bad url) those must be notified to server user
         })
       }
     }
 
     sharedCode()
 
-    //todo not need to pass request if nested def
-    def executeOperation[T](request: Request[T, U]): Unit = {
-      request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state")).compute(obj)
-      for {operation <- request.operation} operation.compute(obj)
-    }
-
     def sharedCode(): Unit = {
       if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD) {
-        executeOperation(request)
+        val (obj, answer) = executeOperation(request)
         if (request.operation.isInstanceOf[Query[_, _]]) {
           replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
           return
@@ -108,15 +108,14 @@ class QuServiceImpl[U, Marshallable[_]] extends MyNewServiceImplBase[Marshallabl
         //update ReplicaHistory
         //authenticatedReplicaHistory._1 + (lt, ltCo)
         //update authenticator
-        updateAuthenticatorFor(keys)(myId)(replicaHistory)
-
+        val updatedReplicaHistory: ReplicaHistory = replicaHistory ++ (lt, ltCo)
+        val updatedAuthenticator = updateAuthenticatorFor(keys)(myId)(updatedReplicaHistory)
+        authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
         if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
           store(lt, (obj, answer))
         }
 
-        //replica history pruning
-        //if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD) {
-        //}
+        //todo: replica history pruning
       }
       replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
     }
@@ -131,3 +130,16 @@ class QuServiceImpl[U, Marshallable[_]] extends MyNewServiceImplBase[Marshallabl
     responseObserver.onCompleted()
   }
 }
+
+
+
+
+
+/*with pattern matching instad of if -else:
+request.operation match {
+    case _: Query[_, _] =>
+      val answer = for {
+        ab <- retrieve[T, U](latestTime(authenticatedReplicaHistory._1))
+        op <- request.operation
+      } yield op.compute(ab._2)
+  }*/
