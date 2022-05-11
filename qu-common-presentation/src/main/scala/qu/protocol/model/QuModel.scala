@@ -95,16 +95,14 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   def emptyOhs(serverKeys: Map[ServerId, String]): OHS =
     serverKeys.view.mapValues(_ => emptyAuthenticatedRh(serverKeys)).toMap
 
-  trait OperationA[ReturnValueT, ObjectT] {
-    def compute(obj: ObjectT): (ObjectT, ReturnValueT)
-  }
+  override type Operation[ReturnValueT, ObjectT] = ObjectT => (ObjectT, ReturnValueT)
 
-  trait Query[ReturnValueT, ObjectT] extends OperationA[ReturnValueT, ObjectT]
+  trait Query[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT]
 
-  trait Update[ReturnValueT, ObjectT] extends OperationA[ReturnValueT, ObjectT]
+  trait Update[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT]
 
   //final keyword removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
-  case class Request[ReturnValueT, ObjectT](operation: Option[OperationA[ReturnValueT, ObjectT]],
+  case class Request[ReturnValueT, ObjectT](operation: Option[Operation[ReturnValueT, ObjectT]],
                                             ohs: OHS)
 
   case class Response[ReturnValueT](responseCode: StatusCode,
@@ -126,8 +124,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //2.
   case class ObjectSyncResponse[ObjectT](responseCode: StatusCode,
                                          answer: ObjectT)
-
-  override type Operation[T, U] = OperationA[T, U]
 
   //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
   override type LogicalTimestamp = MyLogicalTimestamp
