@@ -96,7 +96,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
     serverKeys.view.mapValues(_ => emptyAuthenticatedRh(serverKeys)).toMap
 
   trait OperationA[ReturnValueT, ObjectT] {
-    def compute(obj: ObjectT): ReturnValueT
+    def compute(obj: ObjectT): (ObjectT, ReturnValueT)
   }
 
   trait Query[ReturnValueT, ObjectT] extends OperationA[ReturnValueT, ObjectT]
