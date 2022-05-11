@@ -1,4 +1,9 @@
-import qu.protocol.ConcreteQuModel
+
+import GrpcClientStub.JacksonClientStub
+import com.fasterxml.jackson.module.scala.JavaTypeable
+import io.grpc.ManagedChannelBuilder
+import qu.protocol.Shared.{QuorumSystemThresholds, ServerInfo}
+import qu.protocol.model.ConcreteQuModel
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -6,7 +11,7 @@ import scala.concurrent.{Future, Promise}
 import scala.util.{Failure, Success}
 
 //import that declares specific dependency
-import qu.protocol.ConcreteQuModel._
+import ConcreteQuModel._
 
 
 trait QuorumPolicy[U, Marshallable[_]] {
@@ -17,30 +22,40 @@ trait QuorumPolicy[U, Marshallable[_]] {
                 marshallableResponse: Marshallable[Response[Option[T]]]): Future[(Option[T], Int, OHS)]
 }
 
+object QuorumPolicy {
+  //policy factories
+
+  type PolicyFactory[U, Marshallable[_]] = (Set[ServerInfo], QuorumSystemThresholds) => QuorumPolicy[U, Marshallable]
+
+  def jacksonSimpleQuorumPolicyFactory[U](): PolicyFactory[U, JavaTypeable] =
+    (mySet: Set[ServerInfo], thresholds: QuorumSystemThresholds) =>
+      new SimpleBroadcastPolicy(thresholds,
+        mySet.map(serverInfo => serverInfo.ip -> new JacksonClientStub(
+          ManagedChannelBuilder.forAddress(serverInfo.ip, serverInfo.port)
+            .build))
+          .toMap)
+
+}
+
 
 //basic policy
-trait SimpleBroadcastPolicy[U, Marshallable[_]] extends QuorumPolicy[U, Marshallable] {
+class SimpleBroadcastPolicy[U, Marshallable[_]](private val thresholds: QuorumSystemThresholds,
+                                                private val servers: Map[ServerId, GrpcClientStub[Marshallable]])
+  extends QuorumPolicy[U, Marshallable] {
 
-  //vakues to inject
-  val q = 2
-  val r = 3
-  //is it possible to have overlapping calls to schedule?
-  // (only so it's convenient to use >1 threads)?? no, actually!
-  //dependencies shared with QuClient
-  val scheduler = new OneShotAsyncScheduler(2)  //concurrency level configurable by user??
-  protected val servers: Map[ServerId, GrpcClientStub[Marshallable]]
+  //is it possible to have overlapping calls to schedule? (only so it's convenient to use >1 threads)?? no, actually!
+  private val scheduler = new OneShotAsyncScheduler(2) //concurrency level configurable by user??
 
   override def quorum[T](operation: Option[Operation[T, U]],
                          ohs: OHS)
                         (implicit
                          marshallableRequest: Marshallable[Request[T, U]],
                          marshallableResponse: Marshallable[Response[Option[T]]]): Future[(Option[T], Int, OHS)] = {
-    //private nested method
     def gatherResponses(completionPromise: Promise[(Set[Response[Option[T]]], OHS)],
-                    successSet: Map[ServerId, Response[Option[T]]])
-                   (implicit
-                    marshallableRequest: Marshallable[Request[T, U]],
-                    marshallableResponse: Marshallable[Response[Option[T]]]): Future[(Set[Response[Option[T]]], OHS)] = {
+                        successSet: Map[ServerId, Response[Option[T]]])
+                       (implicit
+                        marshallableRequest: Marshallable[Request[T, U]],
+                        marshallableResponse: Marshallable[Response[Option[T]]]): Future[(Set[Response[Option[T]]], OHS)] = {
       var myOhs: OHS = ohs
       //new set need for preventing reassignment to val
       var currentSuccessSet = successSet
@@ -55,12 +70,12 @@ trait SimpleBroadcastPolicy[U, Marshallable[_]] extends QuorumPolicy[U, Marshall
             this.synchronized {
               myOhs = myOhs + (kv._1 -> response.authenticatedRh)
               currentSuccessSet = currentSuccessSet + ((kv._1, response))
-              if (currentSuccessSet.size == q) {
+              if (currentSuccessSet.size == thresholds.q) {
                 cancelable.cancel()
                 completionPromise success ((successSet.values.toSet, myOhs))
               }
             }
-          case _ => //no need to do nothing, only waiting for other servers' responses
+          case _ => //can happen exception for which must inform client user? no need to do nothing, only waiting for other servers' responses
         }))
 
       completionPromise.future
