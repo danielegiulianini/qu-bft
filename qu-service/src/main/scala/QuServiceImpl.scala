@@ -2,7 +2,7 @@ import com.google.common.util.concurrent.MoreExecutors
 import io.grpc.MethodDescriptor
 import io.grpc.stub.StreamObserver
 import qu.protocol.MethodDescriptorFactory
-import qu.protocol.Shared.QuorumSystemThresholds
+import qu.protocol.Shared.{QuorumSystemThresholds, ServerInfo}
 import qu.protocol.model.ConcreteQuModel
 
 import java.security.InvalidParameterException
@@ -16,23 +16,22 @@ import scala.util.Success
 import qu.protocol.model.ConcreteQuModel._
 
 
-class QuServiceImpl[U, Marshallable[_]] extends MyNewServiceImplBase[Marshallable, U] {
+class QuServiceImpl[U, Marshallable[_]](private val myId: ServerId,
+                                        private val keys: Map[ServerId, String], //this contains mykey too (needed)
+                                        private val thresholds: QuorumSystemThresholds)
+  extends MyNewServiceImplBase[Marshallable, U] {
 
-  //values to inject
-  val keys = Map[String, String]() //this contains mykey too (needed)
-  val thresholds = QuorumSystemThresholds(2, 3)
   val clientId = "" //from context (server interceptor)
-  val myId: ServerId = "myIp"
 
   //scheduler for io-bound (callbacks from other servers)
-
   import java.util.concurrent.Executors
   val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors + 1)) //or MoreExecutors.newDirectExecutorService
-  //scheduler for cpu-bound (computing hmac)
+  //todo scheduler for cpu-bound (computing hmac, for now not used)
 
   //initialization (todo could have destructured tuple here instead
   var authenticatedReplicaHistory = emptyAuthenticatedRh(keys)
   //must add to store the initial object (passed by param)
+
 
   override def sRequest[T](request: Request[T, U], responseObserver: StreamObserver[Response[Option[T]]]): Unit = {
     val (replicaHistory, _) = authenticatedReplicaHistory
@@ -45,7 +44,7 @@ class QuServiceImpl[U, Marshallable[_]] extends MyNewServiceImplBase[Marshallabl
     //todo not need to pass request if nested def
     def executeOperation[T](request: Request[T, U]): (U, T) = {
       //todo can actually happen that a malevolent client can make this exception happen?
-      request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state: if classify returns a (inline) method then operation should be defined (not none)")).apply(obj) //for {operation <- request.operation} operation.compute(obj)
+      request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state: if classify returns a (inline) method then operation should be defined (not none)"))(obj) //for {operation <- request.operation} operation.compute(obj)
     }
 
     println("received request!")
