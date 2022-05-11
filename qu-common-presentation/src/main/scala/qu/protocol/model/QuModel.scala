@@ -1,4 +1,4 @@
-package qu.protocol
+package qu.protocol.model
 
 import scala.collection.SortedSet
 
@@ -337,18 +337,18 @@ trait CryptoMd5Authenticator {
 trait Storage {
   self: AbstractQuModel =>
 
-  def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, T)): Unit
+  def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, Option[T])): Unit
 
-  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): Option[(T, U)]
+  def retrieve[T, U](logicalTimestamp: LogicalTimestamp): Option[(U, Option[T])]
 
 }
 
 trait InMemoryStorage extends Storage {
   self: AbstractQuModel =>
 
-  override def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, T)): Unit = ???
+  override def store[T, U](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, Option[T])) = ???
 
-  override def retrieve[T, U](logicalTimestamp: LogicalTimestamp): Option[(T, U)] = ???
+  override def retrieve[T, U](logicalTimestamp: LogicalTimestamp): Option[(U, Option[T])] = ???
 
 }
 
