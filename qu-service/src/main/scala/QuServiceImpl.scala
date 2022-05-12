@@ -3,8 +3,9 @@ import io.grpc.MethodDescriptor
 import io.grpc.stub.StreamObserver
 import qu.protocol.MethodDescriptorFactory
 import qu.protocol.Shared.{QuorumSystemThresholds, ServerInfo}
-import qu.protocol.model.ConcreteQuModel
+import qu.protocol.model.{ConcreteQuModel, Storage}
 
+import scala.reflect.runtime.universe._
 import java.security.InvalidParameterException
 import scala.Option
 import scala.collection.SortedSet
@@ -16,10 +17,12 @@ import scala.util.Success
 import qu.protocol.model.ConcreteQuModel._
 
 
-class QuServiceImpl[U, Marshallable[_]](private val myId: ServerId,
+class QuServiceImpl[U:TypeTag, Marshallable[_]](private val myId: ServerId,
                                         private val keys: Map[ServerId, String], //this contains mykey too (needed)
                                         private val thresholds: QuorumSystemThresholds)
-  extends MyNewServiceImplBase[Marshallable, U] {
+  extends QuServiceImplBase[Marshallable, U] {
+
+  private val storage = new SeparateStorage[U]()
 
   val clientId = "" //from context (server interceptor)
 
@@ -33,7 +36,7 @@ class QuServiceImpl[U, Marshallable[_]](private val myId: ServerId,
   //must add to store the initial object (passed by param)
 
 
-  override def sRequest[T](request: Request[T, U], responseObserver: StreamObserver[Response[Option[T]]]): Unit = {
+  override def sRequest[T:TypeTag](request: Request[T, U], responseObserver: StreamObserver[Response[Option[T]]]): Unit = {
     val (replicaHistory, _) = authenticatedReplicaHistory
     var answer = Option.empty[T]
 
@@ -60,7 +63,7 @@ class QuServiceImpl[U, Marshallable[_]](private val myId: ServerId,
 
     //repeated request
     if (contains(replicaHistory, (lt, ltCo))) {
-      val (_, answer) = retrieve[T, U](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if in replica history must be in store too."))
+      val (_, answer) = storage.retrieve[T, U](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if in replica history must be in store too."))
       replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
       return //todo put attention if it's possible to express this with a chain of if e.se and only one return
     }
@@ -68,8 +71,8 @@ class QuServiceImpl[U, Marshallable[_]](private val myId: ServerId,
     //validating if ohs current
     if (latestTime(replicaHistory) > ltCurrent) {
       // optimistic query execution
-      if (request.operation.isInstanceOf[Query[_, _]]) {
-        val (obj, _) = retrieve[T, U](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if replica history has lt older than ltcur store must contain ltcur too."))
+      if (request.operation.isInstanceOf[Option[Query[_, _]]]) {
+        val (obj, _) = storage.retrieve[T, U](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if replica history has lt older than ltcur store must contain ltcur too."))
         val (newObj, opAnswer) = executeOperation(request)
         answer = Some(opAnswer)
         if (newObj != obj) {
@@ -82,7 +85,7 @@ class QuServiceImpl[U, Marshallable[_]](private val myId: ServerId,
     }
 
     if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
-      val objAndAnswer = retrieve[T, U](lt)
+      val objAndAnswer = storage.retrieve[T, U](lt)//retrieve[T, U](lt)
       if (objAndAnswer.isEmpty && ltCo > emptyLT) {
         /*for { obj <- quorumPolicy.objectSync[T]()} yield*/
         quorumPolicy.objectSync[T]().onComplete({
@@ -108,7 +111,7 @@ class QuServiceImpl[U, Marshallable[_]](private val myId: ServerId,
         val updatedAuthenticator = updateAuthenticatorFor(keys)(myId)(updatedReplicaHistory)
         authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
         if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
-          store(lt, (obj, answer))
+          storage.store[T](lt, (obj, answer))
         }
         //todo: replica history pruning
       }
