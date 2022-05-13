@@ -17,17 +17,23 @@ import scala.util.Success
 import qu.protocol.model.ConcreteQuModel._
 
 
-class QuServiceImpl[U:TypeTag, Marshallable[_]](private val myId: ServerId,
-                                        private val keys: Map[ServerId, String], //this contains mykey too (needed)
-                                        private val thresholds: QuorumSystemThresholds)
-  extends QuServiceImplBase[Marshallable, U] {
+class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by programmer
+                                                  private val methodDescriptorFactory: MethodDescriptorFactory[Marshallable],
+                                                  private val policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => ServerQuorumPolicy[U],
+                                                  //dependencies chosen by user
+                                                  override val myServerInfo: ServerInfo,
+                                                  override val thresholds: QuorumSystemThresholds,
+                                                  private val obj: U)
+  extends QuServiceImplBase2[Marshallable, U](methodDescriptorFactory, policyFactory, thresholds, myServerInfo) {
 
-  private val storage = new SeparateStorage[U]()
+  private val storage = new StorageWithImmutableMap[U]()
 
   val clientId = "" //from context (server interceptor)
 
   //scheduler for io-bound (callbacks from other servers)
+
   import java.util.concurrent.Executors
+
   val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors + 1)) //or MoreExecutors.newDirectExecutorService
   //todo scheduler for cpu-bound (computing hmac, for now not used)
 
@@ -36,7 +42,7 @@ class QuServiceImpl[U:TypeTag, Marshallable[_]](private val myId: ServerId,
   //must add to store the initial object (passed by param)
 
 
-  override def sRequest[T:TypeTag](request: Request[T, U], responseObserver: StreamObserver[Response[Option[T]]]): Unit = {
+  override def sRequest[T: TypeTag](request: Request[T, U], responseObserver: StreamObserver[Response[Option[T]]]): Unit = {
     val (replicaHistory, _) = authenticatedReplicaHistory
     var answer = Option.empty[T]
 
@@ -55,7 +61,7 @@ class QuServiceImpl[U:TypeTag, Marshallable[_]](private val myId: ServerId,
     //culling invalid Replica histories
     val updatedOhs = request.
       ohs. //todo map access like this (to authenticator) could raise exception
-      map { case (serverId, (rh, authenticator)) => if (authenticator("mioServerId") != hmac(keys(serverId), rh))
+      map { case (serverId, (rh, authenticator)) => if (authenticator(myServerInfo.ip) != hmac(keys(serverId), rh))
         (serverId, (emptyRh, authenticator)) else (serverId, (rh, authenticator)) //keep authentictor untouched (as in paper)
       }
 
@@ -63,7 +69,7 @@ class QuServiceImpl[U:TypeTag, Marshallable[_]](private val myId: ServerId,
 
     //repeated request
     if (contains(replicaHistory, (lt, ltCo))) {
-      val (_, answer) = storage.retrieve[T, U](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if in replica history must be in store too."))
+      val (_, answer) = storage.retrieve[T](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if in replica history must be in store too."))
       replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
       return //todo put attention if it's possible to express this with a chain of if e.se and only one return
     }
@@ -72,7 +78,7 @@ class QuServiceImpl[U:TypeTag, Marshallable[_]](private val myId: ServerId,
     if (latestTime(replicaHistory) > ltCurrent) {
       // optimistic query execution
       if (request.operation.isInstanceOf[Option[Query[_, _]]]) {
-        val (obj, _) = storage.retrieve[T, U](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if replica history has lt older than ltcur store must contain ltcur too."))
+        val (obj, _) = storage.retrieve[T](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if replica history has lt older than ltcur store must contain ltcur too."))
         val (newObj, opAnswer) = executeOperation(request)
         answer = Some(opAnswer)
         if (newObj != obj) {
@@ -85,7 +91,7 @@ class QuServiceImpl[U:TypeTag, Marshallable[_]](private val myId: ServerId,
     }
 
     if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
-      val objAndAnswer = storage.retrieve[T, U](lt)//retrieve[T, U](lt)
+      val objAndAnswer = storage.retrieve[T](lt) //retrieve[T, U](lt)
       if (objAndAnswer.isEmpty && ltCo > emptyLT) {
         /*for { obj <- quorumPolicy.objectSync[T]()} yield*/
         quorumPolicy.objectSync[T]().onComplete({
@@ -108,7 +114,7 @@ class QuServiceImpl[U:TypeTag, Marshallable[_]](private val myId: ServerId,
 
       this.synchronized {
         val updatedReplicaHistory: ReplicaHistory = replicaHistory + ((lt, ltCo))
-        val updatedAuthenticator = updateAuthenticatorFor(keys)(myId)(updatedReplicaHistory)
+        val updatedAuthenticator = updateAuthenticatorFor(keys)(myServerInfo.ip)(updatedReplicaHistory)
         authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
         if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
           storage.store[T](lt, (obj, answer))
@@ -141,3 +147,11 @@ request.operation match {
         op <- request.operation
       } yield op.compute(ab._2)
   }*/
+
+/*QuService' constructor before:
+
+class QuServiceImpl[Marshallable[_],U: TypeTag](private val myId: ServerId,
+                                                 private val keys: Map[ServerId, String], //this contains mykey too (needed)
+                                                 private val thresholds: QuorumSystemThresholds)
+  extends QuServiceImplBase2[Marshallable, U] {
+ */
