@@ -89,7 +89,7 @@ object QuServiceImplBase {
 
 
 //QuServiceImplBase without builder... (each method could or not return the QuServiceImplBase itself)
-abstract class QuServiceImplBase2[Marshallable[_], U](
+abstract class AbstractQuService[Marshallable[_], U] (
                                                        //dependencies chosen by programmer
                                                        private val methodDescriptorFactory: MethodDescriptorFactory[Marshallable],
                                                        private val policyFactory: ServerQuorumPolicyFactory[Marshallable, U],
@@ -107,12 +107,12 @@ abstract class QuServiceImplBase2[Marshallable[_], U](
   insertKeyForServer(myServerInfo)
 
   //this precluded me the possibility of using scala name constr as builder
-  def addOp[T](implicit
+  def addOp[T]()(implicit
                marshallableRequest: Marshallable[Request[T, U]],
                marshallableResponse: Marshallable[Response[Option[T]]],
                marshallableLogicalTimestamp: Marshallable[LogicalTimestamp],
                marshallableObjectSyncResponse: Marshallable[ObjectSyncResponse[U]],
-               last: TypeTag[T]): QuServiceImplBase2[Marshallable, U] = {
+               last: TypeTag[T]): AbstractQuService[Marshallable, U] = {
     //could be a separate reusable utility to plug into ssd (by implicit conversion)
     def addMethod[X: Marshallable, Y: Marshallable](handler: ServerCalls.UnaryMethod[X, Y]): Unit =
       ssd.addMethod(methodDescriptorFactory.generateMethodDescriptor5[X, Y](METHOD_NAME, SERVICE_NAME),
@@ -125,7 +125,7 @@ abstract class QuServiceImplBase2[Marshallable[_], U](
     this
   }
 
-  def addServer(serverInfo: ServerInfo): QuServiceImplBase2[Marshallable, U] = {
+  def addServer(serverInfo: ServerInfo): AbstractQuService[Marshallable, U] = {
     Objects.requireNonNull(serverInfo) //require(serverInfo != null)
     servers = servers + serverInfo
     insertKeyForServer(serverInfo)
@@ -137,10 +137,10 @@ abstract class QuServiceImplBase2[Marshallable[_], U](
   override def bindService(): ServerServiceDefinition = ssd.build
 }
 
-object QuServiceImplBase2 {
-  type ServiceFactory[Marshallable[_], U] = (QuorumSystemThresholds, ServerInfo, U) => QuServiceImplBase2[Marshallable, U]
+object AbstractQuService {
+  type ServiceFactory[Marshallable[_], U] = (QuorumSystemThresholds, ServerInfo, U) => AbstractQuService[Marshallable, U]
 
-  def simpleJacksonQuorumServiceFactory[U:TypeTag](): ServiceFactory[JavaTypeable, U] = (quorumSystemThresholds, serverInfo, obj) =>
+  def jacksonSimpleQuorumServiceFactory[U:TypeTag](): ServiceFactory[JavaTypeable, U] = (quorumSystemThresholds, serverInfo, obj) =>
     new QuServiceImpl(new JacksonMethodDescriptorFactory {},
     simpleJacksonServerQuorumFactory(),
     serverInfo, quorumSystemThresholds, obj)
