@@ -1,7 +1,8 @@
+import ServerQuorumPolicy.{ServerQuorumPolicyFactory, simpleJacksonServerQuorumFactory}
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{BindableService, ManagedChannel, ManagedChannelBuilder, MethodDescriptor, ServerServiceDefinition}
 import io.grpc.stub.{ServerCalls, StreamObserver}
-import qu.protocol.Shared.{QuorumSystemThresholds, ServerInfo}
+import Shared.{QuorumSystemThresholds, RecipientInfo => ServerInfo}
 import qu.protocol.TemporaryConstants._
 import qu.protocol.model.ConcreteQuModel
 import qu.protocol.{JacksonMethodDescriptorFactory, MethodDescriptorFactory}
@@ -91,16 +92,18 @@ object QuServiceImplBase {
 abstract class QuServiceImplBase2[Marshallable[_], U](
                                                        //dependencies chosen by programmer
                                                        private val methodDescriptorFactory: MethodDescriptorFactory[Marshallable],
-                                                       private val policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => ServerQuorumPolicy[U],
-                                                       //dependencies chosen by user
+                                                       private val policyFactory: ServerQuorumPolicyFactory[Marshallable, U],
+                                                       //dependencies chosen by user (could go as setter)
                                                        protected val thresholds: QuorumSystemThresholds,
-                                                       protected val myServerInfo: ServerInfo)
+                                                       protected val myServerInfo: ServerInfo,
+                                                       protected val obj: U)
   extends BindableService with QuService[U] {
   private val ssd = ServerServiceDefinition.builder(SERVICE_NAME)
 
   private var servers = Set[ServerInfo]()
   protected val keys = Map[ServerId, String]() //this contains mykey too (needed)
-  protected val quorumPolicy: ServerQuorumPolicy[U] = policyFactory(servers, thresholds)
+  protected val quorumPolicy: ServerQuorumPolicy[Marshallable, U] = policyFactory(servers, thresholds)
+
   insertKeyForServer(myServerInfo)
 
   //this precluded me the possibility of using scala name constr as builder
@@ -131,8 +134,16 @@ abstract class QuServiceImplBase2[Marshallable[_], U](
 
   private def insertKeyForServer(serverInfo: ServerInfo): Unit = keys + serverInfo.ip -> serverInfo.hmacKey
 
-
   override def bindService(): ServerServiceDefinition = ssd.build
+}
+
+object QuServiceImplBase2 {
+  type ServiceFactory[Marshallable[_], U] = (QuorumSystemThresholds, ServerInfo, U) => QuServiceImplBase2[Marshallable, U]
+
+  def simpleJacksonQuorumServiceFactory[U:TypeTag](): ServiceFactory[JavaTypeable, U] = (quorumSystemThresholds, serverInfo, obj) =>
+    new QuServiceImpl(new JacksonMethodDescriptorFactory {},
+    simpleJacksonServerQuorumFactory(),
+    serverInfo, quorumSystemThresholds, obj)
 }
 
 
