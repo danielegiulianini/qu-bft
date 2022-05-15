@@ -4,107 +4,25 @@ import com.fasterxml.jackson.databind.`type`.TypeFactory
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.MethodDescriptor
 
-//import that declares specific dependency
-import qu.protocol.ConcreteQuModel._
+trait MethodDescriptorFactory[Transferable[_]] {
+  self: MarshallerFactory[Transferable] =>
 
+  //a deterministic function on parameter types...
+  def genericTypesIdentifier[ReqT: Transferable, RespT: Transferable]: String //type Signaturable[T, U] <: {def typeIdentifier: String}
 
-trait MethodDescriptorFactory[Marshallable[_]] {
-  self: MarshallerFactory[Marshallable] =>
-
-  //a deterministic function on parameter types...//todo can also be refactored to be only on 1 type parameter
-  def getGenericSignature[T: Marshallable, U: Marshallable]: String //type Signaturable[T, U] <: {def getGenericSignature: String}
-
-  //todo: here I require Marhallable of Response instead of only a marshaller of U and T
-  // so marshallerForResponse etc. are not needed in MDFactory
-  /*def generateMethodDescriptor[T, U](methodName: String, serviceName: String)
-                                    (implicit enc: Marshallable[Request[T, U]],
-                                     enc3: Marshallable[Response[Option[T]]],
-                                     //the following are really needed?
-                                     enc2: Marshallable[T],
-                                     dec: Marshallable[U]):
-  MethodDescriptor[Request[T, U], Response[Option[T]]] =
+  def generateMethodDescriptor5[ReqT, RespT](methodName: String, serviceName: String)
+                                            (implicit enc: Transferable[ReqT],
+                                                enc3: Transferable[RespT]):
+  MethodDescriptor[ReqT, RespT] =
     MethodDescriptor.newBuilder(
-      marshallerFor[Request[T, U]],
-      marshallerFor[Response[Option[T]]])
-      .setFullMethodName(MethodDescriptor.
-        generateFullMethodName(serviceName, methodName + getGenericSignature[T, U]))// methodName + implicitly[Signaturable[T, U]].getGenericSignature))
+      marshallerFor[ReqT],
+      marshallerFor[RespT])
+      .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, // methodName + implicitly[Signaturable[T, U]].getGenericSignature))
+        methodName + "ciaociao")) // getGenericSignature[InputT1, InputT2])) //todo
       .setType(MethodDescriptor.MethodType.UNARY)
       .setSampledToLocalTracing(true)
       .build
 
-  def generateMethodDescriptor3[T, U, TF[_, _], UF[_, _]](methodName: String, serviceName: String)
-                                                         (implicit enc: Marshallable[TF[T, U]],
-                                                          enc3: Marshallable[UF[T, U]],
-                                                          enc2: Marshallable[T],
-                                                          dec: Marshallable[U]):
-  MethodDescriptor[TF[T, U], UF[T, U]] = //MethodDescriptor[Messages.Request[T, U], Messages.Response[T, U]] = {
-    MethodDescriptor.newBuilder(
-      marshallerFor[TF[T, U]],
-      marshallerFor[UF[T, U]])
-      .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, // methodName + implicitly[Signaturable[T, U]].getGenericSignature))
-        methodName + getGenericSignature[T, U]))
-      .setType(MethodDescriptor.MethodType.UNARY)
-      .setSampledToLocalTracing(true)
-      .build
-
-  def generateMethodDescriptor4[InputT1, InputT2, OutputT1, OutputT2](methodName: String, serviceName: String)
-                                                                     (implicit enc: Marshallable[OutputT2],
-                                                                      enc3: Marshallable[OutputT1],
-                                                                      enc2: Marshallable[InputT1],
-                                                                      dec: Marshallable[InputT2]):
-  MethodDescriptor[OutputT1, OutputT2] = //MethodDescriptor[Messages.Request[T, U], Messages.Response[T, U]] = {
-    MethodDescriptor.newBuilder(
-      marshallerFor[OutputT1],
-      marshallerFor[OutputT2])
-      .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, // methodName + implicitly[Signaturable[T, U]].getGenericSignature))
-        methodName + getGenericSignature[InputT1, InputT2]))
-      .setType(MethodDescriptor.MethodType.UNARY)
-      .setSampledToLocalTracing(true)
-      .build*/
-
-  def generateMethodDescriptor5[OutputT1, OutputT2](methodName: String, serviceName: String)
-                                                   (implicit enc: Marshallable[OutputT1],
-                                                    enc3: Marshallable[OutputT2]):
-  MethodDescriptor[OutputT1, OutputT2] = //MethodDescriptor[Messages.Request[T, U], Messages.Response[T, U]] = {
-    MethodDescriptor.newBuilder(
-      marshallerFor[OutputT1],
-      marshallerFor[OutputT2])
-      .setFullMethodName(MethodDescriptor.generateFullMethodName(serviceName, // methodName + implicitly[Signaturable[T, U]].getGenericSignature))
-        methodName + "ciaociao"))// getGenericSignature[InputT1, InputT2]))
-      .setType(MethodDescriptor.MethodType.UNARY)
-      .setSampledToLocalTracing(true)
-      .build
-
-
-  /*def ciao[T, U, X, Z](methodName: String, serviceName: String)
-          (implicit enc: Marshallable[Z],
-           enc3: Marshallable[X],
-           enc2: Marshallable[T],
-           dec: Marshallable[U]) =
-    generateMethodDescriptor4[T, U, Request[T, U], Response[T, U]](methodName, serviceName)*/
-  /* should and could here, but put in subclasses for passing them the burden (instead of lib user)
-  of definig marshaller for Response and Request
-  def generateRequestResponseMethodDescriptor[T, U](methodName: String, serviceName: String)
-                                                   (implicit enc: Marshallable[Request[T, U]],
-                                                    enc3: Marshallable[Response[T,U]],
-                                                    enc2: Marshallable[T],
-                                                    dec: Marshallable[U]) =
-  generateMethodDescriptor3[T, U, Request, Response](methodName, serviceName)*/
-
-
-  //FACADE for reducing implicits at call side (could go in new mixin)
-  //could possibly be moved to subclasses only? no!
-  /*def generateRequestResponseMethodDescriptor[T, U](methodName: String, serviceName: String)
-                                                   (implicit enc2: Marshallable[T],
-                                                    dec: Marshallable[U]):
-  MethodDescriptor[Request[T, U], Response[T, U]]
-
-  import qu.protocol.ConcreteQuModel._
-
-  def generateObjectSyncMethodDescriptor[T, U](methodName: String, serviceName: String)
-                                              (implicit enc2: Marshallable[T],
-                                               dec: Marshallable[U]):
-  MethodDescriptor[MyLogicalTimestamp[T, U], ObjectSyncResponse[U]]*/
 }
 
 //an optimization that leverages flyweight pattern to avoid regenerating method descriptors
@@ -125,18 +43,9 @@ trait MethodDescriptorFactory[Marshallable[_]] {
 
 //family polymorphism:
 trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory[JavaTypeable] with JacksonMarshallerFactory {
-  override def getGenericSignature[T: JavaTypeable, U: JavaTypeable]: String = //todo to be refactored
-    (implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature +
-      implicitly[JavaTypeable[U]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature).replace("/", "") //todo
-
-  //should I define a trait that implements Signaturable and implicitly import here?  //override type Signaturable[T, U] = implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
-
-  //facade for reducing implicits at call side (could go in new mixin)
-  /*override def generateRequestResponseMethodDescriptor[T, U](methodName: String, serviceName: String)
-                                                            (implicit enc2: JavaTypeable[T], dec: JavaTypeable[U]) =
-    this.generateMethodDescriptor3(methodName, serviceName)*/
-
-  /*override def generateObjectSyncMethodDescriptor[T, U](methodName: String, serviceName: String)(implicit enc2: JavaTypeable[T], dec: JavaTypeable[U]) =
-    this.generateMethodDescriptor3[T, U, MyLogicalTimestamp, ObjectSyncResponse](methodName, serviceName)*/
+  override def genericTypesIdentifier[ReqT: JavaTypeable, RespT: JavaTypeable]: String = {
+    def typeIdentifier[T](): String = implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
+    (typeIdentifier[ReqT]() + typeIdentifier[RespT]()).replace("/", "")
+  }
 
 }
