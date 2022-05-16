@@ -34,30 +34,13 @@ object QuorumPolicy {
 
   //with tls
   def simpleJacksonPolicyFactoryWithTls[U](jwtToken: String): PolicyFactory[JavaTypeable, U] = ???
-
-
-  /* logic to plug to enable TLS:
-  import io.grpc.ChannelCredentials
-import io.grpc.Grpc
-import io.grpc.ManagedChannel
-import io.grpc.TlsChannelCredentials
-
-// 1. With server authentication SSL/TLS// With server authentication SSL/TLS
-
-val channel: ManagedChannel = Grpc.newChannelBuilder("myservice.example.com:443", TlsChannelCredentials.create).build
-val stub: Nothing = GreeterGrpc.newStub(channel)
-
-// 2. With server authentication SSL/TLS; custom CA root certificates
-val creds: ChannelCredentials = TlsChannelCredentials.newBuilder.trustManager(new Nothing("roots.pem")).build
-val channel: ManagedChannel = Grpc.newChannelBuilder("myservice.example.com:443", creds).build
-   */
-
 }
 
 
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
 class SimpleBroadcastPolicy[U, Marshallable[_]](private val thresholds: QuorumSystemThresholds,
-                                                private val servers: Map[ServerId, GrpcClientStub[Marshallable]])
+                                                private val servers: Map[ServerId, JwtGrpcClientStub[Marshallable]],
+                                                private val startingBackOffTime: FiniteDuration = 3.seconds)
   extends QuorumPolicy[U, Marshallable] {
 
   //is it possible to have overlapping calls to schedule? (only so it's convenient to use >1 threads)?? no, actually!
@@ -76,31 +59,31 @@ class SimpleBroadcastPolicy[U, Marshallable[_]](private val thresholds: QuorumSy
       var myOhs: OHS = ohs
       //new set need for preventing reassignment to val
       var currentSuccessSet = successSet
-      val cancelable = scheduler.scheduleOnceAsCallback(3.seconds)(gatherResponses(completionPromise, successSet)) //passing all the servers  the first time
+      val cancelable = scheduler.scheduleOnceAsCallback(startingBackOffTime)(gatherResponses(completionPromise, successSet)) //passing all the servers  the first time
 
       (servers -- successSet.keySet)
-        /*.map(kv => (kv._1,
+        //without partial function:
+        .map(kv => (kv._1,
           kv._2.send2[Request[T, U], Response[Option[T]]](toBeSent = Request(operation, ohs))))
-        .foreach(kv => kv._2.onComplete({*/
-        .map { case (serverId, stubToServer) => (serverId,
-          stubToServer.send2[Request[T, U], Response[Option[T]]](toBeSent = Request(operation, ohs)))
-        }
-        /*.foreach(kv => kv._2.onComplete({*/
-      .foreach{case (serverId, responseFuture) => responseFuture.onComplete({
+        .foreach(kv => kv._2.onComplete({
+          /*.map { case (serverId, stubToServer) => (serverId,
+            stubToServer.send2[Request[T, U], Response[Option[T]]](toBeSent = Request(operation, ohs)))
+          }*/
+          /*.foreach{case (serverId, responseFuture) => responseFuture.onComplete({*/
           case Success(response) if response.responseCode == StatusCode.SUCCESS =>
             //mutex needed because of multithreaded ex context
             this.synchronized {
-              /*myOhs = myOhs + (kv._1 -> response.authenticatedRh)
-              currentSuccessSet = currentSuccessSet + ((kv._1, response))*/
-              myOhs = myOhs + (serverId -> response.authenticatedRh)
-              currentSuccessSet = currentSuccessSet + ((responseFuture, response))
+              myOhs = myOhs + (kv._1 -> response.authenticatedRh)
+              currentSuccessSet = currentSuccessSet + ((kv._1, response))
+              /*myOhs = myOhs + (serverId -> response.authenticatedRh)
+              currentSuccessSet = currentSuccessSet + ((responseFuture, response))*/
               if (currentSuccessSet.size == thresholds.q) {
                 cancelable.cancel()
                 completionPromise success ((successSet.values.toSet, myOhs))
               }
             }
           case _ => //can happen exception for which must inform client user? no need to do nothing, only waiting for other servers' responses
-        })}
+        }))
 
       completionPromise.future
     }
