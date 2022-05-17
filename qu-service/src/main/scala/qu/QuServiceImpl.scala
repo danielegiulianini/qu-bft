@@ -1,8 +1,10 @@
+
+
 import com.google.common.util.concurrent.MoreExecutors
 import io.grpc.MethodDescriptor
 import io.grpc.stub.StreamObserver
 import qu.protocol.MethodDescriptorFactory
-import qu.protocol.Shared.{QuorumSystemThresholds, ServerInfo}
+import Shared.{QuorumSystemThresholds, RecipientInfo}
 import qu.protocol.model.{ConcreteQuModel, Storage}
 
 import scala.reflect.runtime.universe._
@@ -19,12 +21,12 @@ import qu.protocol.model.ConcreteQuModel._
 
 class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by programmer
                                                   private val methodDescriptorFactory: MethodDescriptorFactory[Marshallable],
-                                                  private val policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => ServerQuorumPolicy[U],
+                                                  private val policyFactory: (Set[RecipientInfo], QuorumSystemThresholds) => ServerQuorumPolicy[Marshallable, U],
                                                   //dependencies chosen by user
-                                                  override val myServerInfo: ServerInfo,
+                                                  override val myServerInfo: RecipientInfo,
                                                   override val thresholds: QuorumSystemThresholds,
-                                                  private val obj: U)
-  extends QuServiceImplBase2[Marshallable, U](methodDescriptorFactory, policyFactory, thresholds, myServerInfo) {
+                                                  override val obj: U)
+  extends AbstractQuService[Marshallable, U](methodDescriptorFactory, policyFactory, thresholds, myServerInfo, obj) {
 
   private val storage = new StorageWithImmutableMap[U]()
 
@@ -43,7 +45,9 @@ class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by progr
 
 
   override def sRequest[T: TypeTag](request: Request[T, U], responseObserver: StreamObserver[Response[Option[T]]]): Unit = {
-    val (replicaHistory, _) = authenticatedReplicaHistory
+    println("ricevuto richiesta!")
+
+    /*val (replicaHistory, _) = authenticatedReplicaHistory
     var answer = Option.empty[T]
 
     def replyWith(response: Response[Option[T]]) = {
@@ -51,7 +55,7 @@ class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by progr
     }
 
     //todo not need to pass request if nested def
-    def executeOperation[T](request: Request[T, U]): (U, T) = {
+    def executeOperation(request: Request[T, U]): (U, T) = {
       //todo can actually happen that a malevolent client can make this exception happen?
       request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state: if classify returns a (inline) method then operation should be defined (not none)"))(obj) //for {operation <- request.operation} operation.compute(obj)
     }
@@ -69,7 +73,7 @@ class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by progr
 
     //repeated request
     if (contains(replicaHistory, (lt, ltCo))) {
-      val (_, answer) = storage.retrieve[T](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if in replica history must be in store too."))
+      val (_, answer) = storage.retrieve[T](lt).getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
       replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
       return //todo put attention if it's possible to express this with a chain of if e.se and only one return
     }
@@ -78,7 +82,7 @@ class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by progr
     if (latestTime(replicaHistory) > ltCurrent) {
       // optimistic query execution
       if (request.operation.isInstanceOf[Option[Query[_, _]]]) {
-        val (obj, _) = storage.retrieve[T](lt).getOrElse(throw new RuntimeException("inconsistent protocol state: if replica history has lt older than ltcur store must contain ltcur too."))
+        val (obj, _) = storage.retrieve[T](lt).getOrElse(throw new Error("inconsistent protocol state: if replica history has lt older than ltcur store must contain ltcur too."))
         val (newObj, opAnswer) = executeOperation(request)
         answer = Some(opAnswer)
         if (newObj != obj) {
@@ -105,7 +109,7 @@ class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by progr
 
     def respondWithFoundObjectAndUpdateDataStructures(): Unit = {
       if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD) {
-        val (obj, answer) = executeOperation(request)
+        val (_, answer) = executeOperation(request)
         if (request.operation.isInstanceOf[Query[_, _]]) {
           replyWith(Response(StatusCode.SUCCESS, Some(answer), authenticatedReplicaHistory))
           return
@@ -122,7 +126,7 @@ class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by progr
         //todo: replica history pruning
       }
       replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
-    }
+    }*/
   }
 
 

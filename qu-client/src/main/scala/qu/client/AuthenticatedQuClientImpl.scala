@@ -2,6 +2,7 @@ package client
 
 //import that declares specific dependency
 
+import Shared.QuorumSystemThresholds
 import qu.protocol.model.ConcreteQuModel._
 
 import scala.concurrent.Future

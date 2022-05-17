@@ -1,5 +1,10 @@
+package qu
+
+
 import io.grpc.stub.StreamObserver
+import Shared.{QuorumSystemThresholds, RecipientInfo}
 import qu.protocol.model.ConcreteQuModel._
+
 import scala.reflect.runtime.universe._
 
 //abstract description of QuService functionalities

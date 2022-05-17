@@ -1,7 +1,7 @@
 import qu.protocol.model.ConcreteQuModel._
 
-import scala.reflect.runtime.universe._
 import java.util.Objects
+import scala.reflect.runtime.universe._
 
 
 //from Effective Java, "Item 33: Consider typesafe heterogeneous containers":
@@ -42,8 +42,7 @@ class StorageWithImmutableMap[U: TypeTag] {
 }
 
 
-import collection.mutable.{Map => MutableMap}
-import collection.mutable.{HashMap => MutableHashMap}
+import scala.collection.mutable.{HashMap => MutableHashMap, Map => MutableMap}
 
 abstract class StorageWithMutable[U: TypeTag] {
   protected val storage: MutableMap[TypeTag[_], MutableMap[LogicalTimestamp, (U, Option[Any])]]

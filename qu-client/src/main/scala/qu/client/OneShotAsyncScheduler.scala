@@ -1,4 +1,4 @@
-package client
+package qu.client
 
 import monix.execution.schedulers.SchedulerService
 import monix.execution.{Cancelable, Scheduler}

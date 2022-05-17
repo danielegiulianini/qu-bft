@@ -1,18 +1,16 @@
+package client
 
-import GrpcClientStub.UnauthenticatedJacksonClientStub
+
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.grpc.ManagedChannelBuilder
-import Shared.{QuorumSystemThresholds, RecipientInfo => ServerInfo}
-import StubFactoryContainer.distributedJacksonJwtStubFactory
 import qu.protocol.model.ConcreteQuModel
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success}
+import scala.util.Success
 
 //import that declares specific dependency
-import ConcreteQuModel._
+import qu.protocol.model.ConcreteQuModel._
 
 
 trait QuorumPolicy[U, Marshallable[_]] {

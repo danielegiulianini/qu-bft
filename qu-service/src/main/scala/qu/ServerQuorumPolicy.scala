@@ -7,7 +7,7 @@ trait ServerQuorumPolicy[Marshallable[_], U] {
   def objectSync[T](): Future[Option[(U, T)]]
 }
 
-class SimpleServerQuorumPolicy[U, Marshallable[_]](stubs: Map[String, GrpcClientStub[Marshallable]])
+class SimpleServerQuorumPolicy[Marshallable[_], U](stubs: Map[String, GrpcClientStub[Marshallable]])
   extends ServerQuorumPolicy[Marshallable, U] {
   override def objectSync[T](): Future[Option[(U, T)]] = null
 }
@@ -15,6 +15,8 @@ class SimpleServerQuorumPolicy[U, Marshallable[_]](stubs: Map[String, GrpcClient
 object ServerQuorumPolicy{
   type ServerQuorumPolicyFactory[Marshallable[_], U] = (Set[RecipientInfo], QuorumSystemThresholds) => ServerQuorumPolicy[Marshallable, U]
 
-  def simpleJacksonServerQuorumFactory[U]() : ServerQuorumPolicyFactory[JavaTypeable, U] = ???
+  //todo: this is only a stub
+  def simpleJacksonServerQuorumFactory[U]() : ServerQuorumPolicyFactory[JavaTypeable, U] =
+    (mySet, thresholds) => new SimpleServerQuorumPolicy[JavaTypeable, U](stubs = Map())
 
 }

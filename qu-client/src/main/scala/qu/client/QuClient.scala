@@ -1,5 +1,6 @@
 package client
 
+
 import client.QuorumPolicy.simpleJacksonPolicyFactoryUnencrypted
 import com.fasterxml.jackson.module.scala.JavaTypeable
 

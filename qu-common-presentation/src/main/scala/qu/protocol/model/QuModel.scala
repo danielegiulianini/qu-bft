@@ -12,14 +12,9 @@ trait QuModel {
   type Time
   type Flag = Boolean
 
-  //before TimeStampRepr as generic
-  //type LogicalTimestamp[T, U] <: {val time: Int; val barrierFlag: Flag; val clientId: ClientId; val operation: Operation[T, U]; val ohs: OHS[U]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
-  //type Candidate[U] = (LogicalTimestamp[_, U], LogicalTimestamp[_, U]) //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
-
   type OperationRepresentation
   type OHSRepresentation
   type LogicalTimestamp <: {val time: Int; val barrierFlag: Flag; val clientId: Option[ClientId]; val operation: Option[OperationRepresentation]; val ohs: Option[OHSRepresentation]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
-
 
   type OperationType
   type α //authenticator
@@ -62,7 +57,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   type AuthenticatedReplicaHistory = (ReplicaHistory, α) //MyAuthenticatedReplicaHistory[U]//
 
   //tuples are difficult to read...
-  case class MyAuthenticatedReplicaHistory(serverId: ServerId, authenticator: α)
+  //case class MyAuthenticatedReplicaHistory(serverId: ServerId, authenticator: α)
 
   override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
@@ -74,9 +69,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   //todo could be a functional val
   def nullHMAC(key: String): HMAC //hash of null(empty)timestamp (emptyLT)
-
-  //todo could be a functional val
-  //def fillAuthenticator(keys: Map[ServerId, String])(replicaHistory: ReplicaHistory)(fun: (String, ReplicaHistory) => HMAC): α =
 
   //most general
   def fillAuthenticator(keys: Map[ServerId, String])(fun: (String) => HMAC): α =
@@ -97,17 +89,16 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   override type Operation[ReturnValueT, ObjectT] = ObjectT => (ObjectT, ReturnValueT)
 
-  trait Query[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT]
+  //prohibiting to
+  trait Query[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT] {
+    override def apply(v1: ObjectT): (ObjectT, ReturnValueT) = (v1, query(v1))
+
+    def query(v1:ObjectT): ReturnValueT
+  }
 
   trait Update[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT]
 
-  //final keyword removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
-  case class Request[ReturnValueT, ObjectT](operation: Option[Operation[ReturnValueT, ObjectT]],
-                                            ohs: OHS)
 
-  case class Response[ReturnValueT](responseCode: StatusCode,
-                                    answer: ReturnValueT,
-                                    authenticatedRh: AuthenticatedReplicaHistory)
 
   //todo not used:
   //object sync request:
@@ -206,7 +197,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
     case object FAIL extends StatusCode
   }
-  
+
   override type OperationType = OperationType1
 
   override def classify(ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)], α)],
@@ -299,4 +290,12 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 }
 
 //maybe more implementations (that with compact authenticators...)
-object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator with InMemoryStorage
+object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator {
+  //final keyword removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
+  case class Request[ReturnValueT, ObjectT](operation: Option[Operation[ReturnValueT, ObjectT]],
+                                            ohs: OHS)
+
+  case class Response[ReturnValueT](responseCode: StatusCode,
+                                    answer: ReturnValueT,
+                                    authenticatedRh: AuthenticatedReplicaHistory)
+}
