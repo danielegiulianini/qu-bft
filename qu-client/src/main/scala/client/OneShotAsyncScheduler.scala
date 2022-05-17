@@ -1,7 +1,9 @@
-import monix.execution.{Cancelable, Scheduler}
-import monix.execution.schedulers.SchedulerService
+package client
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import monix.execution.schedulers.SchedulerService
+import monix.execution.{Cancelable, Scheduler}
+
+import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Future, Promise}
 
 //a class exposing a promise-based and a callback-based API (monix scheduler has callback only)

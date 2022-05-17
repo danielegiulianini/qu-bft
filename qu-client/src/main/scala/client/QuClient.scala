@@ -1,8 +1,7 @@
-import GrpcClientStub.UnauthenticatedJacksonClientStub
-import QuorumPolicy.{PolicyFactory, simpleJacksonPolicyFactoryUnencrypted}
+package client
+
+import client.QuorumPolicy.simpleJacksonPolicyFactoryUnencrypted
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.grpc.ManagedChannelBuilder
-import Shared.{QuorumSystemThresholds, RecipientInfo => ServerInfo}
 
 import scala.concurrent.Future
 
@@ -20,13 +19,14 @@ trait QuClient[U, Transferable[_]] {
 
 object QuClient {
 
-  //should return a trait type
-  //could use builder factory instead of defaultBuilder
-  def defaultBuilder[U](token: String): AuthenticatedClientBuilderD[U] = simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
+  //could use builder factory (apply) instead of defaultBuilder
+  def defaultBuilder[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds):
+  AuthenticatedClientBuilderD[U] =
+    simpleJacksonQuClientBuilderWithNamedParameter[U](token, serversInfo, thresholds)
 
   //todo complete methods (abstraction to hide Marshallable type param) but I think it is not possible...
   trait AuthenticatedClientBuilderD[U] {
-    //def build() : QuClient[U, ]
+    //def build() : client.QuClient[U, ]
   }
 
   //another style of building objects
@@ -37,18 +37,31 @@ object QuClient {
                                                                             private val thresholds: QuorumSystemThresholds,
                                                                             private val token: String
                                                                           ) extends AuthenticatedClientBuilderD[U] {
-    def build: QuClientImpl[U, Transportable] = {
+    def build: AuthenticatedQuClientImpl[U, Transportable] = {
       //todo missing validation
-      new QuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds), thresholds)
+      new AuthenticatedQuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds), thresholds)
     }
   }
 
-  case class AuthenticatedClientBuilderInFunctionalStyle[U, Transportable[_]]( //programmer dependencies
-                                                                               private val policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => QuorumPolicy[U, Transportable],
+  //hided builder implementations
+  def simpleJacksonQuClientBuilderWithNamedParameter[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds): AuthenticatedClientBuilderD[U] =
+    AuthenticatedClientBuilderWithNamedParam[U, JavaTypeable](simpleJacksonPolicyFactoryUnencrypted(token), serversInfo, thresholds, token)
+}
+
+
+
+
+
+
+
+
+/*
+* builder with functional style (still interesting):
+  /*case class AuthenticatedClientBuilderInFunctionalStyle[U, Transportable[_]]( //programmer dependencies
+                                                                               private val policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => client.QuorumPolicy[U, Transportable],
                                                                                //user dependencies
                                                                                private val serversInfo: Set[ServerInfo],
                                                                                private val thresholds: Option[QuorumSystemThresholds],
-                                                                               private val token: String
                                                                              ) extends AuthenticatedClientBuilderD[U] {
 
     def addServer(serverInfo: ServerInfo): AuthenticatedClientBuilderInFunctionalStyle[U, Transportable] =
@@ -57,9 +70,9 @@ object QuClient {
     def withThresholds(thresholds: QuorumSystemThresholds): AuthenticatedClientBuilderInFunctionalStyle[U, Transportable] =
       this.copy(thresholds = Some(thresholds))
 
-    def build: QuClientImpl[U, Transportable] = {
+    def build: client.AuthenticatedQuClientImpl[U, Transportable] = {
       //todo missing validation
-      new QuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds.get), thresholds.get)
+      new client.AuthenticatedQuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds.get), thresholds.get)
     }
   }
 
@@ -69,8 +82,11 @@ object QuClient {
       AuthenticatedClientBuilderInFunctionalStyle((mySet, thresholds) => policyFactory(mySet, thresholds), Set(), Option.empty, token)
   }
 
+
+  def defaultBuilder[U](token: String): AuthenticatedClientBuilderD[U] = simpleJacksonQuClientBuilderWithFunctionalStyle[U](token)
+
   //hided builder implementations
   private def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: String): AuthenticatedClientBuilderD[U] =
     AuthenticatedClientBuilderInFunctionalStyle.empty[U, JavaTypeable](simpleJacksonPolicyFactoryUnencrypted(token), token)
-
-}
+*/
+* */

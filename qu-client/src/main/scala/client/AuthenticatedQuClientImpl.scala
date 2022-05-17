@@ -1,13 +1,14 @@
+package client
+
 //import that declares specific dependency
 
-import Shared.QuorumSystemThresholds
 import qu.protocol.model.ConcreteQuModel._
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
+import scala.concurrent.duration.DurationInt
 
-class QuClientImpl[U, Transferable[_]](private var policy: QuorumPolicy[U, Transferable],
-                                       private val thresholds: QuorumSystemThresholds)
+class AuthenticatedQuClientImpl[U, Transferable[_]](private var policy: QuorumPolicy[U, Transferable],
+                                                    private val thresholds: QuorumSystemThresholds)
   extends QuClient[U, Transferable] {
 
   private val scheduler = new OneShotAsyncScheduler(1) //concurrency level configurable by user??
@@ -35,7 +36,7 @@ class QuClientImpl[U, Transferable[_]](private var policy: QuorumPolicy[U, Trans
   def repair(ohs: OHS)(implicit
                        marshallableRequest: Transferable[Request[Object, U]],
                        marshallableResponse: Transferable[Response[Option[Object]]]): Future[OHS] = {
-    //utilities
+    //utilities todo 1.can be a point of polymorphism! 2.
     def backOff(): Future[Void] = scheduler.scheduleOnceAsPromise(3.seconds)
 
     def backOffAndRetry(): Future[OHS] = for {
