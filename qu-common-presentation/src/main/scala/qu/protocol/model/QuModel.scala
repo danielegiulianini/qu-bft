@@ -91,14 +91,35 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   //prohibiting to
   trait Query[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT] {
-    override def apply(v1: ObjectT): (ObjectT, ReturnValueT) = (v1, query(v1))
+    override def apply(obj: ObjectT): (ObjectT, ReturnValueT) = (obj, query(obj))
 
-    def query(v1:ObjectT): ReturnValueT
+    //in this way queries can't edit replica object!
+    def query(obj:ObjectT): ReturnValueT
   }
+
+  //todo the most general (being able to change object type at server side (requires work)
+  trait GenericUpdate[ReturnValueT, ObjectT, NewObjectT] extends Operation[ReturnValueT, ObjectT]
 
   trait Update[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT]
 
 
+  //reusable utilities that returns object at server side
+  trait QueryReturningObject[ObjectT] extends Query[ObjectT, ObjectT] {
+    override def query(obj: ObjectT): ObjectT = obj
+  }
+
+  class GetObj[ObjectT]() extends QueryReturningObject[ObjectT]
+
+  trait OperationReturningObject[ObjectT] extends Operation[ObjectT, ObjectT] {
+    override def apply(obj: ObjectT): (ObjectT, ObjectT) = {
+      val updatedObj = workOnObject(obj)
+      (updatedObj, updatedObj)
+    }
+
+    def workOnObject(obj: ObjectT): ObjectT
+  }
+
+  trait UpdateReturningObject[ObjectT] extends Update[ObjectT, ObjectT] with OperationReturningObject[ObjectT]
 
   //todo not used:
   //object sync request:
