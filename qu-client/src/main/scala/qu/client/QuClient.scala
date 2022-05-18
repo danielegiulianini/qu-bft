@@ -1,8 +1,9 @@
-package client
+package qu.client
 
-
-import client.QuorumPolicy.simpleJacksonPolicyFactoryUnencrypted
+import QuorumPolicy.simpleJacksonPolicyFactoryUnencrypted
 import com.fasterxml.jackson.module.scala.JavaTypeable
+import qu.Shared.QuorumSystemThresholds
+import qu.Shared.{QuorumSystemThresholds, RecipientInfo => ServerInfo}
 
 import scala.concurrent.Future
 
@@ -20,44 +21,63 @@ trait QuClient[U, Transferable[_]] {
 
 object QuClient {
 
-  //could use builder factory (apply) instead of defaultBuilder
-  def defaultBuilder[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds):
-  AuthenticatedClientBuilderD[U] =
-    simpleJacksonQuClientBuilderWithNamedParameter[U](token, serversInfo, thresholds)
+  //public factories
+  def apply[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds):
+  QuClient[U, JavaTypeable] =
+    simpleJacksonQuClient[U](token, serversInfo, thresholds)
 
-  //todo complete methods (abstraction to hide Marshallable type param) but I think it is not possible...
-  trait AuthenticatedClientBuilderD[U] {
-    //def build() : client.QuClient[U, ]
+  //private factories internal use only
+  private def apply[U, Transportable[_]](policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => QuorumPolicy[U, Transportable],
+                                 //user dependencies,
+                                 serversInfo: Set[ServerInfo],
+                                 thresholds: QuorumSystemThresholds): QuClient[U, Transportable] = {
+    //validation
+    new AuthenticatedQuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds), thresholds)
   }
 
+  //hided builder implementations
+  def simpleJacksonQuClient[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds):
+  QuClient[U, JavaTypeable] =
+    QuClient[U, JavaTypeable](simpleJacksonPolicyFactoryUnencrypted(token), serversInfo, thresholds)
+}
+
+
+/* 2. Builder with named param (validation logic has been moved from build method to apply
+object QuClient {
+
+  //could use builder factory (apply) instead of defaultBuilder
+  def defaultBuilder[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds):
+  AuthenticatedClientBuilder[U, JavaTypeable] =
+  //AuthenticatedClientBuilderD[U] =
+    simpleJacksonQuClientBuilder[U](token, serversInfo, thresholds)
+
+  //todo complete methods (abstraction to hide Marshallable type param) but I think it is not possible...
+ /* trait AuthenticatedClientBuilderD[U] {
+    //def build() : client.QuClient[U, ]
+  }*/
+
   //another style of building objects
-  case class AuthenticatedClientBuilderWithNamedParam[U, Transportable[_]]( //programmer dependencies
-                                                                            private val policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => QuorumPolicy[U, Transportable],
-                                                                            //user dependencies
-                                                                            private val serversInfo: Set[ServerInfo],
-                                                                            private val thresholds: QuorumSystemThresholds,
-                                                                            private val token: String
-                                                                          ) extends AuthenticatedClientBuilderD[U] {
-    def build: AuthenticatedQuClientImpl[U, Transportable] = {
+  case class AuthenticatedClientBuilder[U, Transportable[_]]( //programmer dependencies
+                                                              private val policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => QuorumPolicy[U, Transportable],
+                                                              //user dependencies
+                                                              private val serversInfo: Set[ServerInfo],
+                                                              private val thresholds: QuorumSystemThresholds,
+                                                              private val token: String
+                                                                          ) { //extends AuthenticatedClientBuilderD[U] {
+    def build(): AuthenticatedQuClientImpl[U, Transportable] = {
       //todo missing validation
       new AuthenticatedQuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds), thresholds)
     }
   }
 
   //hided builder implementations
-  def simpleJacksonQuClientBuilderWithNamedParameter[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds): AuthenticatedClientBuilderD[U] =
-    AuthenticatedClientBuilderWithNamedParam[U, JavaTypeable](simpleJacksonPolicyFactoryUnencrypted(token), serversInfo, thresholds, token)
+  def simpleJacksonQuClientBuilder[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds): AuthenticatedClientBuilder[U, JavaTypeable] =
+    AuthenticatedClientBuilder[U, JavaTypeable](simpleJacksonPolicyFactoryUnencrypted(token), serversInfo, thresholds, token)
 }
 
-
-
-
-
-
-
-
+ */
 /*
-* builder with functional style (still interesting):
+* 1. builder with functional style (still interesting):
   /*case class AuthenticatedClientBuilderInFunctionalStyle[U, Transportable[_]]( //programmer dependencies
                                                                                private val policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => client.QuorumPolicy[U, Transportable],
                                                                                //user dependencies
