@@ -4,6 +4,10 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.8"
 
+Compile / PB.targets := Seq(
+  scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
+)
+
 lazy val root = (project in file("."))
   .settings(
     name := "ds-project-giulianini-ay1920",
@@ -23,7 +27,13 @@ lazy val quCommonPresentation = (project in file("qu-common-presentation"))
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2",
       "com.roundeights" % "hasher_2.12" % "1.2.0",
       "com.typesafe.play" %% "play-json" % "2.8.2",
-      "io.leonard" % "play-json-traits_2.13" % "1.5.1"
+      "io.leonard" % "play-json-traits_2.13" % "1.5.1",
+      "io.jsonwebtoken" % "jjwt-api" % "0.11.5",
+      "io.jsonwebtoken" % "jjwt-impl" % "0.11.5",
+      "io.jsonwebtoken" % "jjwt-jackson" % "0.11.5",
+      //"io.jsonwebtoken" % "jjwt" % "0.9.1", old version before splitting
+      "jakarta.xml.bind" % "jakarta.xml.bind-api" % "2.3.2",
+      "org.glassfish.jaxb" % "jaxb-runtime" % "2.3.2"
     )
   )
 lazy val quClient = (project in file("qu-client"))
@@ -51,6 +61,14 @@ lazy val quSystemTesting = (project in file("qu-system-testing"))
   .settings(
     libraryDependencies ++= commonDependencies
   )
+  .dependsOn(quClient)
+  .dependsOn(quService)
+
+lazy val quDemo = (project in file("qu-demo"))
+  .settings(
+    libraryDependencies ++= commonDependencies
+  )
+  .dependsOn(quCommonPresentation)
   .dependsOn(quClient)
   .dependsOn(quService)
 
