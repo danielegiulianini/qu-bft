@@ -3,16 +3,16 @@ import sbt.Keys.libraryDependencies
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.8"
-
+/*
 Compile / PB.targets := Seq(
   scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
-)
+)*/
 
 lazy val root = (project in file("."))
   .settings(
     name := "ds-project-giulianini-ay1920",
   )
-  .aggregate(quCommonPresentation, quClient, quService, quSystemTesting)
+  .aggregate(quCommonPresentation, quClient, quService, quSystemTesting, auth)
 
 
 lazy val commonDependencies = Seq(
@@ -40,7 +40,6 @@ lazy val quClient = (project in file("qu-client"))
   .settings(
     libraryDependencies ++= commonDependencies ++ Seq("io.grpc" % "grpc-netty" % "1.45.0",
       "org.scala-lang" % "scala-reflect" % "2.13.8",
-      "com.thesamet.scalapb" % "scalapb-runtime-grpc_2.13" % "0.11.10",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2",
       "io.monix" %% "monix" % "3.4.0"
     )
@@ -73,7 +72,19 @@ lazy val quDemo = (project in file("qu-demo"))
   .dependsOn(quService)
 
 
-
+lazy val auth = (project in file("auth"))
+  .settings(
+    PB.targets in Compile := Seq(
+      scalapb.gen() -> (sourceManaged in Compile).value / "scalapb"
+    ),
+    libraryDependencies ++= commonDependencies ++ Seq("io.grpc" % "grpc-netty" % "1.45.0",
+      "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion,// % "protobuf",
+      "org.scala-lang" % "scala-reflect" % "2.13.8",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2",
+      "io.monix" %% "monix" % "3.4.0"
+    )
+  )
+  .dependsOn(quCommonPresentation)
 
 
 
