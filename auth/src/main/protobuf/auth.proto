@@ -1,0 +1,41 @@
+syntax = "proto3";
+
+/*option java_multiple_files = true;
+option java_package = "io.grpc.examples.helloworld";
+option java_outer_classname = "HelloWorldProto";
+option objc_class_prefix = "HLW";*/
+
+package qu;
+
+// The auth service definition.
+service Auth {
+  rpc register (User) returns (RegisterResponse) {}
+  rpc authorize (Credentials) returns (Token) {}
+}
+
+message RegisterResponse {
+}
+
+enum Role {
+  CLIENT = 0;
+  ADMIN = 1;
+}
+
+// The request message containing the user's name.
+message Credentials {
+  string username = 1;
+  string password = 2;
+}
+
+message User {
+  string username = 1;
+  string password = 2;
+  //other possible info (the later streets are closed the better the design)
+}
+
+message Token {
+  string username = 1;
+  Role role = 2;
+}
+
+
