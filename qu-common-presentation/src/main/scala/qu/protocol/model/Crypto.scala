@@ -2,21 +2,27 @@ package qu.protocol.model
 
 
 trait CryptoMd5Authenticator {
-  self: AbstractAbstractQuModel => //needs the ordering defined by SortedSet
+  self: QuModel with AbstractAbstractQuModel => //needs the ordering defined by SortedSet
 
-  override type HMAC = String
+  override type HMAC = String //so authenticator is a map[ServerId, String]
 
-  override def nullHMAC(key: String) = hmac(key, emptyRh)
+  override val nullAuthenticator: α = Map[String, String]()
 
-  import com.roundeights.hasher.Implicits._ // import com.roundeights.hasher.Digest.digest2string
+  import com.roundeights.hasher.Implicits._
 
   //leveraging sortedSet ordering here
-  def hmac(key: String, replicaHistory: ReplicaHistory): HMAC =
-  //should be taken over the hash of a replicahistory
+  def hmac(key: String, replicaHistory: ReplicaHistory): HMAC = {
     replicaHistory.hashCode().toString().hmac(key).md5
+  }
 
-  def updateAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(replicaHistory: ReplicaHistory): α =
-    fillAuthenticatorFor(keys)(serverIdToUpdate)(hmac(_, replicaHistory))
+  def updateAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(replicaHistory: ReplicaHistory): α
+  = if (replicaHistory == emptyRh) nullAuthenticator //could be removed as updatedReplicaHistory will not ever hadve
+  else fillAuthenticatorFor(keys)(serverIdToUpdate)(hmac(_, replicaHistory))
+
+}
+
+trait Hashing {
+  self: QuModel with AbstractAbstractQuModel =>
 
   override type OperationRepresentation = String
 
@@ -26,7 +32,7 @@ trait CryptoMd5Authenticator {
   override def represent(ohs: OHS): OHSRepresentation =
     hashObject(ohs)
 
-  //or Objects.hash ...??
+  //since obj is never null Objects.hashcode not required...
   private def hashObject(obj: Any) = obj.hashCode().toString //obj.toString().md5.hex
 
 }

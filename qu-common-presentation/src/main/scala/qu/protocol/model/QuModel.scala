@@ -52,7 +52,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   type HMAC
   override type α = Map[ServerId, HMAC] //SortedSet[HMAC] //or map?
 
-
   //refactored since used in responses also...
   type AuthenticatedReplicaHistory = (ReplicaHistory, α) //MyAuthenticatedReplicaHistory[U]//
 
@@ -61,65 +60,32 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
-
   val startingTime = 0
-  val emptyLT = MyLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty) //or as Nil
+  val emptyLT = MyLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty)
   val emptyCandidate: Candidate = (emptyLT, emptyLT)
   val emptyRh: ReplicaHistory = SortedSet(emptyCandidate)
 
-  //todo could be a functional val
-  def nullHMAC(key: String): HMAC //hash of null(empty)timestamp (emptyLT)
+  type Key = String
 
   //most general
-  def fillAuthenticator(keys: Map[ServerId, String])(fun: (String) => HMAC): α =
+  def fillAuthenticator(keys: Map[ServerId, String])(fun: (Key) => HMAC): α =
     keys.view.mapValues(fun(_)).toMap
 
-  def fillAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(fun: (String) => HMAC): α =
+  def fillAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(fun: (Key) => HMAC): α =
     fillAuthenticator(keys.view.filterKeys(_ == serverIdToUpdate).toMap)(fun) //fillAuthenticator(keys.filter(kv => kv._1  == serverIdToUpdate))(fun)
 
-  //todo could use partial application
-  def nullAuthenticator(keys: Map[ServerId, String]): α = fillAuthenticator(keys)(nullHMAC(_)) //or keys.map(idKey => idKey._1->nullHMAC(idKey._2))
+  val nullAuthenticator: α
 
   //todo could be private (nested) to emptyAuthenticatedRh, a functional val
-  def emptyAuthenticatedRh(serverKeys: Map[ServerId, String]): AuthenticatedReplicaHistory =
-    SortedSet(emptyCandidate) -> nullAuthenticator(serverKeys)
+  val emptyAuthenticatedRh: AuthenticatedReplicaHistory = SortedSet(emptyCandidate) -> nullAuthenticator
 
   def emptyOhs(serverKeys: Map[ServerId, String]): OHS =
-    serverKeys.view.mapValues(_ => emptyAuthenticatedRh(serverKeys)).toMap
-
-  override type Operation[ReturnValueT, ObjectT] = ObjectT => (ObjectT, ReturnValueT)
-
-  //prohibiting to
-  trait Query[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT] {
-    override def apply(obj: ObjectT): (ObjectT, ReturnValueT) = (obj, query(obj))
-
-    //in this way queries can't edit replica object!
-    def query(obj:ObjectT): ReturnValueT
-  }
-
-  //todo the most general (being able to change object type at server side (requires work)
-  trait GenericUpdate[ReturnValueT, ObjectT, NewObjectT] extends Operation[ReturnValueT, ObjectT]
-
-  trait Update[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT]
+    serverKeys.view.mapValues(_ => emptyAuthenticatedRh).toMap
 
 
-  //reusable utilities that returns object at server side
-  trait QueryReturningObject[ObjectT] extends Query[ObjectT, ObjectT] {
-    override def query(obj: ObjectT): ObjectT = obj
-  }
 
-  class GetObj[ObjectT]() extends QueryReturningObject[ObjectT]
 
-  trait OperationReturningObject[ObjectT] extends Operation[ObjectT, ObjectT] {
-    override def apply(obj: ObjectT): (ObjectT, ObjectT) = {
-      val updatedObj = workOnObject(obj)
-      (updatedObj, updatedObj)
-    }
 
-    def workOnObject(obj: ObjectT): ObjectT
-  }
-
-  trait UpdateReturningObject[ObjectT] extends Update[ObjectT, ObjectT] with OperationReturningObject[ObjectT]
 
   //todo not used:
   //object sync request:
@@ -311,7 +277,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 }
 
 //maybe more implementations (that with compact authenticators...)
-object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator {
+object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator with Operations with Hashing {
   //final keyword removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
   case class Request[ReturnValueT, ObjectT](operation: Option[Operation[ReturnValueT, ObjectT]],
                                             ohs: OHS)
