@@ -1,29 +1,34 @@
-package client
+package qu.client
 
 //import that declares specific dependency
 
-import Shared.QuorumSystemThresholds
+import qu.OneShotAsyncScheduler
+import qu.Shared.{QuorumSystemThresholds, RecipientInfo}
 import qu.protocol.model.ConcreteQuModel._
 
 import scala.concurrent.Future
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class AuthenticatedQuClientImpl[U, Transferable[_]](private var policy: QuorumPolicy[U, Transferable],
-                                                    private val thresholds: QuorumSystemThresholds)
-  extends QuClient[U, Transferable] {
+class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQuorumPolicy[U, Transportable],
+                                                     //only servers ids is actually required in this class
+                                                     private val serversIds: Set[String],
+                                                     private val thresholds: QuorumSystemThresholds,
+                                                     private var initialBackOffTime: FiniteDuration = 1000.millis)
+  extends QuClient[U, Transportable] {
 
   private val scheduler = new OneShotAsyncScheduler(1) //concurrency level configurable by user??
 
-  import scala.concurrent.ExecutionContext.Implicits.global  //temporneous
+  import scala.concurrent.ExecutionContext.Implicits.global //todo temporneous
 
-  //todo (after fixing nul authenticator)
-  private val ohs: OHS = null //emptyOhs(
+  private val ohs: OHS = emptyOhs(serversIds)
 
   override def submit[T](op: Operation[T, U])(implicit
-                                              marshallableRequest: Transferable[Request[T, U]],
-                                              marshallableResponse: Transferable[Response[Option[T]]],
-                                              marshallableRequestObj: Transferable[Request[Object, U]],
-                                              marshallableResponseObj: Transferable[Response[Option[Object]]]): Future[T] = {
+                                              //ec: ExecutionContext,
+                                              transportableRequest: Transportable[Request[T, U]],
+                                              transportableResponse: Transportable[Response[Option[T]]],
+                                              transportableRequestObj: Transportable[Request[Object, U]],
+                                              transportableResponseObj: Transportable[Response[Option[Object]]]):
+  Future[T] = {
     for {
       (answer, order, ohs) <- policy.quorum(Some(op), ohs)
       answer <- if (order < thresholds.q) for {
@@ -34,11 +39,15 @@ class AuthenticatedQuClientImpl[U, Transferable[_]](private var policy: QuorumPo
   }
 
 
-  def repair(ohs: OHS)(implicit
-                       marshallableRequest: Transferable[Request[Object, U]],
-                       marshallableResponse: Transferable[Response[Option[Object]]]): Future[OHS] = {
+  private def repair(ohs: OHS)(implicit
+                               transportableRequest: Transportable[Request[Object, U]],
+                               transportableResponse: Transportable[Response[Option[Object]]]): Future[OHS] = {
+
     //utilities todo 1.can be a point of polymorphism! 2.
-    def backOff(): Future[Void] = scheduler.scheduleOnceAsPromise(3.seconds)
+    def backOff(): Future[Void] = {
+      initialBackOffTime *= 2
+      scheduler.scheduleOnceAsPromise(initialBackOffTime)
+    }
 
     def backOffAndRetry(): Future[OHS] = for {
       _ <- backOff()
