@@ -1,7 +1,7 @@
 package qu
 
 
-import io.grpc.{Context, Contexts, Metadata, ServerCall, ServerCallHandler, ServerInterceptor, Status}
+import io.grpc._
 import io.jsonwebtoken.Jwts
 
 //class AuthorizationServerInterceptor extends ServerInterceptor {
@@ -32,14 +32,7 @@ import io.jsonwebtoken.Jwts
   new ServerCall.Listener[ReqT]() {}
 }*/
 
-import io.grpc.Context
-import io.grpc.Contexts
-import io.grpc.ServerCall
-import io.grpc.ServerCallHandler
-import io.grpc.ServerInterceptor
-import io.grpc.Status
-
-class AuthorizationServerInterceptor extends ServerInterceptor {
+class JwtAuthorizationServerInterceptor extends ServerInterceptor {
   private val parser = Jwts.parser.setSigningKey(Constants.JWT_SIGNING_KEY)
 
   def interceptCall[ReqT, RespT](serverCall: ServerCall[ReqT, RespT], metadata: Metadata, serverCallHandler: ServerCallHandler[ReqT, RespT]): ServerCall.Listener[ReqT] = {
@@ -50,6 +43,7 @@ class AuthorizationServerInterceptor extends ServerInterceptor {
     else try {
       val token = value.substring(Constants.BEARER_TYPE.length).trim
       val claims = parser.parseClaimsJws(token)
+      //the CLIENT_ID_CONTEXT_KEY is the one used by QuServerImpl
       val ctx = Context.current.withValue(Constants.CLIENT_ID_CONTEXT_KEY, claims.getBody.getSubject)
       return Contexts.interceptCall(ctx, serverCall, metadata, serverCallHandler)
     } catch {
