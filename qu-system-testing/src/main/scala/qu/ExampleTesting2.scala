@@ -3,23 +3,22 @@ package qu
 import io.grpc.inprocess.InProcessServerBuilder
 import qu.StubFactories.inNamedProcessJacksonStubFactory
 import qu.model.ConcreteQuModel.Request
-import qu.model.ConcreteQuModel.{Request, Response, Query}
-
+import qu.model.ConcreteQuModel.{Query, Request, Response}
+import qu.service.AbstractQuService.jacksonSimpleQuorumServiceFactory
 
 import java.util.concurrent.TimeUnit
 
 object ExampleTesting2 extends App {
-  println("try to send to server with a jacksonclientStub...")
-/*
+  /*println("try to send to server with a jacksonclientStub...")
+
   val serviceFactory = jacksonSimpleQuorumServiceFactory[Int]()
 
   val ip = "ciao"
-  val port = 2
-  val serviceInfo = RecipientInfo(ip = ip, port = port, keySharedWithMe = "hmackey")
+  val port = 2  //val serviceInfo = RecipientInfo(ip = ip, port = port, keySharedWithMe = "hmackey")
 
 
-  //quorumSystemThresholds, serverInfo, obj
-  val service = serviceFactory(null, serviceInfo, 8)
+  //ip port key wuorumthresholds obj quorumSystemThresholds, serverInfo, obj
+  val service = serviceFactory(ip = "ip", 2, "key", null, 8)
 
 
   class MyQuery extends Query[Int, Int] {

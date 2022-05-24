@@ -4,8 +4,8 @@ import io.grpc.Context
 import io.grpc.stub.StreamObserver
 import qu.MethodDescriptorFactory
 import qu.auth.Constants
-import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
-import qu.storage.{StorageWithImmutableMap, ImmutableStorage}
+import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
+import qu.storage.ImmutableStorage
 
 import java.security.InvalidParameterException
 import java.util.logging.{Level, Logger}
@@ -24,8 +24,9 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
                                                          private val policyFactory: (Map[String, Int], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, ObjectT],
                                                          //dependencies chosen by user
                                                          override val ip: String, override val port: Int, override val privateKey: String,
-                                                         override val thresholds: QuorumSystemThresholds,
-                                                         override val obj: ObjectT)
+                                                         override val obj: ObjectT,
+                                                         override val thresholds: QuorumSystemThresholds
+                                                       )
   extends AbstractQuService[Transportable, ObjectT](methodDescriptorFactory, policyFactory, thresholds, ip, port, privateKey, obj) {
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
   private var storage = ImmutableStorage[ObjectT]()
@@ -100,7 +101,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
       return
     }
 
-    if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
+    if (opType == ConcreteOperationTypes.METHOD || opType == ConcreteOperationTypes.INLINE_METHOD || opType == ConcreteOperationTypes.COPY) {
       val objAndAnswer = storage.retrieve[AnswerT](lt) //retrieve[T, U](lt)
       if (objAndAnswer.isEmpty && ltCo > emptyLT) {
         /*for { obj <- quorumPolicy.objectSync[T]()} yield*/
@@ -116,7 +117,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
     def respondWithFoundObjectAndUpdateDataStructures(obj: ObjectT): Unit = {
       var answerToReturn = Option.empty[AnswerT]
-      if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD) {
+      if (opType == ConcreteOperationTypes.METHOD || opType == ConcreteOperationTypes.INLINE_METHOD) {
         val (_, answer) = executeOperation(request)
         answerToReturn = Some(answer) //must overwrite
         //if method or inline method operation should not be empty
@@ -132,10 +133,10 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
         authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
 
         //overriding answer since it's ignored at client side
-        if (opType == OperationType1.COPY) {
+        if (opType == ConcreteOperationTypes.COPY) {
           answerToReturn = Option.empty
         }
-        if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
+        if (opType == ConcreteOperationTypes.METHOD || opType == ConcreteOperationTypes.INLINE_METHOD || opType == ConcreteOperationTypes.COPY) {
           storage = storage.store[AnswerT](lt, (obj, answerToReturn)) //answer.asInstanceOf[AnswerT])
           //todo: replica history pruning
         }

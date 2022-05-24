@@ -10,10 +10,11 @@ import scala.reflect.runtime.universe._
 //storage separate from QUModel (this class can be generic in U(ObjecT)
 //todo could be futhermore split (in general heterogeneous container, and in another using it but specific(with lts etc...))
 //since it's immutable it demands to caller (user) the burden for thread sadety
-class ImmutableStorage[U: TypeTag] private(private var storage: Map[TypeTag[_], Map[LogicalTimestamp, (U, Option[Any])]] = Map()) {
+class ImmutableStorage[U: TypeTag] private(private var storage: Map[TypeTag[_],
+  Map[LogicalTimestamp, (U, Option[Any])]] = Map()) extends Storage[U] {
 
   //qhy store could have option[response]?? for the first time ... the initial object!
-  def store[T: TypeTag](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, Option[T])): ImmutableStorage[U] = {
+  override def store[T: TypeTag](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, Option[T])): ImmutableStorage[U] = {
     //se c' quell'aentrata allora c'p la mappa quindi aggiungi alla mappa
     //se non c'è allora crea una nuova mappa con quella entrata (stesso discorso dellacached)
     println("lo storage is :" + storage)
@@ -24,11 +25,11 @@ class ImmutableStorage[U: TypeTag] private(private var storage: Map[TypeTag[_], 
   }
 
   //new API, for objects only
-  def retrieveObject(logicalTimestamp: LogicalTimestamp): Option[U] = {
+  override def retrieveObject(logicalTimestamp: LogicalTimestamp): Option[U] = {
     storage.values.filter(_ == logicalTimestamp).flatMap(_.values).headOption.map { case (obj, _) => obj } //.collect(item => if (item == logicalTimestamp)//.collect(item => if (item))flatten//map(._1).head//.flatMap(i=>i.values).map(tuple=>tuple._1)
   }
 
-  def retrieve[T: TypeTag](logicalTimestamp: LogicalTimestamp): Option[(U, Option[T])] = {
+  override def retrieve[T: TypeTag](logicalTimestamp: LogicalTimestamp): Option[(U, Option[T])] = {
     val tmp = storage.get(implicitly[TypeTag[T]])
 
     tmp.flatMap(_.get(logicalTimestamp)

@@ -13,18 +13,13 @@ abstract class MutableStorage[U: TypeTag] {
   protected val storage: MutableMap[TypeTag[_], MutableMap[LogicalTimestamp, (U, Option[Any])]]
 
   def store[T: TypeTag](logicalTimestamp: LogicalTimestamp, objectAndAnswer: (U, Option[T])): Unit = {
-    println("lo mutable storage is :" + storage)
-
     storage.getOrElseUpdate(Objects.requireNonNull(implicitly[TypeTag[T]]), new MutableHashMap()).put(logicalTimestamp, objectAndAnswer) //Map[LogicalTimestamp, (_, Option[_])]()
-    storage.getOrElseUpdate(TypeTag.Object, new MutableHashMap()).put(logicalTimestamp, objectAndAnswer) //Map[LogicalTimestamp, (_, Option[_])]()
   }
 
 
   def retrieve[T: TypeTag](logicalTimestamp: LogicalTimestamp): Option[(U, Option[T])] = {
     println("lo mutable storage is :" + storage)
-
     storage.get(implicitly[TypeTag[T]]).flatMap(_.get(logicalTimestamp).asInstanceOf[Option[(U, Option[T])]])
-
   }
 }
 

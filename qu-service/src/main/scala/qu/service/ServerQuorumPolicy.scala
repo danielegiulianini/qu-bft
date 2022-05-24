@@ -3,7 +3,7 @@ package qu.service
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.{AbstractQuorumPolicy, GrpcClientStub}
 import qu.model.ConcreteQuModel._
-import qu.model.QuorumSystemThresholds
+import qu.model.{QuorumSystemThresholds, StatusCode}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

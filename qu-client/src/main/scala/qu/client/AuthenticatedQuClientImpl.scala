@@ -59,8 +59,8 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
       classify(ohs, thresholds.r, thresholds.q)
     }
 
-    def backOffAndRetryUntilMethod(operationType: OperationType1): Future[OHS] =
-      if (operationType != OperationType1.METHOD) backOffAndRetry() else Future {
+    def backOffAndRetryUntilMethod(operationType: ConcreteOperationTypes): Future[OHS] =
+      if (operationType != ConcreteOperationTypes.METHOD) backOffAndRetry() else Future {
         ohs
       }
 
@@ -70,6 +70,9 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
       ohs <- backOffAndRetryUntilMethod(operationType)
     } yield ohs
   }
+
+  //should shutdown policy...
+  override def shutdown(): Unit = ???
 }
 
 object ProvaUserSide {

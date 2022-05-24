@@ -3,7 +3,7 @@ package qu.client
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.{AbstractQuorumPolicy, JwtGrpcClientStub}
 import qu.StubFactories.distributedJacksonJwtStubFactory
-import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
+import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}

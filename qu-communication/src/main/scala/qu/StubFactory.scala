@@ -14,6 +14,13 @@ object StubFactories {
 
   val inNamedProcessJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port) => {
     //could also use for address/for port
+    //could validate with InetAddress
+    new UnauthenticatedJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build())
+  }
+
+  def inNamedProcessJacksonStubFactory(ip:String, port:String): UnauthenticatedJacksonClientStub = {
+    //could also use for address/for port
+    //could validate with InetAddress
     new UnauthenticatedJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build())
   }
 

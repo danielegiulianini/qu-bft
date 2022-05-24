@@ -64,7 +64,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   type Key = String
 
   //most general
-  def fillAuthenticator(keys: Map[ServerId, String])(fun: (Key) => HMAC): α =
+  def fillAuthenticator(keys: Map[ServerId, String])(fun: Key => HMAC): α =
     keys.view.mapValues(fun(_)).toMap
 
   def fillAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(fun: (Key) => HMAC): α =
@@ -77,9 +77,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   def emptyOhs(serverIds: Set[ServerId]): OHS =
     serverIds.map(_ -> emptyAuthenticatedRh).toMap
 
-
   override type LogicalTimestamp = MyLogicalTimestamp //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
-
 
   //clean but not considers if rh are not ordered by server...
   //implicit val OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.values.toString compare y.toString
@@ -137,29 +135,21 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
 
   //classify can be plugged after definition of operationTypes instances
-  sealed trait OperationType1
+  sealed trait ConcreteOperationTypes
 
-  object OperationType1 {
-    case object METHOD extends OperationType1
+  object ConcreteOperationTypes {
+    case object METHOD extends ConcreteOperationTypes
 
-    case object INLINE_METHOD extends OperationType1
+    case object INLINE_METHOD extends ConcreteOperationTypes
 
-    case object COPY extends OperationType1
+    case object COPY extends ConcreteOperationTypes
 
-    case object BARRIER extends OperationType1
+    case object BARRIER extends ConcreteOperationTypes
 
-    case object INLINE_BARRIER extends OperationType1
+    case object INLINE_BARRIER extends ConcreteOperationTypes
   }
 
-  sealed trait StatusCode
-
-  object StatusCode {
-    case object SUCCESS extends StatusCode
-
-    case object FAIL extends StatusCode
-  }
-
-  override type OperationType = OperationType1
+  override type OperationType = ConcreteOperationTypes
 
   override def classify(ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)], α)],
                         repairableThreshold: Int,
@@ -174,11 +164,11 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
     val (latestObjectVersionLT, _) = latestObjectVersion
     val (latestBarrierVersionLT, _) = latestBarrierVersion
 
-    val operationType = if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) >= quorumThreshold) OperationType1.METHOD
-    else if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) >= repairableThreshold) OperationType1.INLINE_METHOD
-    else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) >= quorumThreshold) OperationType1.COPY
-    else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) >= repairableThreshold) OperationType1.INLINE_BARRIER
-    else OperationType1.BARRIER
+    val operationType = if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) >= quorumThreshold) ConcreteOperationTypes.METHOD
+    else if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) >= repairableThreshold) ConcreteOperationTypes.INLINE_METHOD
+    else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) >= quorumThreshold) ConcreteOperationTypes.COPY
+    else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) >= repairableThreshold) ConcreteOperationTypes.INLINE_BARRIER
+    else ConcreteOperationTypes.BARRIER
     (operationType, latestObjectVersion, latestBarrierVersion)
   }
 
@@ -194,7 +184,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
                   clientId: String): (OperationType, Candidate, LogicalTimestamp) = {
     val (opType, latestObjectVersion, latestBarrierVersion) = classify(ohs, quorumThreshold, repairableThreshold)
     val conditionedOnLogicalTimestamp = latestObjectVersion._1 //._1 stands for lt
-    if (opType == OperationType1.METHOD)
+    if (opType == ConcreteOperationTypes.METHOD)
       ( //opType
         opType,
         //candidate
@@ -207,7 +197,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
           conditionedOnLogicalTimestamp),
         //ltCurrent
         conditionedOnLogicalTimestamp)
-    else if (opType == OperationType1.BARRIER) {
+    else if (opType == ConcreteOperationTypes.BARRIER) {
       val lt = MyLogicalTimestamp(
         time = latestTime(ohs).time + 1,
         barrierFlag = true,
@@ -219,7 +209,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
         (lt, conditionedOnLogicalTimestamp),
         //ltCurrent
         lt)
-    } else if (opType == OperationType1.COPY)
+    } else if (opType == ConcreteOperationTypes.COPY)
       (opType,
         (MyLogicalTimestamp(
           time = latestTime(ohs).time + 1,
@@ -229,7 +219,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
           ohs = Some(represent(ohs))), conditionedOnLogicalTimestamp),
         //ltCurrent
         latestBarrierVersion._1)
-    else if (opType == OperationType1.INLINE_METHOD)
+    else if (opType == ConcreteOperationTypes.INLINE_METHOD)
       (opType,
         //candidate
         latestObjectVersion,

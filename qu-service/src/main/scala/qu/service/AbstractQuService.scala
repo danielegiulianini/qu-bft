@@ -72,7 +72,7 @@ object AbstractQuService {
   //factory replaced by actual service if using functional builder
   type ServiceFactory[Marshallable[_], U] = (String, Int, String, U, QuorumSystemThresholds) => AbstractQuService[Marshallable, U]
 
-  def jacksonSimpleQuorumServiceFactory[U: TypeTag](): ServiceFactory[JavaTypeable, U] = (ip, port, key, quorumSystemThresholds, obj) =>
+  def jacksonSimpleQuorumServiceFactory[U: TypeTag](): ServiceFactory[JavaTypeable, U] = (ip, port, key, obj, quorumSystemThresholds) =>
     new QuServiceImpl(new JacksonMethodDescriptorFactory {},
       simpleJacksonServerQuorumFactory(),
       ip, port, key, obj, quorumSystemThresholds)

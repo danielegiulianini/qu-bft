@@ -17,6 +17,8 @@ trait QuClient[ObjectT, Transferable[_]] {
                                                                  marshallableResponse: Transferable[Response[Option[ReturnValueT]]],
                                                                  marshallableRequestObj: Transferable[Request[Object, ObjectT]],
                                                                  marshallableResponseObj: Transferable[Response[Option[Object]]]): Future[ReturnValueT]
+
+  def shutdown()
 }
 
 object QuClient {

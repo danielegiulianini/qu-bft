@@ -27,8 +27,6 @@ trait Operations {
   trait QueryReturningObject[ObjectT] extends Query[ObjectT, ObjectT]
     with OperationReturningObjectWithoutUpdate[ObjectT]
 
-  class GetObj[ObjectT]() extends QueryReturningObject[ObjectT]
-
   trait UpdateReturningUpdatedObject[ObjectT] extends OperationReturningObjectWithoutUpdate[ObjectT] {
     override def whatToReturn(obj: ObjectT): ObjectT = obj
   }
@@ -36,6 +34,8 @@ trait Operations {
   trait UpdateReturningUnit[ObjectT] extends Update[Unit, ObjectT] {
     final override def whatToReturn(obj: ObjectT): Unit = {}
   }
+
+  class GetObj[ObjectT]() extends QueryReturningObject[ObjectT]
 
   //todo here on some perplexities...
   trait OperationReturningObjectWithoutUpdate[ObjectT] extends AbstractOperation[ObjectT, ObjectT] {
