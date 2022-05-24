@@ -1,6 +1,6 @@
-package auth
+package qu.auth
 
-import auth.FutureUtilities.mapThrowableByStatus
+import FutureUtilities.mapThrowableByStatus
 import io.grpc.Status
 import qu.auth._
 

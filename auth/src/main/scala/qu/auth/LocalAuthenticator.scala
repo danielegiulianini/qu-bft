@@ -1,5 +1,5 @@
 //class not dependent on specific transport layer
-package auth
+package qu.auth
 
 import qu.auth.{Credentials, Role, Token, User}
 

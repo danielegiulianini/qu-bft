@@ -1,4 +1,4 @@
-import qu.auth.HelloWorldClient
+import qu.auth.AuthClient
 
 object AuthSpec extends App {
 
@@ -25,9 +25,9 @@ object AuthSpec extends App {
 
   //prof' spec:
   /*
-  import qu.auth.ConflictException
+  import auth.ConflictException
 import qu.auth.User
-import qu.auth.WrongCredentialsException
+import auth.WrongCredentialsException
 import java.util.Optional
 import java.util.stream.Collectors
 import java.util.stream.Stream

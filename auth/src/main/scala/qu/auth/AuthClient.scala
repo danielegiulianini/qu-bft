@@ -1,6 +1,6 @@
-package auth
+package qu.auth
 
-import auth.FutureUtilities.mapThrowable
+import FutureUtilities.mapThrowable
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.{ManagedChannel, ManagedChannelBuilder, StatusRuntimeException}
 import qu.auth.AuthGrpc.AuthStub
