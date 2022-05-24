@@ -18,7 +18,8 @@ lazy val root = (project in file("."))
 
 lazy val commonDependencies = Seq(
   "org.scalamock" %% "scalamock" % "5.2.0" % Test,
-  "org.scalatest" %% "scalatest" % "3.2.11" % Test)
+  "org.scalatest" %% "scalatest" % "3.2.11" % Test,
+  "org.scalacheck" % "scalacheck_2.13" % "1.16.0")
 
 
 lazy val auth = (project in file("auth"))
