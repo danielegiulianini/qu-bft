@@ -1,12 +1,13 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
+import qu.Shutdownable
 import qu.client.ClientQuorumPolicy.{ClientPolicyFactory, simpleJacksonPolicyFactoryUnencrypted}
 import qu.model.QuorumSystemThresholds
 
 
 case class AuthenticatedClientBuilderInFunctionalStyle[U, Transportable[_]]( //programmer dependencies
-                                                                             private val policyFactory: (Map[String, Int], QuorumSystemThresholds) => ClientQuorumPolicy[U, Transportable],
+                                                                             private val policyFactory: (Map[String, Int], QuorumSystemThresholds) => ClientQuorumPolicy[U, Transportable] with Shutdownable,
                                                                              //user dependencies
                                                                              private val serversInfo: Map[String, Int],
                                                                              private val thresholds: Option[QuorumSystemThresholds],
@@ -28,7 +29,7 @@ object AuthenticatedClientBuilderInFunctionalStyle {
 
   def builder[U](token: String): AuthenticatedClientBuilderInFunctionalStyle[U, JavaTypeable] = simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 
-  private def empty[U, Transferable[_]](policyFactory: ClientPolicyFactory[Transferable, U], token: String): AuthenticatedClientBuilderInFunctionalStyle[U, Transferable] =
+  private def empty[U, Transferable[_]](policyFactory: ClientPolicyFactory[Transferable, U] , token: String): AuthenticatedClientBuilderInFunctionalStyle[U, Transferable] =
     AuthenticatedClientBuilderInFunctionalStyle((mySet, thresholds) => policyFactory(mySet, thresholds), Map(), Option.empty)
 
   //builder implementations

@@ -18,7 +18,7 @@ trait QuModel {
 
   type OperationType
   type α //authenticator
-  type Candidate = (LogicalTimestamp, LogicalTimestamp) //type Candidate = <: { val lt: LogicalTimestamp; val ltCo: LogicalTimestamp }
+  type Candidate = (LogicalTimestamp, LogicalTimestamp)
 
   //number of replica histories in the object history set in which it appears
   def order(candidate: Candidate, ohs: OHS): Int
@@ -27,7 +27,6 @@ trait QuModel {
 
   def latestTime(rh: ReplicaHistory): LogicalTimestamp
 
-  // return tuples or  case classes (c.c. that extends ? it depends if i want to access them...
   def classify(ohs: OHS,
                repairableThreshold: Int,
                quorumThreshold: Int): (OperationType, Candidate, Candidate)
@@ -42,12 +41,16 @@ trait AbstractQuModel extends QuModel {
   //since RH is a ordered set must define ordering for LogicalTimestamp, that actually requires
   override type ReplicaHistory = SortedSet[Candidate]
 
-  //or structural type? so I can name...
-  //override type OHS = ServerId => (ReplicaHistory, α)
 }
 
 
-trait AbstractAbstractQuModel extends AbstractQuModel {
+
+trait AbstractAbstractQuModel extends QuModel {
+  override type Time = Int
+
+  override type ClientId = String
+
+  override type ReplicaHistory = SortedSet[Candidate]
 
   type HMAC
   override type α = Map[ServerId, HMAC]
@@ -79,11 +82,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   override type LogicalTimestamp = MyLogicalTimestamp //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
 
-  //clean but not considers if rh are not ordered by server...
-  //implicit val OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.values.toString compare y.toString
-  //a def is required (instead of a val) because (generic) type params are required
-  implicit def OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.values.toString compare y.toString
-
   type OperationRepresentation = String
   type OHSRepresentation = String
 
@@ -113,10 +111,10 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   override def order(candidate: (MyLogicalTimestamp, MyLogicalTimestamp),
                      ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)], α)]): Int =
-  //foreach replicahistory count if it contains the given candidate
-    ohs.values.count(_._1.contains(candidate))
+    ohs.values.count(_._1.contains(candidate))  //foreach replicahistory count if it contains the given candidate
 
-  //here I need dependency injection of q
+
+  //todo here I need dependency injection of q
   override def latestCandidate(ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)], α)],
                                barrierFlag: Boolean,
                                repairableThreshold: Int):
@@ -151,12 +149,12 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   override type OperationType = ConcreteOperationTypes
 
-  override def classify(ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)], α)],
+  override def classify(ohs: OHS,
                         repairableThreshold: Int,
                         quorumThreshold: Int):
   (OperationType,
-    (MyLogicalTimestamp, MyLogicalTimestamp),
-    (MyLogicalTimestamp, MyLogicalTimestamp)) = {
+    (LogicalTimestamp, LogicalTimestamp),
+    (LogicalTimestamp, LogicalTimestamp)) = {
     val latestObjectVersion = latestCandidate(ohs, barrierFlag = false, repairableThreshold)
     val latestBarrierVersion = latestCandidate(ohs, barrierFlag = true, repairableThreshold)
     val ltLatest = latestTime(ohs)
@@ -172,7 +170,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
     (operationType, latestObjectVersion, latestBarrierVersion)
   }
 
-  //todo are type param really needed?
   def represent[T, U](operation: Option[Operation[T, U]]): OperationRepresentation
 
   def represent(OHSRepresentation: OHS): OHSRepresentation
@@ -270,7 +267,6 @@ object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticat
 
 
 /*with pattern matching:
-
 val operationType = (latestObjectVersionLT, latestBarrierVersionLT) match {
   case (`ltLatest`, _) if order(latestObjectVersion, ohs) > quorumThreshold => 1
   case (`ltLatest`, _) if order(latestObjectVersion, ohs) > repairableThreshold => 2

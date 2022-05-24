@@ -5,7 +5,7 @@ import io.grpc.stub.ServerCalls
 import io.grpc.{BindableService, ServerServiceDefinition}
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu.model.QuorumSystemThresholds
-import qu.service.ServerQuorumPolicy.{ServerQuorumPolicyFactory, simpleJacksonServerQuorumFactory}
+import qu.service.ServerQuorumPolicy.{ServerQuorumPolicyFactory, simpleDistributedJacksonServerQuorumFactory}
 import qu.{JacksonMethodDescriptorFactory, MethodDescriptorFactory}
 
 import java.util.Objects
@@ -67,15 +67,38 @@ abstract class AbstractQuService[Transportable[_], U](
   override def bindService(): ServerServiceDefinition = ssd.build
 }
 
+
 object AbstractQuService {
 
-  //factory replaced by actual service if using functional builder
-  type ServiceFactory[Marshallable[_], U] = (String, Int, String, U, QuorumSystemThresholds) => AbstractQuService[Marshallable, U]
+  //for reducing number of parameters
+  case class ServerInfo(ip: String, port: Int, keySharedWithMe: String)
 
-  def jacksonSimpleQuorumServiceFactory[U: TypeTag](): ServiceFactory[JavaTypeable, U] = (ip, port, key, obj, quorumSystemThresholds) =>
-    new QuServiceImpl(new JacksonMethodDescriptorFactory {},
-      simpleJacksonServerQuorumFactory(),
-      ip, port, key, obj, quorumSystemThresholds)
+  type ServiceFactory[Transportable[_], U] =
+    (ServerInfo, U, QuorumSystemThresholds) => AbstractQuService[Transportable, U]
+
+  def jacksonSimpleQuorumServiceFactory[U: TypeTag](): ServiceFactory[JavaTypeable, U] = (serverInfo, obj, quorumSystemThresholds) =>
+    new QuServiceImpl(
+      methodDescriptorFactory = new JacksonMethodDescriptorFactory {},
+      policyFactory = simpleDistributedJacksonServerQuorumFactory(),
+      ip = serverInfo.ip,
+      port = serverInfo.port,
+      privateKey = serverInfo.keySharedWithMe,
+      obj = obj,
+      thresholds = quorumSystemThresholds)
+
+
+  //todo (if wanting to use named params for more readability)
+  def jacksonSimpleQuorumServiceFactory2[U: TypeTag]()(serverInfo: ServerInfo,
+                                                      obj: U,
+                                                      quorumSystemThresholds: QuorumSystemThresholds) =
+    new QuServiceImpl(
+      methodDescriptorFactory = new JacksonMethodDescriptorFactory {},
+      policyFactory = simpleDistributedJacksonServerQuorumFactory[U](),
+      ip = serverInfo.ip,
+      port = serverInfo.port,
+      privateKey = serverInfo.keySharedWithMe,
+      obj = obj,
+      thresholds = quorumSystemThresholds)
 }
 
 /* old:

@@ -12,7 +12,7 @@ import scala.concurrent.Future
 
 //a stub reusable between client and server sides
 abstract class GrpcClientStub[Transferable[_]](val chan: ManagedChannel)
-  extends MethodDescriptorFactory[Transferable] with MarshallerFactory[Transferable] {
+  extends MethodDescriptorFactory[Transferable] with MarshallerFactory[Transferable] with Shutdownable {
 
   protected val callOptions: CallOptions = CallOptions.DEFAULT
 
@@ -22,6 +22,8 @@ abstract class GrpcClientStub[Transferable[_]](val chan: ManagedChannel)
     val md = generateMethodDescriptor5[InputT, OutputT](methodName, serviceName)
     ClientCalls.asyncUnaryCall(chan, md, callOptions, toBeSent)
   }
+
+  override def shutdown(): Unit = chan.shutdown()
 }
 
 

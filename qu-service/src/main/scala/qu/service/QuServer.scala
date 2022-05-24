@@ -4,7 +4,7 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{ServerBuilder, ServerInterceptor}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.{ServiceFactory, jacksonSimpleQuorumServiceFactory}
+import qu.service.AbstractQuService.{ServerInfo, ServiceFactory, jacksonSimpleQuorumServiceFactory}
 import qu.service.QuServerBuilder.jacksonSimpleServerBuilder
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -65,7 +65,7 @@ class QuServerBuilder[Marshallable[_], U](private val serviceFactory: ServiceFac
                                           private val quorumSystemThresholds: QuorumSystemThresholds,
                                           private val obj: U) {
 
-  private val quService: AbstractQuService[Marshallable, U] = serviceFactory(ip, port,privateKey, obj, quorumSystemThresholds)
+  private val quService: AbstractQuService[Marshallable, U] = serviceFactory(ServerInfo(ip, port,privateKey), obj, quorumSystemThresholds)
 
   def addOperation[T: TypeTag](implicit
                                marshallableRequest: Marshallable[Request[T, U]],

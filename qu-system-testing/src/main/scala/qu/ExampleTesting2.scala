@@ -4,21 +4,21 @@ import io.grpc.inprocess.InProcessServerBuilder
 import qu.StubFactories.inNamedProcessJacksonStubFactory
 import qu.model.ConcreteQuModel.Request
 import qu.model.ConcreteQuModel.{Query, Request, Response}
-import qu.service.AbstractQuService.jacksonSimpleQuorumServiceFactory
+import qu.model.QuorumSystemThresholds
+import qu.service.AbstractQuService.{ServerInfo, jacksonSimpleQuorumServiceFactory}
 
 import java.util.concurrent.TimeUnit
 
 object ExampleTesting2 extends App {
-  /*println("try to send to server with a jacksonclientStub...")
+  println("try to send to server with a jacksonclientStub...")
 
   val serviceFactory = jacksonSimpleQuorumServiceFactory[Int]()
 
   val ip = "ciao"
-  val port = 2  //val serviceInfo = RecipientInfo(ip = ip, port = port, keySharedWithMe = "hmackey")
+  val port = 2
+  val serverInfo = ServerInfo(ip = ip, port = port, keySharedWithMe = "hmackey")
 
-
-  //ip port key wuorumthresholds obj quorumSystemThresholds, serverInfo, obj
-  val service = serviceFactory(ip = "ip", 2, "key", null, 8)
+  val service = serviceFactory(serverInfo, 8, QuorumSystemThresholds(1, 2, 3, 4))
 
 
   class MyQuery extends Query[Int, Int] {
@@ -42,7 +42,7 @@ object ExampleTesting2 extends App {
 
 
   //jacksonclientstub con canale inprocess
-  val myStub = inNamedProcessJacksonStubFactory(serviceInfo)
+  val myStub = inNamedProcessJacksonStubFactory(serverInfo.ip, serverInfo.port)
 
   myStub.send2(
     Request(operation = Option.empty[Query[Int, String]],
@@ -53,5 +53,5 @@ object ExampleTesting2 extends App {
   println("closing...")
 
   server.shutdown()
-  server.awaitTermination(5, TimeUnit.SECONDS)*/
+  server.awaitTermination(5, TimeUnit.SECONDS)
 }

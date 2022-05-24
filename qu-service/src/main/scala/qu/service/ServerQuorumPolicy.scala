@@ -1,7 +1,8 @@
 package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.{AbstractQuorumPolicy, GrpcClientStub}
+import qu.StubFactories.unencryptedDistributedJacksonStubFactory
+import qu.{AbstractQuorumPolicy, GrpcClientStub, Shutdownable}
 import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
 
@@ -11,21 +12,21 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 trait ServerQuorumPolicy[Transportable[_], ObjectT] {
   def objectSync(lt: LogicalTimestamp)(implicit
-                                                transportableRequest: Transportable[LogicalTimestamp],
-                                                transportableResponse: Transportable[ObjectSyncResponse[ObjectT]]
+                                       transportableRequest: Transportable[LogicalTimestamp],
+                                       transportableResponse: Transportable[ObjectSyncResponse[ObjectT]]
   ): Future[ObjectT]
 }
 
 class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[String, GrpcClientStub[Transportable]],
                                                           private val thresholds: QuorumSystemThresholds,
                                                           private val retryingTime: FiniteDuration = 3.seconds)
-extends AbstractQuorumPolicy[Transportable](servers, retryingTime) with ServerQuorumPolicy[Transportable, ObjectT] {
+  extends AbstractQuorumPolicy[Transportable](servers, retryingTime) with ServerQuorumPolicy[Transportable, ObjectT] with Shutdownable {
 
   override def objectSync(lt: LogicalTimestamp)
-                                  (implicit
-                                   transportableRequest: Transportable[LogicalTimestamp],
-                                   transportableResponse: Transportable[ObjectSyncResponse[ObjectT]]
-                                  ): Future[ObjectT] = {
+                         (implicit
+                          transportableRequest: Transportable[LogicalTimestamp],
+                          transportableResponse: Transportable[ObjectSyncResponse[ObjectT]]
+                         ): Future[ObjectT] = {
     gatherResponses[LogicalTimestamp, ObjectSyncResponse[ObjectT]](lt,
       responsesQuorum = thresholds.b,
       filterSuccess = response => response.responseCode == StatusCode.SUCCESS && !response.answer.isEmpty
@@ -34,18 +35,20 @@ extends AbstractQuorumPolicy[Transportable](servers, retryingTime) with ServerQu
 }
 
 
-
 object ServerQuorumPolicy {
-  type ServerQuorumPolicyFactory[Marshallable[_], U] = (Map[String, Int], QuorumSystemThresholds) => ServerQuorumPolicy[Marshallable, U]
+  type ServerQuorumPolicyFactory[Transportable[_], U] =
+    (Map[String, Int], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, U]
 
-  //todo: this is only a stub
-  def simpleJacksonServerQuorumFactory[U](): ServerQuorumPolicyFactory[JavaTypeable, U] =
-    (serversMap, thresholds) => new SimpleServerQuorumPolicy[JavaTypeable, U](servers = Map(), thresholds)
+  def simpleDistributedJacksonServerQuorumFactory[U](): ServerQuorumPolicyFactory[JavaTypeable, U] =
+    (serversMap, thresholds) => new SimpleServerQuorumPolicy[JavaTypeable, U](
+      servers = serversMap.map { case (serverIp, serverPort) =>
+        serverIp -> unencryptedDistributedJacksonStubFactory(serverIp, serverPort)
+      },
+      thresholds = thresholds
+    )
+
 
 }
-
-
-
 
 
 /* old code without refactoring:

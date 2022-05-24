@@ -6,6 +6,8 @@ import io.grpc.{Grpc, InsecureChannelCredentials, TlsChannelCredentials}
 import qu.GrpcClientStub.{JwtJacksonClientStub, UnauthenticatedJacksonClientStub}
 
 
+case class RecipientInfo(ip:String, port:Int)
+
 //equivalent of multiple applys
 object StubFactories {
   //here key is ignored
@@ -18,11 +20,11 @@ object StubFactories {
     new UnauthenticatedJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build())
   }
 
-  def inNamedProcessJacksonStubFactory(ip:String, port:String): UnauthenticatedJacksonClientStub = {
+  /*def inNamedProcessJacksonStubFactory(ip:String, port:Int): UnauthenticatedJacksonClientStub = {
     //could also use for address/for port
     //could validate with InetAddress
     new UnauthenticatedJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build())
-  }
+  }*/
 
   val unencryptedDistributedJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port) =>
     new UnauthenticatedJacksonClientStub(Grpc.newChannelBuilder(ip + ":" + port,

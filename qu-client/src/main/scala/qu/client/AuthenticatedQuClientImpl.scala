@@ -4,12 +4,13 @@ package qu.client
 
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
-import qu.OneShotAsyncScheduler
+import qu.{OneShotAsyncScheduler, Shutdownable}
+
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQuorumPolicy[U, Transportable],
-                                                     private val serversIds: Set[String],                                                     //only servers ids is actually required in this class
+class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQuorumPolicy[U, Transportable] with Shutdownable,
+                                                     private val serversIds: Set[String], //only servers ids is actually required in this class
                                                      private val thresholds: QuorumSystemThresholds,
                                                      private var initialBackOffTime: FiniteDuration = 1000.millis)
   extends QuClient[U, Transportable] {
@@ -41,7 +42,7 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
                                transportableResponse: Transportable[Response[Option[Object]]]): Future[OHS] = {
 
     //utilities
-    // todo 1.can be a point of polymorphism! 2.
+    // todo 1.can be a point of polymorphism!(could use functional object)
     def backOff(): Future[Void] = {
       initialBackOffTime *= 2
       scheduler.scheduleOnceAsPromise(initialBackOffTime)
@@ -72,7 +73,7 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
   }
 
   //should shutdown policy...
-  override def shutdown(): Unit = ???
+  override def shutdown(): Unit = policy.shutdown()
 }
 
 object ProvaUserSide {

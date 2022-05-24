@@ -7,8 +7,12 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
 import scala.util.Success
 
+trait Shutdownable {
+  def shutdown(): Unit
+}
+
 abstract class AbstractQuorumPolicy[Transportable[_]](servers: Map[String, GrpcClientStub[Transportable]],
-                                                      private val retryingTime: FiniteDuration = 3.seconds) {
+                                                      private val retryingTime: FiniteDuration = 3.seconds) extends Shutdownable{
   private val scheduler = new OneShotAsyncScheduler(2) //concurrency level configurable by user??
   //is it possible to have overlapping calls to schedule? (only so it's convenient to use >1 threads)?? no, actually!
 
@@ -42,5 +46,7 @@ abstract class AbstractQuorumPolicy[Transportable[_]](servers: Map[String, GrpcC
       }
     completionPromise.future
   }
+
+  override def shutdown() = servers.values.foreach(_.shutdown())
 }
 

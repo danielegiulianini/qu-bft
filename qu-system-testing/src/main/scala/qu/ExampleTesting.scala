@@ -2,6 +2,7 @@ package qu
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 
+//showcasing a stub
 object ExampleTesting extends App {
   //val a: Server = ServerBuilder.forPort(1).build()
   //ManagedChannelBuilder

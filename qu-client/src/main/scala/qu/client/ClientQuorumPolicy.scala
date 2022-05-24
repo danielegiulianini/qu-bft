@@ -1,7 +1,7 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.{AbstractQuorumPolicy, JwtGrpcClientStub}
+import qu.{AbstractQuorumPolicy, JwtGrpcClientStub, Shutdownable}
 import qu.StubFactories.distributedJacksonJwtStubFactory
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 
@@ -71,10 +71,10 @@ class SimpleBroadcastPolicyClient[ObjectT, Transportable[_]](private val thresho
 object ClientQuorumPolicy {
 
   //policy factories
-  type ClientPolicyFactory[Trasportable[_], U] = (Map[String, Int], QuorumSystemThresholds) => ClientQuorumPolicy[U, Trasportable]
+  type ClientPolicyFactory[Trasportable[_], U] = (Map[String, Int], QuorumSystemThresholds) => ClientQuorumPolicy[U, Trasportable] with Shutdownable
 
   //without tls
-  def simpleJacksonPolicyFactoryUnencrypted[U](jwtToken: String): ClientPolicyFactory[JavaTypeable, U] =
+  def simpleJacksonPolicyFactoryUnencrypted[U](jwtToken: String): (ClientPolicyFactory[JavaTypeable, U] ) =
     (servers, thresholds) => new SimpleBroadcastPolicyClient(thresholds,
       servers.map { case (ip, port) => ip -> distributedJacksonJwtStubFactory(jwtToken, ip, port) })
 
