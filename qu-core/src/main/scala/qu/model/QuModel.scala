@@ -48,15 +48,11 @@ trait AbstractQuModel extends QuModel {
 
 
 trait AbstractAbstractQuModel extends AbstractQuModel {
-  //the ones of the following that are self-independent can be put in separate trait/class and plugged by mixin
+
   type HMAC
-  override type α = Map[ServerId, HMAC] //SortedSet[HMAC] //or map?
+  override type α = Map[ServerId, HMAC]
 
-  //refactored since used in responses also...
-  type AuthenticatedReplicaHistory = (ReplicaHistory, α) //MyAuthenticatedReplicaHistory[U]//
-
-  //tuples are difficult to read...
-  //case class MyAuthenticatedReplicaHistory(serverId: ServerId, authenticator: α)
+  type AuthenticatedReplicaHistory = (ReplicaHistory, α) //case class MyAuthenticatedReplicaHistory(serverId: ServerId, authenticator: α)  //tuples are difficult to read...  //refactored since used in responses also...
 
   override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
@@ -73,33 +69,17 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   def fillAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(fun: (Key) => HMAC): α =
     fillAuthenticator(keys.view.filterKeys(_ == serverIdToUpdate).toMap)(fun) //fillAuthenticator(keys.filter(kv => kv._1  == serverIdToUpdate))(fun)
+
   val nullAuthenticator: α
+
   val emptyAuthenticatedRh: AuthenticatedReplicaHistory = SortedSet(emptyCandidate) -> nullAuthenticator
 
   def emptyOhs(serverIds: Set[ServerId]): OHS =
     serverIds.map(_ -> emptyAuthenticatedRh).toMap
 
 
+  override type LogicalTimestamp = MyLogicalTimestamp //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
 
-
-  //todo not used:
-  //object sync request:
-  //1. LogicalTimestamp only
-  //2. wrapping class:
-  /*case class LogicalTimestampOperation[ReturnValueObjectT](logicalTimestamp:
-                                                           LogicalTimestamp)
-    extends Query[ReturnValueObjectT, ReturnValueObjectT] {
-    override def compute(obj: ReturnValueObjectT): ReturnValueObjectT = obj
-  }*/
-
-  //object sync response:
-  //1. reuse response (some fields are null)
-  //2. new class:
-  case class ObjectSyncResponse[ObjectT, AnswerT](responseCode: StatusCode,
-                                         answer: Option[(ObjectT, AnswerT)])
-
-  //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
-  override type LogicalTimestamp = MyLogicalTimestamp
 
   //clean but not considers if rh are not ordered by server...
   //implicit val OHSOrdering: Ordering[OHS] = (x: OHS, y: OHS) => x.values.toString compare y.toString
@@ -114,7 +94,6 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
                                 clientId: Option[ClientId],
                                 operation: Option[OperationRepresentation],
                                 ohs: Option[OHSRepresentation])
-
 
   //candidate ordering leverages the implicit ordering of tuples and of MyLogicalTimestamp
   implicit def MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] =
@@ -194,13 +173,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
     //renaming without using custom case class instead of tuples...
     val (latestObjectVersionLT, _) = latestObjectVersion
     val (latestBarrierVersionLT, _) = latestBarrierVersion
-    /*val operationType = (latestObjectVersionLT, latestBarrierVersionLT) match {
-      case (`ltLatest`, _) if order(latestObjectVersion, ohs) > quorumThreshold => 1
-      case (`ltLatest`, _) if order(latestObjectVersion, ohs) > repairableThreshold => 2
-      case (_, `ltLatest`) if order(latestObjectVersion, ohs) > quorumThreshold => 3
-      case (_, `ltLatest`) if order(latestObjectVersion, ohs) > repairableThreshold => 4
-      case _ => 5
-    }*/
+
     val operationType = if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) >= quorumThreshold) OperationType1.METHOD
     else if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) >= repairableThreshold) OperationType1.INLINE_METHOD
     else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) >= quorumThreshold) OperationType1.COPY
@@ -271,6 +244,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   }
 }
 
+
 //maybe more implementations (that with compact authenticators...)
 object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator with Operations with Hashing {
   //final keyword removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
@@ -280,4 +254,37 @@ object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticat
   case class Response[ReturnValueT](responseCode: StatusCode,
                                     answer: ReturnValueT,
                                     authenticatedRh: AuthenticatedReplicaHistory)
+
+
+  case class ObjectSyncResponse[ObjectT](responseCode: StatusCode,
+                                         answer: Option[ObjectT])
 }
+
+
+
+
+
+//Wrapping for objectSyncRequest:
+//object sync request:
+//1. LogicalTimestamp only
+//2. wrapping class:
+/*case class LogicalTimestampOperation[ReturnValueObjectT](logicalTimestamp:
+                                                         LogicalTimestamp)
+  extends Query[ReturnValueObjectT, ReturnValueObjectT] {
+  override def compute(obj: ReturnValueObjectT): ReturnValueObjectT = obj
+}*/
+
+//object sync response:
+//1. reuse response (some fields are null)
+//2. new class:
+
+
+/*with pattern matching:
+
+val operationType = (latestObjectVersionLT, latestBarrierVersionLT) match {
+  case (`ltLatest`, _) if order(latestObjectVersion, ohs) > quorumThreshold => 1
+  case (`ltLatest`, _) if order(latestObjectVersion, ohs) > repairableThreshold => 2
+  case (_, `ltLatest`) if order(latestObjectVersion, ohs) > quorumThreshold => 3
+  case (_, `ltLatest`) if order(latestObjectVersion, ohs) > repairableThreshold => 4
+  case _ => 5
+}*/
