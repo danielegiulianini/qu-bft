@@ -27,7 +27,7 @@ extends AbstractQuorumPolicy[Transportable](servers, retryingTime) with ServerQu
                                    transportableResponse: Transportable[ObjectSyncResponse[ObjectT]]
                                   ): Future[ObjectT] = {
     gatherResponses[LogicalTimestamp, ObjectSyncResponse[ObjectT]](lt,
-      responsesQuorum = 6,//todo come ricavo b??
+      responsesQuorum = thresholds.b,
       filterSuccess = response => response.responseCode == StatusCode.SUCCESS && !response.answer.isEmpty
     ).map(_.values.head.answer.getOrElse(throw new Exception(" inconsistent...")))
   }
