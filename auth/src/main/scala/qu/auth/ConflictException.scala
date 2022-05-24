@@ -1,4 +1,4 @@
-package qu.auth
+package auth
 
 class ConflictException(message:String) extends Exception{
 

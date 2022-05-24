@@ -1,11 +1,12 @@
-package qu.auth
+package auth
 
+import auth.FutureUtilities.mapThrowableByStatus
 import io.grpc.Status
-import qu.auth.FutureUtilities.mapThrowableByStatus
+import qu.auth._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scala.util.{Failure, Success}
+
 
 class MyAuthService extends AuthGrpc.Auth {
 

@@ -2,15 +2,14 @@ package qu
 
 
 import io.grpc.stub.StreamObserver
-import qu.Shared.{QuorumSystemThresholds, RecipientInfo}
-import qu.protocol.MethodDescriptorFactory
+import qu.model.QuorumSystemThresholds
 
 import java.util.logging.{Level, Logger}
 import scala.concurrent.ExecutionContext
 import scala.reflect.runtime.universe._
 
 //import that declares specific dependency
-import qu.protocol.model.ConcreteQuModel._
+import qu.model.ConcreteQuModel._
 
 
 class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by programmer
@@ -24,18 +23,18 @@ class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by progr
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Marshallable, U]].getName)
   private val storage = new StorageWithImmutableMap[U]()
 
-  val clientId = "" //from context (server interceptor)
+  val clientId = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
 
-  //scheduler for io-bound (callbacks from other servers)
 
   import java.util.concurrent.Executors
 
+  //scheduler for io-bound (callbacks from other servers)
   val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors + 1)) //or MoreExecutors.newDirectExecutorService
   //todo scheduler for cpu-bound (computing hmac, for now not used)
 
   //initialization (todo could have destructured tuple here instead
   var authenticatedReplicaHistory = emptyAuthenticatedRh
-  storage.store(emptyLT, (obj, Option.empty))  //must add to store the initial object (passed by param)
+  storage.store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
 
   class MyException() extends Exception
 

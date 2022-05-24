@@ -1,21 +1,21 @@
 package qu
 
 
-import ServerQuorumPolicy.{ServerQuorumPolicyFactory, simpleJacksonServerQuorumFactory}
+import TemporaryConstants.METHOD_NAME
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.grpc.{BindableService, ManagedChannel, ManagedChannelBuilder, MethodDescriptor, ServerServiceDefinition}
-import io.grpc.stub.{ServerCalls, StreamObserver}
-import Shared.{QuorumSystemThresholds, WithHmacKey, WithIp, RecipientInfo => ServerInfo}
-import qu.protocol.TemporaryConstants._
-import qu.protocol.model.ConcreteQuModel
-import qu.protocol.{JacksonMethodDescriptorFactory, MethodDescriptorFactory}
+import io.grpc.stub.ServerCalls
+import io.grpc.{BindableService, ServerServiceDefinition}
+import qu.ServerQuorumPolicy.{ServerQuorumPolicyFactory, simpleJacksonServerQuorumFactory}
+import qu.Shared.{QuorumSystemThresholds, WithHmacKey, WithIp, RecipientInfo => ServerInfo}
+import qu.model.QuorumSystemThresholds
+import qu.model.ConcreteQuModel
 
-import scala.reflect.runtime.universe._
 import java.util.Objects
+import scala.reflect.runtime.universe._
 
 
 //import that declares specific dependency
-import qu.protocol.model.ConcreteQuModel._
+import qu.model.ConcreteQuModel._
 
 
 
@@ -34,7 +34,7 @@ abstract class AbstractQuService[Marshallable[_], U] (
   private val ssd = ServerServiceDefinition.builder(SERVICE_NAME)
 
   private var servers = Set[ServerInfo]()
-  protected val keys = Map[ServerId, String]() //this contains mykey too (needed)
+  protected val keys: Map[ServerId, Key] = Map[ServerId, String]() //this contains mykey too (needed)
   protected var quorumPolicy: ServerQuorumPolicy[Marshallable, U] = policyFactory(servers, thresholds)
 
   insertKeyForServer(myServerInfo)
@@ -44,7 +44,7 @@ abstract class AbstractQuService[Marshallable[_], U] (
                                 marshallableRequest: Marshallable[Request[OperationOutputT, U]],
                                 marshallableResponse: Marshallable[Response[Option[OperationOutputT]]],
                                 marshallableLogicalTimestamp: Marshallable[LogicalTimestamp],
-                                marshallableObjectSyncResponse: Marshallable[ObjectSyncResponse[U]],
+                                marshallableObjectSyncResponse: Marshallable[ObjectSyncResponse[U, OperationOutputT]],
                                 last: TypeTag[OperationOutputT]): AbstractQuService[Marshallable, U] = {
     //could be a separate reusable utility to plug into ssd (by implicit conversion)
     def addMethod[X: Marshallable, Y: Marshallable](handler: ServerCalls.UnaryMethod[X, Y]): Unit =
@@ -53,7 +53,7 @@ abstract class AbstractQuService[Marshallable[_], U] (
 
     println("generating md:")
     addMethod[Request[OperationOutputT, U], Response[Option[OperationOutputT]]]((request, obs) => sRequest(request, obs))
-    //addMethod[LogicalTimestamp, ObjectSyncResponse[U]]((request, obs) => sObjectRequest(request, obs))
+    addMethod[LogicalTimestamp, ObjectSyncResponse[U, OperationOutputT]]((request, obs) => sObjectRequest(request, obs))
     println("md generated:")
     this
   }
@@ -91,12 +91,12 @@ abandoned because of many protected fields (uninitialized at the beginning, but 
 // because I can't instantiate QuService at the end but must do it before, as addOperation must
 // work over the same instance of it)
 abstract class QuServiceImplBase[Marshallable[_], U] extends BindableService with QuService[U] {
-  //(odvrei lasciare solo i getter protected, gli altri provate) se ritorno un implbase nella build allora i private devono essere private , se un QuServiceImpl allora proected
+  //(odvrei lasciare solo i getter protected, gli altri provate) se ritorno un implbase nella build allora i private devono essere private , se un qu.QuServiceImpl allora proected
 
 //set of protected methods (analogous to protected constructor in "classic" builder pattern)
   protected var obj: U = _ //private  //protected var obj: U = _obj
   protected var serversInfo: Set[ServerInfo] = _ //private  //protected var serversInfo: Set[ServerInfo] = _serversInfo
-  protected var quorumPolicy: ServerQuorumPolicy[U] = _ //private  //protected var quorumPolicy: ServerQuorumPolicy[U] = _quorumPolicy
+  protected var quorumPolicy: qu.ServerQuorumPolicy[U] = _ //private  //protected var quorumPolicy: qu.ServerQuorumPolicy[U] = _quorumPolicy
   protected var ssd: ServerServiceDefinition = _ //private
 
   override def bindService(): ServerServiceDefinition = ssd
@@ -105,9 +105,9 @@ abstract class QuServiceImplBase[Marshallable[_], U] extends BindableService wit
 object QuServiceImplBase {
   //builder used to put construction logic for QuService in one place only
   class QuServiceBuilder[Marshallable[_], U](private val methodDescriptorFactory: MethodDescriptorFactory[Marshallable],
-                                             private val policyFactory: Set[ServerInfo] => ServerQuorumPolicy[U]) {
+                                             private val policyFactory: Set[ServerInfo] => qu.ServerQuorumPolicy[U]) {
 
-    val quService: QuServiceImpl[Marshallable, U] = null // new QuServiceImpl[U, Marshallable]()
+    val quService: qu.QuServiceImpl[Marshallable, U] = null // new qu.QuServiceImpl[U, Marshallable]()
     val ssd = ServerServiceDefinition.builder(SERVICE_NAME)
     var servers = Set[ServerInfo]()
 
@@ -179,11 +179,11 @@ QuServiceImplBase VERSIONS NOT USING BUILDER FOR QUsERVIce
 //QuServiceImplBase2 reducing dependencies from  4 to 3
 abstract class QuServiceImplBase2[MyMarshallable[_], U](private var obj: U,
                                                         private val methodDescriptorFactory: MethodDescriptorFactory[MyMarshallable],
-                                                        private var policyFactory: Map[String, String] => ServerQuorumPolicy[U])
+                                                        private var policyFactory: Map[String, String] => qu.ServerQuorumPolicy[U])
   extends BindableService with QuService[U] {
 
   protected var stubs: Map[String, GrpcClientStub[MyMarshallable]]
-  protected var policy: ServerQuorumPolicy[U] = null
+  protected var policy: qu.ServerQuorumPolicy[U] = null
 
   //put here together with addOperation for centralizing construction logic (in costructor should be better?)
   def addServer(ip: String): Unit = {
@@ -197,11 +197,11 @@ abstract class QuServiceImplBase2[MyMarshallable[_], U](private var obj: U,
 //QuServiceImplBase2 using one exceeding dependencies
 abstract class QuServiceImplBase[MyMarshallable[_], U](private val methodDescriptorFactory: MethodDescriptorFactory[MyMarshallable],
                                                        private val clientStubFactory: (String) => GrpcClientStub[MyMarshallable],
-                                                       private var policyFactory: Map[String, GrpcClientStub[MyMarshallable]] => ServerQuorumPolicy[U])
+                                                       private var policyFactory: Map[String, GrpcClientStub[MyMarshallable]] => qu.ServerQuorumPolicy[U])
   extends BindableService with QuService[U] {
 
   protected var stubs: Map[String, GrpcClientStub[MyMarshallable]]
-  protected var policy: ServerQuorumPolicy[U] = null
+  protected var policy: qu.ServerQuorumPolicy[U] = null
 
   private val ssd: ServerServiceDefinition.Builder = ServerServiceDefinition.builder(SERVICE_NAME)
 
@@ -235,9 +235,9 @@ abstract class QuServiceImplBase[MyMarshallable[_], U](private val methodDescrip
 //implementation-specific factories
 object Implementations {
   //jacksonService factory
-  def jacksonService[U]() = new QuServiceImpl[U, JavaTypeable](new JacksonMethodDescriptorFactory {},
+  def jacksonService[U]() = new qu.QuServiceImpl[U, JavaTypeable](new JacksonMethodDescriptorFactory {},
     (ip: String) => new JacksonClientStub(ManagedChannelBuilder.forAddress(ip, 0).build()),
-    (stubs: Map[String, GrpcClientStub[JavaTypeable]]) => new SimpleServerQuorumPolicy(stubs)
+    (stubs: Map[String, GrpcClientStub[JavaTypeable]]) => new qu.SimpleServerQuorumPolicy(stubs)
   )
 }
 
@@ -252,12 +252,12 @@ object UserSide {
 
 
 /* old with QuService...
-class QuServiceImpl[U, Marshallable[_]]( //strategy
+class qu.QuServiceImpl[U, Marshallable[_]]( //strategy
                                          private val methodDescriptorFactory: MethodDescriptorFactory[Marshallable],
                                          //strategy
                                          private val stubFactory: (String) => GrpcClientStub[Marshallable],
                                          //strategy
-                                         private var policyFactory: Map[String, GrpcClientStub[Marshallable]] => ServerQuorumPolicy[U])
+                                         private var policyFactory: Map[String, GrpcClientStub[Marshallable]] => qu.ServerQuorumPolicy[U])
   extends MyNewServiceImplBase[Marshallable, U](methodDescriptorFactory, stubFactory, policyFactory) {
 
   //values to inject

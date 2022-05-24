@@ -1,13 +1,9 @@
-package qu
-
-import qu.protocol.model.ConcreteQuModel.ServerId
-
-import scala.concurrent.{Future, Promise}
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.util.Success
-
+import qu.model.ConcreteQuModel.ServerId
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.{Future, Promise}
+import scala.util.Success
 
 abstract class AbstractQuorumPolicy[Marshallable[_]](servers: Map[String, GrpcClientStub[Marshallable]],
                                                      private val retryingTime: FiniteDuration = 3.seconds) {

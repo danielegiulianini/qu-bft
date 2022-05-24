@@ -1,4 +1,4 @@
-package qu.protocol.model
+package qu.model
 
 
 trait CryptoMd5Authenticator {

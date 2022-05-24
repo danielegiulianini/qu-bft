@@ -11,7 +11,7 @@ import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets
 
 //import that declares specific dependency
-import qu.protocol.ConcreteQuModel._
+import qu.protocol.model.ConcreteQuModel._
 
 
 trait MarshallerFactory[Marshallable[_]] {
@@ -20,7 +20,7 @@ trait MarshallerFactory[Marshallable[_]] {
 
 
 //could inherit from MethodDescriptorFactory
-trait JacksonMarshallerFactory extends MarshallerFactory[JavaTypeable] {  //self: MethodDescriptorFactory =>
+trait JacksonMarshallerFactory extends MarshallerFactory[JavaTypeable] {
   @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "className")
   class JacksonOperationMixin
 
@@ -41,7 +41,7 @@ trait JacksonMarshallerFactory extends MarshallerFactory[JavaTypeable] {  //self
 }
 
 //could inherit from MethodDescriptorFactory
-trait PlayJsonMarshallerFactory extends MarshallerFactory[Format] {  //self: MethodDescriptorFactory =>
+trait PlayJsonMarshallerFactory extends MarshallerFactory[Format] {
 
   override def marshallerFor[T: Format]: MethodDescriptor.Marshaller[T] =
     new MethodDescriptor.Marshaller[T]() {

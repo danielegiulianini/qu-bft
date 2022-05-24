@@ -1,5 +1,7 @@
 //class not dependent on specific transport layer
-package qu.auth
+package auth
+
+import qu.auth.{Credentials, Role, Token, User}
 
 class LocalAuthenticator {
   private val usersByUsername = Map[String, User]()
@@ -24,6 +26,7 @@ class LocalAuthenticator {
     if (credentials.username.isBlank) throw new BadContentException("Missing user ID: " + credentials.username)
     if (credentials.password.isBlank) throw new BadContentException("Missing password: " + credentials.password)
     val userId = credentials.username
+    //todo should use key shared with quServer to create token
     this.synchronized {
       val user = usersByUsername.get(userId).orElse(throw new WrongCredentialsException("No such a user: " + userId))
       if (!credentials.password.equals(user.get.password)) throw new WrongCredentialsException("Wrong credentials for user: " + userId)

@@ -1,4 +1,4 @@
-package qu.protocol.model
+package qu.model
 
 import scala.collection.SortedSet
 
@@ -73,16 +73,11 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   def fillAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(fun: (Key) => HMAC): α =
     fillAuthenticator(keys.view.filterKeys(_ == serverIdToUpdate).toMap)(fun) //fillAuthenticator(keys.filter(kv => kv._1  == serverIdToUpdate))(fun)
-
   val nullAuthenticator: α
-
-  //todo could be private (nested) to emptyAuthenticatedRh, a functional val
   val emptyAuthenticatedRh: AuthenticatedReplicaHistory = SortedSet(emptyCandidate) -> nullAuthenticator
 
-  def emptyOhs(serverKeys: Map[ServerId, String]): OHS =
-    serverKeys.view.mapValues(_ => emptyAuthenticatedRh).toMap
-
-
+  def emptyOhs(serverIds: Set[ServerId]): OHS =
+    serverIds.map(_ -> emptyAuthenticatedRh).toMap
 
 
 
@@ -90,7 +85,7 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
   //todo not used:
   //object sync request:
   //1. LogicalTimestamp only
-  //2.:
+  //2. wrapping class:
   /*case class LogicalTimestampOperation[ReturnValueObjectT](logicalTimestamp:
                                                            LogicalTimestamp)
     extends Query[ReturnValueObjectT, ReturnValueObjectT] {
@@ -99,9 +94,9 @@ trait AbstractAbstractQuModel extends AbstractQuModel {
 
   //object sync response:
   //1. reuse response (some fields are null)
-  //2.
-  case class ObjectSyncResponse[ObjectT](responseCode: StatusCode,
-                                         answer: ObjectT)
+  //2. new class:
+  case class ObjectSyncResponse[ObjectT, AnswerT](responseCode: StatusCode,
+                                         answer: Option[(ObjectT, AnswerT)])
 
   //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
   override type LogicalTimestamp = MyLogicalTimestamp
