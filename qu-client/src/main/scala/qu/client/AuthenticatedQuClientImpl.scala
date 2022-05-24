@@ -2,16 +2,14 @@ package qu.client
 
 //import that declares specific dependency
 
+import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholds
 import qu.OneShotAsyncScheduler
-import qu.Shared.{QuorumSystemThresholds, RecipientInfo}
-import qu.protocol.model.ConcreteQuModel._
-
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQuorumPolicy[U, Transportable],
-                                                     //only servers ids is actually required in this class
-                                                     private val serversIds: Set[String],
+                                                     private val serversIds: Set[String],                                                     //only servers ids is actually required in this class
                                                      private val thresholds: QuorumSystemThresholds,
                                                      private var initialBackOffTime: FiniteDuration = 1000.millis)
   extends QuClient[U, Transportable] {
@@ -38,12 +36,12 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
     } yield answer
   }
 
-
   private def repair(ohs: OHS)(implicit
                                transportableRequest: Transportable[Request[Object, U]],
                                transportableResponse: Transportable[Response[Option[Object]]]): Future[OHS] = {
 
-    //utilities todo 1.can be a point of polymorphism! 2.
+    //utilities
+    // todo 1.can be a point of polymorphism! 2.
     def backOff(): Future[Void] = {
       initialBackOffTime *= 2
       scheduler.scheduleOnceAsPromise(initialBackOffTime)

@@ -1,54 +1,53 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import monix.execution.Cancelable
-import qu.{AbstractQuorumPolicy, JwtGrpcClientStub, OneShotAsyncScheduler}
-import qu.Shared.{QuorumSystemThresholds, RecipientInfo => ServerInfo}
-import qu.StubFactoryContainer.distributedJacksonJwtStubFactory
-import qu.protocol.model.ConcreteQuModel
+import qu.{AbstractQuorumPolicy, JwtGrpcClientStub}
+import qu.StubFactories.distributedJacksonJwtStubFactory
+import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
-import scala.util.Success
 
 //import that declares specific dependency
-import qu.protocol.model.ConcreteQuModel._
+import qu.model.ConcreteQuModel._
 
 
-trait ClientQuorumPolicy[ObjectT, Marshallable[_]] {
+trait ClientQuorumPolicy[ObjectT, Transportable[_]] {
   def quorum[AnswerT](operation: Option[Operation[AnswerT, ObjectT]],
                       ohs: OHS)
                      (implicit
-                      marshallableRequest: Marshallable[Request[AnswerT, ObjectT]],
-                      marshallableResponse: Marshallable[Response[Option[AnswerT]]]): Future[(Option[AnswerT], Int, OHS)]
+                      transportableRequest: Transportable[Request[AnswerT, ObjectT]],
+                      transportableResponse: Transportable[Response[Option[AnswerT]]]): Future[(Option[AnswerT], Int, OHS)]
 }
 
 
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
-class SimpleBroadcastPolicyClient[ObjectT, Marshallable[_]](private val thresholds: QuorumSystemThresholds,
-                                                            private val servers: Map[ServerId, JwtGrpcClientStub[Marshallable]],
-                                                            private val retryingTime: FiniteDuration = 3.seconds)
-  extends AbstractQuorumPolicy[Marshallable](servers, retryingTime) with ClientQuorumPolicy[ObjectT, Marshallable] {
+class SimpleBroadcastPolicyClient[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
+                                                             private val servers: Map[ServerId, JwtGrpcClientStub[Transportable]],
+                                                             private val retryingTime: FiniteDuration = 3.seconds)
+  extends AbstractQuorumPolicy[Transportable](servers, retryingTime) with ClientQuorumPolicy[ObjectT, Transportable] {
 
 
   override def quorum[AnswerT](operation: Option[Operation[AnswerT, ObjectT]],
                                ohs: OHS)
                               (implicit
-                               marshallableRequest: Marshallable[Request[AnswerT, ObjectT]],
-                               marshallableResponse: Marshallable[Response[Option[AnswerT]]])
+                               transportableRequest: Transportable[Request[AnswerT, ObjectT]],
+                               transportableResponse: Transportable[Response[Option[AnswerT]]])
   : Future[(Option[AnswerT], Int, OHS)] = {
 
-    def extractOhsFromResponses(responses: Map[ServerId, Response[Option[AnswerT]]]):OHS =
+    def extractOhsFromResponses(responses: Map[ServerId, Response[Option[AnswerT]]]): OHS =
       responses.view.mapValues(_.authenticatedRh).toMap
 
     def gatherResponsesAndOhs(): Future[(Set[Response[Option[AnswerT]]], OHS)] = {
+      val req =         Request[AnswerT, ObjectT](operation, ohs)
+
+      val  ss = gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
+        request = req,
+        responsesQuorum = thresholds.q,
+        filterSuccess = _.responseCode == StatusCode.SUCCESS)
       for {
-        responses <- gatherResponses
-          [Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
-            request = Request(operation, ohs),
-            responsesQuorum = thresholds.q,
-            filterSuccess = _.responseCode == StatusCode.SUCCESS)
+        responses <- ss
       } yield (responses.values.toSet, extractOhsFromResponses(responses))
     }
 
@@ -70,16 +69,17 @@ class SimpleBroadcastPolicyClient[ObjectT, Marshallable[_]](private val threshol
 
 
 object ClientQuorumPolicy {
+
   //policy factories
-  type PolicyFactory[Marshallable[_], U] = (Set[ServerInfo], QuorumSystemThresholds) => ClientQuorumPolicy[U, Marshallable]
+  type ClientPolicyFactory[Trasportable[_], U] = (Map[String, Int], QuorumSystemThresholds) => ClientQuorumPolicy[U, Trasportable]
 
   //without tls
-  def simpleJacksonPolicyFactoryUnencrypted[U](jwtToken: String): PolicyFactory[JavaTypeable, U] =
-    (mySet, thresholds) => new SimpleBroadcastPolicyClient(thresholds,
-      mySet.map(serverInfo => serverInfo.ip -> distributedJacksonJwtStubFactory(jwtToken, serverInfo)).toMap)
+  def simpleJacksonPolicyFactoryUnencrypted[U](jwtToken: String): ClientPolicyFactory[JavaTypeable, U] =
+    (servers, thresholds) => new SimpleBroadcastPolicyClient(thresholds,
+      servers.map { case (ip, port) => ip -> distributedJacksonJwtStubFactory(jwtToken, ip, port) })
 
   //with tls
-  def simpleJacksonPolicyFactoryWithTls[U](jwtToken: String): PolicyFactory[JavaTypeable, U] = ???
+  def simpleJacksonPolicyFactoryWithTls[U](jwtToken: String): ClientPolicyFactory[JavaTypeable, U] = ???
 }
 
 
@@ -112,3 +112,20 @@ val cancelable: Cancelable = scheduler.scheduleOnceAsCallback(retryingTime)(gath
 
 completionPromise.future
 }*/
+
+
+/* come era prima...
+object ClientQuorumPolicy {
+
+  //policy factories
+  type PolicyFactory[Marshallable[_], U] = (Set[ServerInfo], QuorumSystemThresholds) => ClientQuorumPolicy[U, Marshallable]
+
+  //without tls
+  def simpleJacksonPolicyFactoryUnencrypted[U](jwtToken: String): PolicyFactory[JavaTypeable, U] =
+    (servers, thresholds) => new SimpleBroadcastPolicyClient(thresholds,
+      servers.map(serverInfo => serverInfo.ip -> distributedJacksonJwtStubFactory(jwtToken, serverInfo)).toMap)
+
+  //with tls
+  def simpleJacksonPolicyFactoryWithTls[U](jwtToken: String): PolicyFactory[JavaTypeable, U] = ???
+}
+ */

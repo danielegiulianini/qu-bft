@@ -1,46 +1,52 @@
 package qu.client
 
-import QuorumPolicy.simpleJacksonPolicyFactoryUnencrypted
+import ClientQuorumPolicy.simpleJacksonPolicyFactoryUnencrypted
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.Shared.QuorumSystemThresholds
-import qu.Shared.{QuorumSystemThresholds, RecipientInfo => ServerInfo}
+import qu.client.AuthenticatedClientBuilderInFunctionalStyle.simpleJacksonQuClientBuilderInFunctionalStyle
+import qu.model.QuorumSystemThresholds
 
 import scala.concurrent.Future
 
 //import that declares specific dependency
-import qu.protocol.model.ConcreteQuModel._
+import qu.model.ConcreteQuModel._
 
 //most abstract possible (not bound to grpc)
-trait QuClient[U, Transferable[_]] {
-  def submit[T](op: Operation[T, U])(implicit
-                                     marshallableRequest: Transferable[Request[T, U]],
-                                     marshallableResponse: Transferable[Response[Option[T]]],
-                                     marshallableRequestObj: Transferable[Request[Object, U]],
-                                     marshallableResponseObj: Transferable[Response[Option[Object]]]): Future[T]
+trait QuClient[ObjectT, Transferable[_]] {
+  def submit[ReturnValueT](op: Operation[ReturnValueT, ObjectT])(implicit
+                                                                 marshallableRequest: Transferable[Request[ReturnValueT, ObjectT]],
+                                                                 marshallableResponse: Transferable[Response[Option[ReturnValueT]]],
+                                                                 marshallableRequestObj: Transferable[Request[Object, ObjectT]],
+                                                                 marshallableResponseObj: Transferable[Response[Option[Object]]]): Future[ReturnValueT]
 }
 
 object QuClient {
-
-  //public factories
-  def apply[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds):
-  QuClient[U, JavaTypeable] =
-    simpleJacksonQuClient[U](token, serversInfo, thresholds)
-
-  //private factories internal use only
-  private def apply[U, Transportable[_]](policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => QuorumPolicy[U, Transportable],
-                                 //user dependencies,
-                                 serversInfo: Set[ServerInfo],
-                                 thresholds: QuorumSystemThresholds): QuClient[U, Transportable] = {
-    //validation
-    new AuthenticatedQuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds), thresholds)
-  }
-
-  //hided builder implementations
-  def simpleJacksonQuClient[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds):
-  QuClient[U, JavaTypeable] =
-    QuClient[U, JavaTypeable](simpleJacksonPolicyFactoryUnencrypted(token), serversInfo, thresholds)
+  def defaultBuilder[U](token: String): AuthenticatedClientBuilderInFunctionalStyle[U, JavaTypeable] =
+    simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 }
 
+
+/*3. Builder with only named parameters
+
+   def apply[U](token: String, serversInfo: Set[ServerInfo], thresholds: QuorumSystemThresholds):
+   QuClient[U, JavaTypeable] =
+     simpleJacksonQuClient[U](token, serversInfo, thresholds)
+
+   //private factories internal use only
+   private def apply[U, Transportable[_]](
+                                           policyFactory: (Set[ServerInfo], QuorumSystemThresholds) => ClientQuorumPolicy[U, Transportable],
+                                           //user dependencies,
+                                           serversInfo: Set[ServerInfo],
+                                           thresholds: QuorumSystemThresholds): QuClient[U, Transportable] = {
+     //validation
+     new AuthenticatedQuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds),
+       serversInfo.map(serverInfo => serverInfo.ip + serverInfo.port), thresholds)
+   }*/
+
+//hided builder implementations
+/*def simpleJacksonQuClient[U](token: String, serversInfo: Map[String, Int], thresholds: QuorumSystemThresholds):
+QuClient[U, JavaTypeable] =
+  QuClient(simpleJacksonPolicyFactoryUnencrypted(token), serversInfo, thresholds)
+*/
 
 /* 2. Builder with named param (validation logic has been moved from build method to apply
 object QuClient {
