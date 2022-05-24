@@ -1,8 +1,8 @@
-package qu
-
+package qu.service
 
 import io.grpc._
 import io.jsonwebtoken.Jwts
+import qu.auth.Constants
 
 //class AuthorizationServerInterceptor extends ServerInterceptor {
 //private val parser = Jwts.parser.setSigningKey(Constants.JWT_SIGNING_KEY)

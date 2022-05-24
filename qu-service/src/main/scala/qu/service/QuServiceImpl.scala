@@ -1,59 +1,69 @@
-package qu
+package qu.service
 
-
+import io.grpc.Context
 import io.grpc.stub.StreamObserver
-import qu.model.QuorumSystemThresholds
+import qu.MethodDescriptorFactory
+import qu.auth.Constants
+import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
+import qu.storage.{StorageWithImmutableMap, ImmutableStorage}
 
+import java.security.InvalidParameterException
 import java.util.logging.{Level, Logger}
-import scala.concurrent.ExecutionContext
+import scala.collection.SortedSet
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
+import scala.math.Ordered.orderingToOrdered
 import scala.reflect.runtime.universe._
+import scala.util.Success
 
 //import that declares specific dependency
 import qu.model.ConcreteQuModel._
 
 
-class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by programmer
-                                                  private val methodDescriptorFactory: MethodDescriptorFactory[Marshallable],
-                                                  private val policyFactory: (Set[RecipientInfo], QuorumSystemThresholds) => ServerQuorumPolicy[Marshallable, U],
-                                                  //dependencies chosen by user
-                                                  override val myServerInfo: RecipientInfo,
-                                                  override val thresholds: QuorumSystemThresholds,
-                                                  override val obj: U)
-  extends AbstractQuService[Marshallable, U](methodDescriptorFactory, policyFactory, thresholds, myServerInfo, obj) {
-  private val logger = Logger.getLogger(classOf[QuServiceImpl[Marshallable, U]].getName)
-  private val storage = new StorageWithImmutableMap[U]()
+class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen by programmer
+                                                         private val methodDescriptorFactory: MethodDescriptorFactory[Transportable],
+                                                         private val policyFactory: (Map[String, Int], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, ObjectT],
+                                                         //dependencies chosen by user
+                                                         override val ip: String, override val port: Int, override val privateKey: String,
+                                                         override val thresholds: QuorumSystemThresholds,
+                                                         override val obj: ObjectT)
+  extends AbstractQuService[Transportable, ObjectT](methodDescriptorFactory, policyFactory, thresholds, ip, port, privateKey, obj) {
+  private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
+  private var storage = ImmutableStorage[ObjectT]()
 
-  val clientId = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
+  val clientId: Context.Key[Key] = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
 
 
   import java.util.concurrent.Executors
 
   //scheduler for io-bound (callbacks from other servers)
-  val ec = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors + 1)) //or MoreExecutors.newDirectExecutorService
+  val ec: ExecutionContextExecutorService = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors + 1)) //or MoreExecutors.newDirectExecutorService
   //todo scheduler for cpu-bound (computing hmac, for now not used)
 
   //initialization (todo could have destructured tuple here instead
-  var authenticatedReplicaHistory = emptyAuthenticatedRh
-  storage.store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
+  var authenticatedReplicaHistory: AuthenticatedReplicaHistory = emptyAuthenticatedRh
+  storage = storage.store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
 
   class MyException() extends Exception
 
-  override def sRequest[T: TypeTag](request: Request[T, U], responseObserver: StreamObserver[Response[Option[T]]]): Unit = {
+  override def sRequest[AnswerT: TypeTag](request: Request[AnswerT, ObjectT],
+                                          responseObserver: StreamObserver[Response[Option[AnswerT]]])(implicit objectSyncResponseTransportable: Transportable[ObjectSyncResponse[ObjectT]],
+                                                                                                       logicalTimestampTransportable: Transportable[LogicalTimestamp])
+  : Unit = {
     logger.log(Level.INFO, "request received", 2)
     //todo importante per veirificare status unknown
     // responseObserver.onError(new MyException)
 
     //responseObserver.onCompleted()
 
-    /*val (replicaHistory, _) = authenticatedReplicaHistory
-    var answer = Option.empty[T]
+    val (replicaHistory, _) = authenticatedReplicaHistory
+    var answer = Option.empty[AnswerT]
 
-    def replyWith(response: Response[Option[T]]) = {
+    def replyWith(response: Response[Option[AnswerT]]): Unit = {
       responseObserver.onNext(response)
     }
 
     //todo not need to pass request if nested def
-    def executeOperation(request: Request[T, U]): (U, T) = {
+    def executeOperation(request: Request[AnswerT, ObjectT]): (ObjectT, AnswerT) = {
       //todo can actually happen that a malevolent client can make this exception happen?
       request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state: if classify returns a (inline) method then operation should be defined (not none)"))(obj) //for {operation <- request.operation} operation.compute(obj)
     }
@@ -61,15 +71,15 @@ class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by progr
     //culling invalid Replica histories
     val updatedOhs = request.
       ohs. //todo map access like this (to authenticator) could raise exception
-      map { case (serverId, (rh, authenticator)) => if (authenticator(myServerInfo.ip) != hmac(keys(serverId), rh))
+      map { case (serverId, (rh, authenticator)) => if (authenticator(ip) != hmac(keys(serverId), rh))
         (serverId, (emptyRh, authenticator)) else (serverId, (rh, authenticator)) //keep authentictor untouched (as in paper)
       }
 
-    val (opType, (lt, ltCo), ltCurrent) = setup(request.operation, updatedOhs, thresholds.q, thresholds.r, clientId)
+    val (opType, (lt, ltCo), ltCurrent) = setup(request.operation, updatedOhs, thresholds.q, thresholds.r, clientId.get())
 
     //repeated request
     if (contains(replicaHistory, (lt, ltCo))) {
-      val (_, answer) = storage.retrieve[T](lt).getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
+      val (_, answer) = storage.retrieve[AnswerT](lt).getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
       replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
       return //todo put attention if it's possible to express this with a chain of if e.se and only one return
     }
@@ -77,8 +87,8 @@ class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by progr
     //validating if ohs current
     if (latestTime(replicaHistory) > ltCurrent) {
       // optimistic query execution
-      if (request.operation.isInstanceOf[Option[Query[_, _]]]) {
-        val (obj, _) = storage.retrieve[T](lt).getOrElse(throw new Error("inconsistent protocol state: if replica history has lt older than ltcur store must contain ltcur too."))
+      if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) {
+        val (obj, _) = storage.retrieve[AnswerT](lt).getOrElse(throw new Error("inconsistent protocol state: if replica history has lt older than ltcur store must contain ltcur too."))
         val (newObj, opAnswer) = executeOperation(request)
         answer = Some(opAnswer)
         if (newObj != obj) {
@@ -91,46 +101,56 @@ class QuServiceImpl[Marshallable[_], U: TypeTag]( //dependencies chosen by progr
     }
 
     if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
-      val objAndAnswer = storage.retrieve[T](lt) //retrieve[T, U](lt)
+      val objAndAnswer = storage.retrieve[AnswerT](lt) //retrieve[T, U](lt)
       if (objAndAnswer.isEmpty && ltCo > emptyLT) {
         /*for { obj <- quorumPolicy.objectSync[T]()} yield*/
-        quorumPolicy.objectSync[T]().onComplete({
-          case Success(_) => respondWithFoundObjectAndUpdateDataStructures() //here I know that a quorum is found...
+        //todo here I require answer as Object since I overwrite it
+        quorumPolicy.objectSync(lt).onComplete({
+          case Success(obj) => respondWithFoundObjectAndUpdateDataStructures(obj) //here I know that a quorum is found...
           case _ => //what can actually happen here? (malformed json, bad url) those must be notified to server user
         })(ec)
       }
     }
 
-    respondWithFoundObjectAndUpdateDataStructures()
+    respondWithFoundObjectAndUpdateDataStructures(obj)
 
-    def respondWithFoundObjectAndUpdateDataStructures(): Unit = {
+    def respondWithFoundObjectAndUpdateDataStructures(obj: ObjectT): Unit = {
+      var answerToReturn = Option.empty[AnswerT]
       if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD) {
         val (_, answer) = executeOperation(request)
-        if (request.operation.isInstanceOf[Query[_, _]]) {
-          replyWith(Response(StatusCode.SUCCESS, Some(answer), authenticatedReplicaHistory))
+        answerToReturn = Some(answer) //must overwrite
+        //if method or inline method operation should not be empty
+        if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) {//todo ugly
+          replyWith(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
           return
         }
       }
 
       this.synchronized {
-        val updatedReplicaHistory: ReplicaHistory = replicaHistory + ((lt, ltCo))
-        val updatedAuthenticator = updateAuthenticatorFor(keys)(myServerInfo.ip)(updatedReplicaHistory)
+        val updatedReplicaHistory: ReplicaHistory = replicaHistory + (lt -> ltCo)
+        val updatedAuthenticator = updateAuthenticatorFor(keys)(ip)(updatedReplicaHistory)
         authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
-        if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
-          storage.store[T](lt, (obj, answer))
+
+        //overriding answer since it's ignored at client side
+        if (opType == OperationType1.COPY) {
+          answerToReturn = Option.empty
         }
-        //todo: replica history pruning
+        if (opType == OperationType1.METHOD || opType == OperationType1.INLINE_METHOD || opType == OperationType1.COPY) {
+          storage = storage.store[AnswerT](lt, (obj, answerToReturn)) //answer.asInstanceOf[AnswerT])
+          //todo: replica history pruning
+        }
+        replyWith(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
       }
-      replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
-    }*/
+    }
   }
 
 
-  override def sObjectRequest[T: TypeTag](request: LogicalTimestamp, //or the wrapping class
-                                          responseObserver: StreamObserver[ObjectSyncResponse[U, T]]): Unit = {
+  override def sObjectRequest(request: LogicalTimestamp, //or the wrapping class
+                                          responseObserver: StreamObserver[ObjectSyncResponse[ObjectT]]): Unit = {
     //devo prevedere il fatto che il server contattato potrebbe non avere questo method descriptor perché lavora su
     //altri oggetti (posso importlo con i generici all'altto della costruzione???)
-    responseObserver.onNext(ObjectSyncResponse(StatusCode.SUCCESS, storage.retrieve[T](request))) //answer: Option[(ObjectT, AnswerT)])
+    responseObserver.onNext(ObjectSyncResponse(StatusCode.SUCCESS,
+      storage.retrieveObject(request))) //answer: Option[(ObjectT, AnswerT)])
     responseObserver.onCompleted()
   }
 }
@@ -147,7 +167,7 @@ request.operation match {
 
 /*QuService' constructor before:
 
-class qu.QuServiceImpl[Marshallable[_],U: TypeTag](private val myId: ServerId,
+class qu.service.QuServiceImpl[Marshallable[_],U: TypeTag](private val myId: ServerId,
                                                  private val keys: Map[ServerId, String], //this contains mykey too (needed)
                                                  private val thresholds: QuorumSystemThresholds)
   extends QuServiceImplBase2[Marshallable, U] {

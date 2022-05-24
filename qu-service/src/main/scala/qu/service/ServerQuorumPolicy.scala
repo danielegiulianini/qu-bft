@@ -1,46 +1,46 @@
-package qu
+package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.Shared.{QuorumSystemThresholds, RecipientInfo}
-import qu.protocol.model.ConcreteQuModel._
-import qu.protocol.model.ConcreteQuModel.{LogicalTimestamp, OHS, Operation, Request, Response, ServerId}
+import qu.{AbstractQuorumPolicy, GrpcClientStub}
+import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholds
 
 import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Future, Promise}
-import scala.util.Success
 
-trait ServerQuorumPolicy[Marshallable[_], ObjectT] {
-  def objectSync[AnswerT](lt: LogicalTimestamp)(implicit
-                                                marshallableRequest: Marshallable[LogicalTimestamp],
-                                                marshallableResponse: Marshallable[ObjectSyncResponse[ObjectT, AnswerT]]
-  ): Future[Option[(ObjectT, AnswerT)]]
+trait ServerQuorumPolicy[Transportable[_], ObjectT] {
+  def objectSync(lt: LogicalTimestamp)(implicit
+                                                transportableRequest: Transportable[LogicalTimestamp],
+                                                transportableResponse: Transportable[ObjectSyncResponse[ObjectT]]
+  ): Future[ObjectT]
 }
 
-class SimpleServerQuorumPolicy[Marshallable[_], ObjectT](servers: Map[String, GrpcClientStub[Marshallable]],
-                                                         private val retryingTime: FiniteDuration = 3.seconds)
-extends AbstractQuorumPolicy[Marshallable](servers, retryingTime) with ServerQuorumPolicy[Marshallable, ObjectT] {
+class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[String, GrpcClientStub[Transportable]],
+                                                          private val thresholds: QuorumSystemThresholds,
+                                                          private val retryingTime: FiniteDuration = 3.seconds)
+extends AbstractQuorumPolicy[Transportable](servers, retryingTime) with ServerQuorumPolicy[Transportable, ObjectT] {
 
-  override def objectSync[AnswerT](lt: LogicalTimestamp)
+  override def objectSync(lt: LogicalTimestamp)
                                   (implicit
-                                   marshallableRequest: Marshallable[LogicalTimestamp],
-                                   marshallableResponse: Marshallable[ObjectSyncResponse[ObjectT, AnswerT]]
-                                  ): Future[Option[(ObjectT, AnswerT)]] = {
-    gatherResponses[LogicalTimestamp, ObjectSyncResponse[ObjectT, AnswerT]](lt,
-      responsesQuorum = 6,
+                                   transportableRequest: Transportable[LogicalTimestamp],
+                                   transportableResponse: Transportable[ObjectSyncResponse[ObjectT]]
+                                  ): Future[ObjectT] = {
+    gatherResponses[LogicalTimestamp, ObjectSyncResponse[ObjectT]](lt,
+      responsesQuorum = 6,//todo come ricavo b??
       filterSuccess = response => response.responseCode == StatusCode.SUCCESS && !response.answer.isEmpty
-    ).map(_.values.head.answer)
+    ).map(_.values.head.answer.getOrElse(throw new Exception(" inconsistent...")))
   }
 }
 
 
 
 object ServerQuorumPolicy {
-  type ServerQuorumPolicyFactory[Marshallable[_], U] = (Set[RecipientInfo], QuorumSystemThresholds) => ServerQuorumPolicy[Marshallable, U]
+  type ServerQuorumPolicyFactory[Marshallable[_], U] = (Map[String, Int], QuorumSystemThresholds) => ServerQuorumPolicy[Marshallable, U]
 
   //todo: this is only a stub
   def simpleJacksonServerQuorumFactory[U](): ServerQuorumPolicyFactory[JavaTypeable, U] =
-    (mySet, thresholds) => new SimpleServerQuorumPolicy[JavaTypeable, U](servers = Map())
+    (serversMap, thresholds) => new SimpleServerQuorumPolicy[JavaTypeable, U](servers = Map(), thresholds)
 
 }
 
@@ -49,7 +49,7 @@ object ServerQuorumPolicy {
 
 
 /* old code without refactoring:
-    private val scheduler = new OneShotAsyncScheduler(2) //concurrency level configurable by user??
+    private val scheduler = new qu.OneShotAsyncScheduler(2) //concurrency level configurable by user??
 
     override def quorum[T](operation: Option[Operation[T, U]],
                            ohs: OHS)
