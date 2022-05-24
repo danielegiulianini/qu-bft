@@ -18,4 +18,6 @@ case class Ola(s:Unit, s2:Int)
 class ExampleTest extends AnyFunSpec {
   println("ok" + new Ciao)
   Ola(3, 2)
+
+  //thrsholds compatibili ( r minore di q)
 }

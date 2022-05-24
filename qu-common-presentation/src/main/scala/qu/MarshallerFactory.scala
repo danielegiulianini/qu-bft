@@ -1,17 +1,16 @@
-package qu.protocol
+package qu
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.databind.`type`.TypeFactory
 import com.fasterxml.jackson.databind.json.JsonMapper
 import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule, JavaTypeable}
 import io.grpc.MethodDescriptor
 import play.api.libs.json.{Format, Json}
-import java.io.{ByteArrayInputStream, InputStream}
 
+import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets
 
 //import that declares specific dependency
-import qu.protocol.model.ConcreteQuModel._
+import qu.model.ConcreteQuModel._
 
 
 trait MarshallerFactory[Marshallable[_]] {

@@ -1,4 +1,4 @@
-package qu.protocol
+package qu
 
 import com.fasterxml.jackson.databind.`type`.TypeFactory
 import com.fasterxml.jackson.module.scala.JavaTypeable
