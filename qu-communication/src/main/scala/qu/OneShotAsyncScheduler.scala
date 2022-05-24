@@ -1,5 +1,7 @@
-import monix.execution.{Cancelable, Scheduler}
+package qu
+
 import monix.execution.schedulers.SchedulerService
+import monix.execution.{Cancelable, Scheduler}
 
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{Future, Promise}

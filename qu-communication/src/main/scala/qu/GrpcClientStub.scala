@@ -1,9 +1,10 @@
-import GrpcClientStub.{methodName, serviceName}
-import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.grpc.{CallCredentials, CallOptions, ManagedChannel, Metadata, Status}
-import qu.{JacksonMethodDescriptorFactory, MarshallerFactory, MethodDescriptorFactory}
-import scalapb.grpc.ClientCalls
+package qu
+
 import auth.Constants
+import com.fasterxml.jackson.module.scala.JavaTypeable
+import io.grpc._
+import qu.GrpcClientStub.{methodName, serviceName}
+import scalapb.grpc.ClientCalls
 
 import scala.concurrent.Future
 
@@ -32,7 +33,7 @@ abstract class JwtGrpcClientStub[Transferable[_]](override val chan: ManagedChan
 import java.util.concurrent.Executor
 
 
-//class AuthenticationCallCredentials(var token: String) extends CallCredentials {
+//class qu.AuthenticationCallCredentials(var token: String) extends CallCredentials {
 
 //this is used client side only?
 class AuthenticationCallCredentials(var value: String) extends CallCredentials {
@@ -65,8 +66,9 @@ object GrpcClientStub {
   //decide where to inject (are grpc-specific constants)
   /*val methodName = "request"
   val serviceName = "io.grpc.KeyValueService"*/
-  val methodName = TemporaryConstants.METHOD_NAME
-  val serviceName = TemporaryConstants.SERVICE_NAME
+
+  val methodName = QuServiceDescriptors.OPERATION_REQUEST_METHOD_NAME
+  val serviceName = QuServiceDescriptors.SERVICE_NAME
 
   class UnauthenticatedJacksonClientStub(channel: ManagedChannel)
     extends GrpcClientStub[JavaTypeable](channel) with JacksonMethodDescriptorFactory
@@ -89,16 +91,16 @@ object GrpcClientStub {
 
 /*
 class JacksonClientStub[A](channel: ManagedChannel)
-  extends GrpcClientStub[A, JavaTypeable](channel) with JacksonMethodDescriptorFactory
+  extends qu.GrpcClientStub[A, JavaTypeable](channel) with JacksonMethodDescriptorFactory
 
 class PlayJsonClientStub[A](channel: ManagedChannel)
-  extends GrpcClientStub[A, Format](channel) with PlayJsonMethodDescriptorFactory*/
+  extends qu.GrpcClientStub[A, Format](channel) with PlayJsonMethodDescriptorFactory*/
 
 //example of use:
-//class JacksonCLientStub extends GrpcClientStub(null) with JacksonMethodDescriptorFactory
+//class JacksonCLientStub extends qu.GrpcClientStub(null) with JacksonMethodDescriptorFactory
 //with cake pattern:
-//class JacksonCLientStub extends GrpcClientStub(null) with JacksonMethodDescriptorFactory {
-//val a = new A (declared in GrpcClientStub); val b= new B (declared in GrpcClientStub))
+//class JacksonCLientStub extends qu.GrpcClientStub(null) with JacksonMethodDescriptorFactory {
+//val a = new A (declared in qu.GrpcClientStub); val b= new B (declared in qu.GrpcClientStub))
 //}
 //only diff with normal mixin with self-type is: every mixin doesn't call methods directly
 //on the self type but on its val

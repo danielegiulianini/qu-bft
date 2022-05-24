@@ -1,3 +1,5 @@
+package qu
+
 import qu.model.ConcreteQuModel.ServerId
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -5,20 +7,19 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
 import scala.util.Success
 
-abstract class AbstractQuorumPolicy[Marshallable[_]](servers: Map[String, GrpcClientStub[Marshallable]],
-                                                     private val retryingTime: FiniteDuration = 3.seconds) {
+abstract class AbstractQuorumPolicy[Transportable[_]](servers: Map[String, GrpcClientStub[Transportable]],
+                                                      private val retryingTime: FiniteDuration = 3.seconds) {
   private val scheduler = new OneShotAsyncScheduler(2) //concurrency level configurable by user??
   //is it possible to have overlapping calls to schedule? (only so it's convenient to use >1 threads)?? no, actually!
 
   protected def gatherResponses[RequestT, ResponseT](request: RequestT,
-                                                     completionPromise: Promise[Map[ServerId, ResponseT]] = Promise(),
-                                                     responseSet: Map[ServerId, ResponseT] = Map(), //todo optional but good to see
+                                                     completionPromise: Promise[Map[ServerId, ResponseT]] = Promise[Map[ServerId, ResponseT]](),
+                                                     responseSet: Map[ServerId, ResponseT] = Map[ServerId, ResponseT](),
                                                      responsesQuorum: Int,
                                                      filterSuccess: ResponseT => Boolean)
-                                                    (implicit
-                                                      marshallableRequest: Marshallable[RequestT],
-                                                      marshallableResponse: Marshallable[ResponseT]
-                                                     ): Future[Map[ServerId, ResponseT]] = {
+                                                    (implicit transportableRequest: Transportable[RequestT],
+                                                     transportableResponse: Transportable[ResponseT]
+                                                    ): Future[Map[ServerId, ResponseT]] = {
     var currentResponseSet = responseSet
     val cancelable = scheduler.scheduleOnceAsCallback(retryingTime)(gatherResponses(request, completionPromise, responseSet, responsesQuorum, filterSuccess)) //passing all the servers  the first time
 
