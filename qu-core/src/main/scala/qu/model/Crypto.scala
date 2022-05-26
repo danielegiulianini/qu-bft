@@ -1,5 +1,7 @@
 package qu.model
 
+import javax.crypto.{KeyGenerator, Mac}
+
 
 trait CryptoMd5Authenticator {
   self: QuModel with AbstractAbstractQuModel => //needs the ordering defined by SortedSet
@@ -8,11 +10,18 @@ trait CryptoMd5Authenticator {
 
   override val nullAuthenticator: α = Map[String, String]()
 
-  import com.roundeights.hasher.Implicits._
+
 
   //leveraging sortedSet ordering here
   def hmac(key: String, replicaHistory: ReplicaHistory): HMAC = {
-    replicaHistory.hashCode().toString().hmac(key).md5
+    //import com.roundeights.hasher.Implicits._
+    //replicaHistory.hashCode().toString().hmac(key).md5
+    val keygen = KeyGenerator.getInstance("HmacSHA1")
+    val secret = keygen.generateKey()
+    val mac = Mac.getInstance("HmacSHA1")
+    mac.init(secret)
+    val result: Array[Byte] = mac.doFinal("foo".getBytes)
+    result.map(_.toString).mkString(",")
   }
 
   def updateAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(replicaHistory: ReplicaHistory): α

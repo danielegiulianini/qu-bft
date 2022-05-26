@@ -37,7 +37,7 @@ lazy val auth = (project in file("auth"))
 
 lazy val quCore = (project in file("qu-core"))
   .settings(
-    libraryDependencies ++= commonDependencies ++  Seq("com.roundeights" %% "hasher" % "1.2.1"//Seq("com.roundeights" % "hasher_2.12" % "1.2.0"
+    //libraryDependencies ++= commonDependencies ++ Seq("com.roundeights" %% "hasher" % "1.2.1"//Seq("com.roundeights" % "hasher_2.12" % "1.2.0"
     )
   )
 
