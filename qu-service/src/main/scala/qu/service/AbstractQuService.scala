@@ -2,11 +2,12 @@ package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.stub.ServerCalls
-import io.grpc.{BindableService, ServerServiceDefinition}
+import io.grpc.{BindableService, MethodDescriptor, ServerCallHandler, ServerMethodDefinition, ServerServiceDefinition}
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu.model.QuorumSystemThresholds
+import qu.service.AbstractQuService.ServerInfo
 import qu.service.ServerQuorumPolicy.{ServerQuorumPolicyFactory, simpleDistributedJacksonServerQuorumFactory}
-import qu.{JacksonMethodDescriptorFactory, MethodDescriptorFactory}
+import qu.{CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory}
 
 import java.util.Objects
 import scala.reflect.runtime.universe._
@@ -16,6 +17,46 @@ import scala.reflect.runtime.universe._
 import qu.model.ConcreteQuModel._
 
 
+
+class CachingServiceServerDefinitionBuilder2(private var serviceName:String) {
+  private val builder = ServerServiceDefinition.builder(serviceName)
+  private var mds = Set[String]()
+
+  def addMethod[ReqT, RespT](`def`: MethodDescriptor[ReqT, RespT], handler: ServerCallHandler[ReqT, RespT]): CachingServiceServerDefinitionBuilder2 = {
+   println("requestng...")
+    if (!mds.contains(`def`.getFullMethodName)) {
+      mds = mds + `def`.getFullMethodName
+      builder.addMethod(`def`, handler)
+    } else println("alteady contained")
+    this
+  }
+
+  def build():ServerServiceDefinition = builder.build
+}
+object CachingServiceServerDefinitionBuilder2 {
+  def apply(serviceName: String) =
+    new CachingServiceServerDefinitionBuilder2(serviceName)
+}
+
+/*
+trait CachingServiceServerDefinitionBuilder {
+  self: ServerServiceDefinition.Builder =>
+  private var mds = Set[ServerMethodDefinition[_, _]]()
+
+  override def addMethod[ReqT, RespT](`def`: ServerMethodDefinition[ReqT, RespT]): ServerServiceDefinition.Builder = {
+    if (!mds.contains(`def`)) {
+      mds = mds + `def`
+      self.addMethod(`def`)
+    }
+    this
+  }
+}
+
+object CachingServiceServerDefinitionBuilder {
+  def apply(serviceName: String) =
+    new ServerServiceDefinition.Builder(serviceName) with CachingServiceServerDefinitionBuilder
+}
+*/
 //QuServiceImplBase without builder... (each method could or not return the QuServiceImplBase itself)
 abstract class AbstractQuService[Transportable[_], U](
                                                        //dependencies chosen by programmer
@@ -27,7 +68,7 @@ abstract class AbstractQuService[Transportable[_], U](
                                                        protected val privateKey: String,
                                                        protected val obj: U)
   extends BindableService with QuService[Transportable, U] {
-  private val ssd = ServerServiceDefinition.builder(SERVICE_NAME)
+  private val ssd = CachingServiceServerDefinitionBuilder2(SERVICE_NAME)
 
   private var servers = Map[ServerId, Int]()
   protected val keys: Map[ServerId, Key] = Map[ServerId, String]() //this contains mykey too (needed)
@@ -36,16 +77,18 @@ abstract class AbstractQuService[Transportable[_], U](
   insertKeyForServer(ip, privateKey)
 
   //this precluded me the possibility of using scala name constr as builder
-  def addOp[OperationOutputT]()(implicit
-                                transportableRequest: Transportable[Request[OperationOutputT, U]],
-                                transportableResponse: Transportable[Response[Option[OperationOutputT]]],
-                                transportableLogicalTimestamp: Transportable[LogicalTimestamp],
-                                transportableObjectSyncResponse: Transportable[ObjectSyncResponse[U]],
-                                last: TypeTag[OperationOutputT]): AbstractQuService[Transportable, U] = {
+  def addOperationOutput[OperationOutputT]()(implicit
+                                             transportableRequest: Transportable[Request[OperationOutputT, U]],
+                                             transportableResponse: Transportable[Response[Option[OperationOutputT]]],
+                                             transportableLogicalTimestamp: Transportable[LogicalTimestamp],
+                                             transportableObjectSyncResponse: Transportable[ObjectSyncResponse[U]],
+                                             last: TypeTag[OperationOutputT]): AbstractQuService[Transportable, U] = {
     //could be a separate reusable utility to plug into ssd (by implicit conversion)
     def addMethod[X: Transportable, Y: Transportable](handler: ServerCalls.UnaryMethod[X, Y]): Unit =
-      ssd.addMethod(methodDescriptorFactory.generateMethodDescriptor5[X, Y](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME),
+      ssd.addMethod(
+        methodDescriptorFactory.generateMethodDescriptor5[X, Y](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME),
         ServerCalls.asyncUnaryCall[X, Y](handler))
+
 
     println("generating md:")
     addMethod[Request[OperationOutputT, U], Response[Option[OperationOutputT]]]((request, obs) => sRequest(request, obs))
@@ -61,6 +104,9 @@ abstract class AbstractQuService[Transportable[_], U](
     quorumPolicy = policyFactory(servers, thresholds)
     this
   }
+
+  def addServer(serverInfo: ServerInfo): AbstractQuService[Transportable, U] =
+    addServer(serverInfo.ip, serverInfo.port, serverInfo.keySharedWithMe)
 
   private def insertKeyForServer(ip: String, keySharedWithMe: String): Unit = keys + ip -> keySharedWithMe
 
@@ -89,10 +135,10 @@ object AbstractQuService {
 
   //todo (if wanting to use named params for more readability)
   def jacksonSimpleQuorumServiceFactory2[U: TypeTag]()(serverInfo: ServerInfo,
-                                                      obj: U,
-                                                      quorumSystemThresholds: QuorumSystemThresholds) =
+                                                       obj: U,
+                                                       quorumSystemThresholds: QuorumSystemThresholds) =
     new QuServiceImpl(
-      methodDescriptorFactory = new JacksonMethodDescriptorFactory {},
+      methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
       policyFactory = simpleDistributedJacksonServerQuorumFactory[U](),
       ip = serverInfo.ip,
       port = serverInfo.port,
