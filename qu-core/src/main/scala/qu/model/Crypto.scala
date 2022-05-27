@@ -1,6 +1,6 @@
 package qu.model
 
-import javax.crypto.{KeyGenerator, Mac}
+import javax.crypto.{KeyGenerator, Mac, SecretKey}
 
 
 trait CryptoMd5Authenticator {
@@ -8,21 +8,23 @@ trait CryptoMd5Authenticator {
 
   override type HMAC = String //so authenticator is a map[ServerId, String]
 
-  override val nullAuthenticator: α = Map[String, String]()
+  override def nullAuthenticator: α = Map[String, String]()
 
-
-
-  //leveraging sortedSet ordering here
+  //adapted from https://gist.github.com/ohac/310945/7642d5432ca5f38d6341d7e7076073d98354c1a7, leveraging sortedSet ordering here
   def hmac(key: String, replicaHistory: ReplicaHistory): HMAC = {
-    //import com.roundeights.hasher.Implicits._
-    //replicaHistory.hashCode().toString().hmac(key).md5
-    val keygen = KeyGenerator.getInstance("HmacSHA1")
-    val secret = keygen.generateKey()
-    val mac = Mac.getInstance("HmacSHA1")
-    mac.init(secret)
-    val result: Array[Byte] = mac.doFinal("foo".getBytes)
-    result.map(_.toString).mkString(",")
+    hmacString(key, replicaHistory.hashCode().toString)
   }
+
+  def hmacString(key:String, data:String): String ={
+    import javax.crypto.Mac
+    import javax.crypto.spec.SecretKeySpec
+    val sha256_HMAC = Mac.getInstance("HmacSHA256")
+    val secret_key = new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA256")
+    sha256_HMAC.init(secret_key)
+
+    sha256_HMAC.doFinal(data.getBytes("UTF-8")).map(_.toString).mkString(",")
+  }
+
 
   def updateAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(replicaHistory: ReplicaHistory): α
   = if (replicaHistory == emptyRh) nullAuthenticator //could be removed as updatedReplicaHistory will not ever hadve

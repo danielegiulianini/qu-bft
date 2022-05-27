@@ -1,5 +1,7 @@
 package qu.model
 
+import qu.model.ConcreteQuModel.ConcreteLogicalTimestamp
+
 import scala.collection.SortedSet
 
 
@@ -44,15 +46,15 @@ trait AbstractQuModel extends QuModel {
 }
 
 
-
 trait AbstractAbstractQuModel extends QuModel {
   override type Time = Int
 
   override type ClientId = String
 
-  override type ReplicaHistory = SortedSet[Candidate]
+  override type ReplicaHistory = List[Candidate]  //SortedSet[Candidate] for avoid hitting bug https://github.com/FasterXML/jackson-module-scala/issues/410
 
   type HMAC
+
   override type α = Map[ServerId, HMAC]
 
   type AuthenticatedReplicaHistory = (ReplicaHistory, α) //case class MyAuthenticatedReplicaHistory(serverId: ServerId, authenticator: α)  //tuples are difficult to read...  //refactored since used in responses also...
@@ -60,9 +62,9 @@ trait AbstractAbstractQuModel extends QuModel {
   override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
   val startingTime = 0
-  val emptyLT = MyLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty)
+  val emptyLT = ConcreteLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty)
   val emptyCandidate: Candidate = (emptyLT, emptyLT)
-  val emptyRh: ReplicaHistory = SortedSet(emptyCandidate)
+  val emptyRh: ReplicaHistory = List(emptyCandidate)
 
   type Key = String
 
@@ -73,26 +75,22 @@ trait AbstractAbstractQuModel extends QuModel {
   def fillAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(fun: (Key) => HMAC): α =
     fillAuthenticator(keys.view.filterKeys(_ == serverIdToUpdate).toMap)(fun) //fillAuthenticator(keys.filter(kv => kv._1  == serverIdToUpdate))(fun)
 
-  val nullAuthenticator: α
+  def nullAuthenticator(): α //= Map[String, String]()
 
-  val emptyAuthenticatedRh: AuthenticatedReplicaHistory = SortedSet(emptyCandidate) -> nullAuthenticator
+  val emptyAuthenticatedRh: AuthenticatedReplicaHistory = (emptyRh, nullAuthenticator())//emptyRh -> nullAuthenticator
 
   def emptyOhs(serverIds: Set[ServerId]): OHS =
     serverIds.map(_ -> emptyAuthenticatedRh).toMap
 
-  override type LogicalTimestamp = MyLogicalTimestamp //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
+  override type LogicalTimestamp = ConcreteLogicalTimestamp //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
 
   type OperationRepresentation = String
   type OHSRepresentation = String
 
-  case class MyLogicalTimestamp(time: Int,
-                                barrierFlag: Boolean,
-                                clientId: Option[ClientId],
-                                operation: Option[OperationRepresentation],
-                                ohs: Option[OHSRepresentation])
+
 
   //candidate ordering leverages the implicit ordering of tuples and of MyLogicalTimestamp
-  implicit def MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] =
+  implicit def ConcreteTimestampOrdering: Ordering[ConcreteLogicalTimestamp] =
     Ordering.by(lt => (lt.time, lt.barrierFlag, lt.clientId, lt.ohs))
 
   def latestTime(ohs: OHS): LogicalTimestamp =
@@ -102,31 +100,30 @@ trait AbstractAbstractQuModel extends QuModel {
       .map(latestTime)
       .max
 
-  def contains(replicaHistory: ReplicaHistory, candidate: Candidate) = replicaHistory(candidate)
+  def contains(replicaHistory: ReplicaHistory, candidate: Candidate) =
+    replicaHistory.contains(candidate)//with ReplicaHistory as SortedSet: replicaHistory(candidate)
 
   override def latestTime(rh: ReplicaHistory): LogicalTimestamp =
     rh
       .flatMap(x => Set(x._1, x._2)) //flattening
       .max
 
-  override def order(candidate: (MyLogicalTimestamp, MyLogicalTimestamp),
-                     ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)], α)]): Int =
-    ohs.values.count(_._1.contains(candidate))  //foreach replicahistory count if it contains the given candidate
+  override def order(candidate: (ConcreteLogicalTimestamp, ConcreteLogicalTimestamp),
+                     ohs: OHS): Int =
+    ohs.values.count(_._1.contains(candidate)) //foreach replicahistory count if it contains the given candidate
 
-
-  //todo here I need dependency injection of q
-  override def latestCandidate(ohs: Map[ServerId, (SortedSet[(MyLogicalTimestamp, MyLogicalTimestamp)], α)],
+  override def latestCandidate(ohs: OHS,
                                barrierFlag: Boolean,
                                repairableThreshold: Int):
-  (MyLogicalTimestamp, MyLogicalTimestamp) = {
+  (ConcreteLogicalTimestamp, ConcreteLogicalTimestamp) = {
     /*ohs
       .values
       .map(rh => rh._1.max) //I can filter by order > repairableThreshold first first (and taking the max then) or viceversa
       .filter(candidate => order(candidate, ohs) > repairableThreshold)
       .max*/
     ohs
-      .values
-      .flatMap(rh => rh._1)
+      .values //authenticated rhs here
+      .flatMap(rh => rh._1) //candidates of rhs here
       .filter(order(_, ohs) >= repairableThreshold)
       .max
   }
@@ -185,7 +182,7 @@ trait AbstractAbstractQuModel extends QuModel {
       ( //opType
         opType,
         //candidate
-        (MyLogicalTimestamp(
+        (ConcreteLogicalTimestamp(
           time = latestTime(ohs).time + 1,
           barrierFlag = false,
           clientId = Some(clientId),
@@ -195,7 +192,7 @@ trait AbstractAbstractQuModel extends QuModel {
         //ltCurrent
         conditionedOnLogicalTimestamp)
     else if (opType == ConcreteOperationTypes.BARRIER) {
-      val lt = MyLogicalTimestamp(
+      val lt = ConcreteLogicalTimestamp(
         time = latestTime(ohs).time + 1,
         barrierFlag = true,
         clientId = Some(clientId),
@@ -208,7 +205,7 @@ trait AbstractAbstractQuModel extends QuModel {
         lt)
     } else if (opType == ConcreteOperationTypes.COPY)
       (opType,
-        (MyLogicalTimestamp(
+        (ConcreteLogicalTimestamp(
           time = latestTime(ohs).time + 1,
           barrierFlag = false,
           clientId = Some(clientId),
@@ -245,6 +242,12 @@ object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticat
 
   case class ObjectSyncResponse[ObjectT](responseCode: StatusCode,
                                          answer: Option[ObjectT])
+
+  case class ConcreteLogicalTimestamp(time: Int,
+                                      barrierFlag: Boolean,
+                                      clientId: Option[ClientId],
+                                      operation: Option[OperationRepresentation],
+                                      ohs: Option[OHSRepresentation])
 }
 
 
