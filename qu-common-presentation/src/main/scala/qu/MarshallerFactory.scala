@@ -23,6 +23,17 @@ trait MarshallerFactory[Marshallable[_]] {
 
 //could inherit from MethodDescriptorFactory
 trait JacksonMarshallerFactory extends MarshallerFactory[JavaTypeable] {
+/*  class OperationsDeserializer extends JsonDeserializer[Operations] {
+
+    override def deserialize(p: JsonParser, ctxt: DeserializationContext): Operations = {
+      p.getValueAsString match {
+        case Foo.jsonValue => Foo
+        case Bar.jsonValue => Bar
+        case value => throw new IllegalArgumentException(s"Undefined deserializer for value: $value")
+      }
+    }
+  }*/
+
   @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")
   class JacksonOperationMixin
 
@@ -30,7 +41,7 @@ trait JacksonMarshallerFactory extends MarshallerFactory[JavaTypeable] {
     .addModule(DefaultScalaModule)
     //this mixin allows to plug jackson features to original class (technology-agnostic) class w/o editing it
     .addMixIn(classOf[MyOperation[_, _]], classOf[JacksonOperationMixin]) //.registerSubtypes(classOf[Messages.AInterface[_, _]], classOf[Messages.C1])    //not needed
-    .addMixIn(classOf[StatusCode], classOf[JacksonOperationMixin]) //.registerSubtypes(classOf[Messages.AInterface[_, _]], classOf[Messages.C1])    //not needed
+    //.addMixIn(classOf[StatusCode], classOf[JacksonOperationMixin]) //.registerSubtypes(classOf[Messages.AInterface[_, _]], classOf[Messages.C1])    //not needed
     .addMixIn(classOf[BoxedUnit], classOf[JacksonOperationMixin])
     .build() :: ClassTagExtensions
 

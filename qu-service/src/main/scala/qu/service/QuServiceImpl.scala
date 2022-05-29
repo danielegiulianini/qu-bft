@@ -183,6 +183,8 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
     //devo prevedere il fatto che il server contattato potrebbe non avere questo method descriptor perché lavora su
     //altri oggetti (posso importlo con i generici all'altto della costruzione???)
+
+
     responseObserver.onNext(ObjectSyncResponse(StatusCode.SUCCESS,
       storage.retrieveObject(request))) //answer: Option[(ObjectT, AnswerT)])
     responseObserver.onCompleted()
