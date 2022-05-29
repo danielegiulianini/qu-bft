@@ -12,6 +12,7 @@ trait MethodDescriptorFactory[Transferable[_]] {
 
   def generateMethodDescriptor5[ReqT: Transferable, RespT: Transferable](methodName: String, serviceName: String):
   MethodDescriptor[ReqT, RespT] = {
+    //println("generating for (request):  " + implicitly[Transferable[ReqT]] + "and response: " +implicitly[Transferable[ReqT]] )
 println("calling ... with name:" + MethodDescriptor.generateFullMethodName(serviceName,
   methodName + genericTypesIdentifier[ReqT, RespT]))
     MethodDescriptor.newBuilder(
@@ -42,6 +43,8 @@ trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory[JavaTypeabl
   override def genericTypesIdentifier[ReqT: JavaTypeable, RespT: JavaTypeable]: String =
     (typeIdentifier[ReqT]() + typeIdentifier[RespT]()).replace("/", "")
 
-  private def typeIdentifier[T: JavaTypeable](): String =
+  private def typeIdentifier[T: JavaTypeable](): String = {
+    println("la erasure is: " + implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getErasedSignature)
     implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
+  }
 }
