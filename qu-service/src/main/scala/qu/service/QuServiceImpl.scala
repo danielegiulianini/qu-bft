@@ -32,7 +32,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
                                                        )
   extends AbstractQuService[Transportable, ObjectT](methodDescriptorFactory, policyFactory, thresholds, ip, port, privateKey, obj) {
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
-  private var storage = ImmutableStorage[ObjectT]()
+  private var storage = ImmutableStorage[ObjectT]().store[Any](emptyLT, (obj, Option.empty[Any]))
 
   val clientId: Context.Key[Key] = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
 
@@ -55,8 +55,6 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
     logger.log(Level.INFO, "request received from " + clientId.get, 2) //: " + clientId.get, 2)
     logger.log(Level.INFO, "request with ohs " + request.ohs, 2) //: " + clientId.get, 2)
 
-    val (replicaHistory, _) = authenticatedReplicaHistory
-    var answer = Option.empty[AnswerT]
 
     def replyWith(response: Response[Option[AnswerT]]): Unit = {
       responseObserver.onNext(response)
@@ -68,20 +66,14 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
       request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state: if classify returns a (inline) method then operation should be defined (not none)")).compute(obj) //for {operation <- request.operation} operation.compute(obj)
     }
 
+    val (replicaHistory, _) = authenticatedReplicaHistory
+    var answerToReturn = Option.empty[AnswerT]
+    var objToWorkOn = obj
+
     logger.log(Level.INFO, "repairable Thresholds at service side is:" + thresholds.r, 2)
 
 
-    //(se ohs ha più server/server diversi da me... di me lancio exception) itero i miei server  e per ogni rh (tranne la empty) controllo l'authenticator
-
-    //flatmap(e => (e._1, e._2._1, e._2._2)
-    //})
-    //.map{ case (id , (rh, hmac2)) => if (hmac(keys(id),rh) != hmac2) (id, emptyAuthenticatedRh)}
-
-    // arh => arh._2 != hmac(keys(arh._1),)).map()
-
-    //val (rh, authenticator) = request.ohs.filterNot(_ == emptyAuthenticatedRh)(server._1)
-    //if (authenticator!= hmac(keys(server._1), rh)) request.ohs.
-    //todo: to be removed
+    //todo: to be removed (use the the one already prepared)
     def getId(ip: String, port: Int) = ip + port
 
     def cullRh(ohs: OHS): OHS = ohs. //todo map access like this (to authenticator) could raise exception
@@ -90,6 +82,8 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
         (serverId, (emptyRh, authenticator)) else (serverId, (rh, authenticator)) //keep authentictor untouched (as in paper)
       }
 
+    logger.log(Level.INFO, "culling rh...:", 2)
+
     //culling invalid Replica histories
     val updatedOhs = cullRh(request.ohs)
 
@@ -97,6 +91,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
     //repeated request
     if (contains(replicaHistory, (lt, ltCo))) {
+      logger.log(Level.INFO, "repeated request detected! sending SUCCESS", 2)
       val (_, answer) = storage.retrieve[AnswerT](lt).getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
       replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
       return //todo put attention if it's possible to express this with a chain of if e.se and only one return
@@ -106,37 +101,47 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
     if (latestTime(replicaHistory) > ltCurrent) {
       // optimistic query execution
       if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) {
-        val (obj, _) = storage.retrieve[AnswerT](lt).getOrElse(throw new Error("inconsistent protocol state: if replica history has lt older than ltcur store must contain ltcur too."))
+        val (obj, _) = storage.retrieve[AnswerT](lt)
+          .getOrElse(throw new Error("inconsistent protocol state: if replica history has lt " +
+            "older than ltcur store must contain ltcur too."))
         val (newObj, opAnswer) = executeOperation(request)
-        answer = Some(opAnswer)
+        objToWorkOn = newObj
+        answerToReturn = Some(opAnswer)
         if (newObj != obj) {
           //todo here what to do?
           throw new InvalidParameterException("user sent an update operation as query")
         }
       }
-      replyWith(Response(StatusCode.FAIL, answer, authenticatedReplicaHistory))
+      logger.log(Level.INFO, "stall ohs detected!, sending FAIL", 2)
+      replyWith(Response(StatusCode.FAIL, answerToReturn, authenticatedReplicaHistory))
       return
     }
 
-    if (opType == ConcreteOperationTypes.METHOD || opType == ConcreteOperationTypes.INLINE_METHOD || opType == ConcreteOperationTypes.COPY) {
+    //Retrieve conditioned-on object so that method can be invoked
+    if (opType == ConcreteOperationTypes.METHOD
+      || opType == ConcreteOperationTypes.INLINE_METHOD
+      || opType == ConcreteOperationTypes.COPY) {
       val objAndAnswer = storage.retrieve[AnswerT](lt) //retrieve[T, U](lt)
       if (objAndAnswer.isEmpty && ltCo > emptyLT) {
-        /*for { obj <- quorumPolicy.objectSync[T]()} yield*/
+        logger.log(Level.INFO, "object not available, object-syncing", 2)
         //todo here I require answer as Object since I overwrite it
         quorumPolicy.objectSync(lt).onComplete({
-          case Success(obj) => respondWithFoundObjectAndUpdateDataStructures(obj) //here I know that a quorum is found...
+          case Success(obj) => updateDataStructuresAndRespondBasedOnRetrievedObject(obj) //here I know that a quorum is found...
           case _ => //what can actually happen here? (malformed json, bad url) those must be notified to server user
         })(ec)
       }
     }
 
-    respondWithFoundObjectAndUpdateDataStructures(obj)
 
-    def respondWithFoundObjectAndUpdateDataStructures(obj: ObjectT): Unit = {
-      var answerToReturn = Option.empty[AnswerT]
+    updateDataStructuresAndRespondBasedOnRetrievedObject(objToWorkOn)
+
+
+    def updateDataStructuresAndRespondBasedOnRetrievedObject(retrievedObj: ObjectT): Unit = {
+      objToWorkOn = retrievedObj
       if (opType == ConcreteOperationTypes.METHOD || opType == ConcreteOperationTypes.INLINE_METHOD) {
-        val (_, answer) = executeOperation(request)
-        answerToReturn = Some(answer) //must overwrite
+        val (newObj, newAnswer) = executeOperation(request)
+        objToWorkOn = newObj
+        answerToReturn = Some(newAnswer) //must overwrite
         //if method or inline method operation should not be empty
         if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) { //todo ugly
           replyWith(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
@@ -145,6 +150,8 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
       }
 
       this.synchronized {
+        logger.log(Level.INFO, "updating ohs and authenticator...", 2)
+
         val updatedReplicaHistory: ReplicaHistory = replicaHistory.appended(lt -> ltCo) //with rh as sortedset: replicaHistory + (lt -> ltCo)
         val updatedAuthenticator = updateAuthenticatorFor(keys)(ip)(updatedReplicaHistory)
         authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
@@ -153,11 +160,14 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
         if (opType == ConcreteOperationTypes.COPY) {
           answerToReturn = Option.empty
         }
-        if (opType == ConcreteOperationTypes.METHOD || opType == ConcreteOperationTypes.INLINE_METHOD || opType == ConcreteOperationTypes.COPY) {
-          storage = storage.store[AnswerT](lt, (obj, answerToReturn)) //answer.asInstanceOf[AnswerT])
+        if (opType == ConcreteOperationTypes.METHOD
+          || opType == ConcreteOperationTypes.INLINE_METHOD
+          || opType == ConcreteOperationTypes.COPY) {
+          logger.log(Level.INFO, "Storing updated (object, answer): (" + objToWorkOn + ", " + answerToReturn + ") with lt " + lt.time, 2)
+          storage = storage.store[AnswerT](lt, (objToWorkOn, answerToReturn)) //answer.asInstanceOf[AnswerT])
           //todo: replica history pruning
         }
-        logger.log(Level.INFO, "QuServiceImpl is sending...", 2)
+        logger.log(Level.INFO, "sending SUCCESS", 2)
         replyWith(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
         responseObserver.onCompleted()
       }
@@ -167,6 +177,8 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
   override def sObjectRequest(request: LogicalTimestamp, //or the wrapping class
                               responseObserver: StreamObserver[ObjectSyncResponse[ObjectT]]): Unit = {
+    logger.log(Level.INFO, "object sync request received", 2)
+
     //devo prevedere il fatto che il server contattato potrebbe non avere questo method descriptor perché lavora su
     //altri oggetti (posso importlo con i generici all'altto della costruzione???)
     responseObserver.onNext(ObjectSyncResponse(StatusCode.SUCCESS,
