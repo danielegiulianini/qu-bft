@@ -32,7 +32,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
                                                        )
   extends AbstractQuService[Transportable, ObjectT](methodDescriptorFactory, policyFactory, thresholds, ip, port, privateKey, obj) {
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
-  private var storage = ImmutableStorage[ObjectT]().store[Any](emptyLT, (obj, Option.empty[Any]))
+  private var storage = ImmutableStorage[ObjectT]().store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)//.store[Any](emptyLT, (obj, Option.empty[Any]))
 
   val clientId: Context.Key[Key] = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
 
@@ -45,8 +45,6 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
   //initialization (todo could have destructured tuple here instead
   var authenticatedReplicaHistory: AuthenticatedReplicaHistory = emptyAuthenticatedRh
-  storage = storage.store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
-
 
   override def sRequest[AnswerT: TypeTag](request: Request[AnswerT, ObjectT],
                                           responseObserver: StreamObserver[Response[Option[AnswerT]]])(implicit objectSyncResponseTransportable: Transportable[ObjectSyncResponse[ObjectT]],
@@ -99,9 +97,12 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
     //validating if ohs current
     if (latestTime(replicaHistory) > ltCurrent) {
+      logger.log(Level.INFO, "stall ohs detected!", 2)
+
       // optimistic query execution
       if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) {
-        val (obj, _) = storage.retrieve[AnswerT](lt)
+        logger.log(Level.INFO, "Since query is required, optimistic query execution, retrieving obj with lt "+ lt, 2)
+        val obj = storage.retrieveObject(latestTime(replicaHistory))
           .getOrElse(throw new Error("inconsistent protocol state: if replica history has lt " +
             "older than ltcur store must contain ltcur too."))
         val (newObj, opAnswer) = executeOperation(request)
@@ -112,7 +113,6 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
           throw new InvalidParameterException("user sent an update operation as query")
         }
       }
-      logger.log(Level.INFO, "stall ohs detected!, sending FAIL", 2)
       replyWith(Response(StatusCode.FAIL, answerToReturn, authenticatedReplicaHistory))
       return
     }
