@@ -56,6 +56,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
     def replyWith(response: Response[Option[AnswerT]]): Unit = {
       responseObserver.onNext(response)
+      responseObserver.onCompleted()
     }
 
     //todo not need to pass request if nested def
@@ -171,7 +172,6 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
         }
         logger.log(Level.INFO, "sending SUCCESS", 2)
         replyWith(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
-        responseObserver.onCompleted()
       }
     }
   }
