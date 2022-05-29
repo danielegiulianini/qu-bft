@@ -59,8 +59,8 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
     }
 
     //todo not need to pass request if nested def
-    def executeOperation(request: Request[AnswerT, ObjectT]): (ObjectT, AnswerT) = {
-      //todo can actually happen that a malevolent client can make this exception happen?
+    def executeOperation(request: Request[AnswerT, ObjectT], obj:ObjectT): (ObjectT, AnswerT) = {
+      //todo can actually happen that a malevolent client can make this exception happen and break the server? no, it's not breaking it!
       request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state: if classify returns a (inline) method then operation should be defined (not none)")).compute(obj) //for {operation <- request.operation} operation.compute(obj)
     }
 
@@ -105,12 +105,14 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
         val obj = storage.retrieveObject(latestTime(replicaHistory))
           .getOrElse(throw new Error("inconsistent protocol state: if replica history has lt " +
             "older than ltcur store must contain ltcur too."))
-        val (newObj, opAnswer) = executeOperation(request)
+        val (newObj, opAnswer) = executeOperation(request, obj)
         objToWorkOn = newObj
         answerToReturn = Some(opAnswer)
         if (newObj != obj) {
+          logger.log(Level.INFO, "obj before query: " + obj + ", new one: " + objToWorkOn, 2)
+
           //todo here what to do?
-          throw new InvalidParameterException("user sent an update operation as query")
+          //throw new InvalidParameterException("user sent an update operation as query")
         }
       }
       replyWith(Response(StatusCode.FAIL, answerToReturn, authenticatedReplicaHistory))
@@ -139,7 +141,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
     def updateDataStructuresAndRespondBasedOnRetrievedObject(retrievedObj: ObjectT): Unit = {
       objToWorkOn = retrievedObj
       if (opType == ConcreteOperationTypes.METHOD || opType == ConcreteOperationTypes.INLINE_METHOD) {
-        val (newObj, newAnswer) = executeOperation(request)
+        val (newObj, newAnswer) = executeOperation(request, objToWorkOn)
         objToWorkOn = newObj
         answerToReturn = Some(newAnswer) //must overwrite
         //if method or inline method operation should not be empty
