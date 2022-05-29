@@ -261,8 +261,8 @@ class QuServiceSpec extends AsyncFunSpec with Matchers {
             _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
               Request(operation = Some(new Increment()),
                 ohs = emptyOhs(serverIds)))
-            response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-              Request(operation = Some(new GetObj()),
+            response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+              Request(operation = Some(new Increment()), //sending an UPDATE operation
                 ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
           } yield response
           it("should fail") {
@@ -279,8 +279,8 @@ class QuServiceSpec extends AsyncFunSpec with Matchers {
               firstResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
                 Request(operation = Some(new Increment()),
                   ohs = emptyOhs(serverIds)))
-              response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-                Request(operation = Some(new GetObj()),
+              response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+                Request(operation = Some(new Increment()), //now sending an UPDATE op
                   ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
             } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
           }
@@ -291,7 +291,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers {
               Request(operation = Some(new Increment()),
                 ohs = emptyOhs(serverIds)))
             response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-              Request(operation = Some(new GetObj()),
+              Request(operation = Some(new GetObj()), //sending a QUERY operation
                 ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
           } yield response
           it("should fail") {
