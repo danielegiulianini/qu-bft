@@ -11,11 +11,9 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQuorumPolicy[U, Transportable] with Shutdownable,
                                                      private var backoffPolicy: BackOffPolicy,
-                                                     private val serversIds: Set[String], //only servers ids is actually required in this class
+                                                     private val serversIds: Set[String], //only servers ids are actually required in this class
                                                      private val thresholds: QuorumSystemThresholds)
   extends QuClient[U, Transportable] {
-
-  //import scala.concurrent.ExecutionContext.Implicits.global //todo temporneous
 
   private val ohs: OHS = emptyOhs(serversIds)
 
@@ -28,6 +26,8 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
   Future[T] = {
     for {
       (answer, order, ohs) <- policy.quorum(Some(op), ohs)
+      //todo mapping exceptions?
+      //todo optimistic query execution
       answer <- if (order < thresholds.q) for {
         _ <- repair(ohs) //this updates ohs
         newAnswer <- submit(op)
@@ -39,7 +39,6 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
                                transportableRequest: Transportable[Request[Object, U]],
                                transportableResponse: Transportable[Response[Option[Object]]]): Future[OHS] = {
     //utilities
-
     def backOffAndRetry(): Future[OHS] = for {
       _ <- backoffPolicy.backOff()
       //perform a barrier or a copy
@@ -68,17 +67,3 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
   override def shutdown(): Unit = policy.shutdown()
 }
 
-object ProvaUserSide {
-
-  //QuClientImpl(cluster, thresholds)
-
-  //QuClientImpl(thresholds,
-  //ips = Set(("www.google.com", port = 2), ("www.amazon.com", port=80))
-  /*QuClientImpl(quorumThreshold = 1,
-    repairableThreshold = 2,
-    ips = Set("www.google.com", "www.amazon.com"))*/
-
-  /*QuClientImpl(quorumThreshold = 1,
-    repairableThreshold = 2,
-    ipsWithKeyPaths = Set(("www.google.com", "pathForGoogle"), ("www.amazon.com", "pathForAmazon")))*/
-}

@@ -6,11 +6,11 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
 
 trait BackOffPolicy {
-  def backOff()(implicit ec: ExecutionContext): Future[Void]
+  def backOff()(implicit ec: ExecutionContext): Future[Unit]
 }
 
 class ExponentialBackOffPolicy(private var initialBackOffTime: FiniteDuration = 1000.millis,
-                               private var scheduler: OneShotAsyncScheduler) {
+                               private var scheduler: OneShotAsyncScheduler) extends BackOffPolicy {
 
   // todo (could use functional object)
   def backOff()(implicit ec: ExecutionContext): Future[Unit] = {

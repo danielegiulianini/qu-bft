@@ -11,4 +11,6 @@ class SimpleClientQuorumPolicyTests {
   //ohs edited ok
 
   //if server responds alqways with fail with it's not included in success set
+
+  //single round if ohs is updated
 }

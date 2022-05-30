@@ -8,6 +8,7 @@ import qu.model.QuorumSystemThresholds
 
 case class AuthenticatedClientBuilderInFunctionalStyle[U, Transportable[_]]( //programmer dependencies
                                                                              private val policyFactory: (Map[String, Int], QuorumSystemThresholds) => ClientQuorumPolicy[U, Transportable] with Shutdownable,
+                                                                             private val backOffPolicy: BackOffPolicy,
                                                                              //user dependencies
                                                                              private val serversInfo: Map[String, Int],
                                                                              private val thresholds: Option[QuorumSystemThresholds],
@@ -20,7 +21,7 @@ case class AuthenticatedClientBuilderInFunctionalStyle[U, Transportable[_]]( //p
 
   def build: AuthenticatedQuClientImpl[U, Transportable] = {
     //todo missing validation
-    new AuthenticatedQuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds.get), serversInfo.keySet, thresholds.get)
+    new AuthenticatedQuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds.get), backOffPolicy, serversInfo.keySet, thresholds.get)
   }
 }
 
@@ -29,10 +30,10 @@ object AuthenticatedClientBuilderInFunctionalStyle {
 
   def builder[U](token: String): AuthenticatedClientBuilderInFunctionalStyle[U, JavaTypeable] = simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 
-  private def empty[U, Transferable[_]](policyFactory: ClientPolicyFactory[Transferable, U] , token: String): AuthenticatedClientBuilderInFunctionalStyle[U, Transferable] =
-    AuthenticatedClientBuilderInFunctionalStyle((mySet, thresholds) => policyFactory(mySet, thresholds), Map(), Option.empty)
+  private def empty[U, Transferable[_]](policyFactory: ClientPolicyFactory[Transferable, U] , policy: BackOffPolicy): AuthenticatedClientBuilderInFunctionalStyle[U, Transferable] =
+    AuthenticatedClientBuilderInFunctionalStyle((mySet, thresholds) => policyFactory(mySet, thresholds), policy, Map(), Option.empty)
 
   //builder implementations
   def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: String): AuthenticatedClientBuilderInFunctionalStyle[U, JavaTypeable] =
-    AuthenticatedClientBuilderInFunctionalStyle.empty[U, JavaTypeable](simpleJacksonPolicyFactoryUnencrypted(token), token)
+    AuthenticatedClientBuilderInFunctionalStyle.empty[U, JavaTypeable](simpleJacksonPolicyFactoryUnencrypted(token), ExponentialBackOffPolicy())
 }
