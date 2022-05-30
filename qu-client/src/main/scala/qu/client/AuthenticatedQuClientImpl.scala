@@ -10,12 +10,10 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQuorumPolicy[U, Transportable] with Shutdownable,
+                                                     private var backoffPolicy: BackOffPolicy,
                                                      private val serversIds: Set[String], //only servers ids is actually required in this class
-                                                     private val thresholds: QuorumSystemThresholds,
-                                                     private var initialBackOffTime: FiniteDuration = 1000.millis)
+                                                     private val thresholds: QuorumSystemThresholds)
   extends QuClient[U, Transportable] {
-
-  private val scheduler = new OneShotAsyncScheduler(1) //concurrency level configurable by user??
 
   //import scala.concurrent.ExecutionContext.Implicits.global //todo temporneous
 
@@ -43,18 +41,14 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
     //utilities
 
     def backOffAndRetry(): Future[OHS] = for {
-      _ <- backOff()
+      _ <- backoffPolicy.backOff()
       //perform a barrier or a copy
       (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, U]], ohs) //here Object is fundamental as server could return other than T
       (operationType, _, _) <- classifyAsync(ohs)
       ohs <- backOffAndRetryUntilMethod(operationType)
     } yield ohs
 
-    // todo 1.can be a point of polymorphism!(could use functional object)
-    def backOff(): Future[Void] = {
-      initialBackOffTime *= 2
-      scheduler.scheduleOnceAsPromise(initialBackOffTime)
-    }
+
     def classifyAsync(ohs: OHS) = Future {
       classify(ohs, thresholds.r, thresholds.q)
     }
