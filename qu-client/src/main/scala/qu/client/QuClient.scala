@@ -6,18 +6,18 @@ import qu.Shutdownable
 import qu.client.AuthenticatedClientBuilderInFunctionalStyle.simpleJacksonQuClientBuilderInFunctionalStyle
 import qu.model.QuorumSystemThresholds
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 //import that declares specific dependency
 import qu.model.ConcreteQuModel._
 
 //most abstract possible (not bound to grpc)
 trait QuClient[ObjectT, Transferable[_]] extends Shutdownable {
-  def submit[ReturnValueT](op: Operation[ReturnValueT, ObjectT])(implicit
-                                                                 marshallableRequest: Transferable[Request[ReturnValueT, ObjectT]],
-                                                                 marshallableResponse: Transferable[Response[Option[ReturnValueT]]],
-                                                                 marshallableRequestObj: Transferable[Request[Object, ObjectT]],
-                                                                 marshallableResponseObj: Transferable[Response[Option[Object]]]): Future[ReturnValueT]
+  def submit[ReturnValueT](op: Operation[ReturnValueT, ObjectT])(implicit executionContext: ExecutionContext,
+                                                                 transportableRequest: Transferable[Request[ReturnValueT, ObjectT]],
+                                                                 transportableResponse: Transferable[Response[Option[ReturnValueT]]],
+                                                                 transportableRequestObj: Transferable[Request[Object, ObjectT]],
+                                                                 transportableResponseObj: Transferable[Response[Option[Object]]]): Future[ReturnValueT]
 
 }
 

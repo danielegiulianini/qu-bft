@@ -6,7 +6,7 @@ import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
 import qu.{OneShotAsyncScheduler, Shutdownable}
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQuorumPolicy[U, Transportable] with Shutdownable,
@@ -17,12 +17,12 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
 
   private val scheduler = new OneShotAsyncScheduler(1) //concurrency level configurable by user??
 
-  import scala.concurrent.ExecutionContext.Implicits.global //todo temporneous
+  //import scala.concurrent.ExecutionContext.Implicits.global //todo temporneous
 
   private val ohs: OHS = emptyOhs(serversIds)
 
   override def submit[T](op: Operation[T, U])(implicit
-                                              //ec: ExecutionContext,
+                                              ec: ExecutionContext,
                                               transportableRequest: Transportable[Request[T, U]],
                                               transportableResponse: Transportable[Response[Option[T]]],
                                               transportableRequestObj: Transportable[Request[Object, U]],
@@ -37,16 +37,10 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
     } yield answer
   }
 
-  private def repair(ohs: OHS)(implicit
+  private def repair(ohs: OHS)(implicit executionContext: ExecutionContext,
                                transportableRequest: Transportable[Request[Object, U]],
                                transportableResponse: Transportable[Response[Option[Object]]]): Future[OHS] = {
-
     //utilities
-    // todo 1.can be a point of polymorphism!(could use functional object)
-    def backOff(): Future[Void] = {
-      initialBackOffTime *= 2
-      scheduler.scheduleOnceAsPromise(initialBackOffTime)
-    }
 
     def backOffAndRetry(): Future[OHS] = for {
       _ <- backOff()
@@ -56,6 +50,11 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
       ohs <- backOffAndRetryUntilMethod(operationType)
     } yield ohs
 
+    // todo 1.can be a point of polymorphism!(could use functional object)
+    def backOff(): Future[Void] = {
+      initialBackOffTime *= 2
+      scheduler.scheduleOnceAsPromise(initialBackOffTime)
+    }
     def classifyAsync(ohs: OHS) = Future {
       classify(ohs, thresholds.r, thresholds.q)
     }
@@ -72,7 +71,6 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
     } yield ohs
   }
 
-  //should shutdown policy...
   override def shutdown(): Unit = policy.shutdown()
 }
 
