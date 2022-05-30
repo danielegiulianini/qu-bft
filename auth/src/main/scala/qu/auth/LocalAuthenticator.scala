@@ -1,6 +1,7 @@
 //class not dependent on specific transport layer
 package qu.auth
 
+import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import qu.auth.{Credentials, Role, Token, User}
 
 class LocalAuthenticator {
@@ -31,7 +32,8 @@ class LocalAuthenticator {
       val user = usersByUsername.get(userId).orElse(throw new WrongCredentialsException("No such a user: " + userId))
       if (!credentials.password.equals(user.get.password)) throw new WrongCredentialsException("Wrong credentials for user: " + userId)
       //assigning "client" role to all clients
-      new Token(user.get.username, Role.CLIENT)
+      val encryptedUserId = Jwts.builder.setSubject(userId).signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact
+      new Token(encryptedUserId, Role.CLIENT)
     }
   }
 }
