@@ -7,6 +7,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{Future, Promise}
 import scala.util.Success
 
+
 trait Shutdownable {
   def shutdown(): Unit
 }
@@ -29,7 +30,7 @@ abstract class AbstractQuorumPolicy[Transportable[_]](servers: Map[String, GrpcC
 
     (servers -- responseSet.keySet)
       .map { case (serverId, stubToServer) => (serverId,
-        stubToServer.send2[RequestT, ResponseT](toBeSent = request))
+        stubToServer.send[RequestT, ResponseT](toBeSent = request))
       }
       .foreach { case (serverId, stubToServer) => stubToServer.onComplete({
         case Success(response) if filterSuccess(response) =>
@@ -47,6 +48,6 @@ abstract class AbstractQuorumPolicy[Transportable[_]](servers: Map[String, GrpcC
     completionPromise.future
   }
 
-  override def shutdown() = servers.values.foreach(_.shutdown())
+  override def shutdown(): Unit = servers.values.foreach(_.shutdown())
 }
 
