@@ -1,16 +1,25 @@
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.StatusRuntimeException
 import org.scalamock.context.MockContext
-import org.scalamock.scalatest.MockFactory
+import org.scalamock.function.MockFunction4
+import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
 import org.scalamock.util.MacroAdapter.Context
 import org.scalatest.RecoverMethods.recoverToSucceededIf
-import org.scalatest.funspec.AnyFunSpec
-import qu.Shutdownable
-import qu.client.{AuthenticatedClientBuilderInFunctionalStyle, AuthenticatedQuClientImpl, BackOffPolicy, ClientQuorumPolicy}
-import qu.model.ConcreteQuModel.{LogicalTimestamp, OHS, ObjectSyncResponse, Operation, Request, Response, emptyOhs}
-import qu.model.{OHSFixture2, QuorumSystemThresholds}
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.funspec.{AnyFunSpec, AsyncFunSpec}
+import org.scalatest.matchers.must.Matchers.be
+import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
+import qu.{JwtGrpcClientStub, Shutdownable}
+import qu.client.{AuthenticatedClientBuilderInFunctionalStyle, AuthenticatedQuClientImpl, BackOffPolicy, ClientQuorumPolicy, SimpleBroadcastPolicyClient}
+import qu.model.Commands.{GetObj, Increment, IncrementAsObj}
+import qu.model.ConcreteQuModel.{LogicalTimestamp, OHS, ObjectSyncResponse, Operation, Request, Response, ServerId, emptyOhs}
+import qu.model.{ConcreteQuModel, OHSFixture2, QuorumSystemThresholds}
 
-class ClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 {
+import java.util.concurrent.{Executors, ThreadPoolExecutor}
+import scala.concurrent.{ExecutionContext, Future}
+import scala.language.postfixOps
+
+class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with ScalaFutures { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
 
   /*
   mocking server for verifying client
@@ -40,10 +49,12 @@ class ClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 {
   //...al primo giro invia la ohs vuota
   // PUò DARSI CHE DURANTE LO scambio l'order cambi ??
 
+  class JacksonSimpleBroadcastPolicyClient(private val thresholds: QuorumSystemThresholds,
+                                           private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]]) extends SimpleBroadcastPolicyClient[Int, JavaTypeable](thresholds, servers)
 
   //todo should go in fixture
   //stubbed dependencies
-  val quorumPolicy = mock[ClientQuorumPolicy[Int, JavaTypeable] with Shutdownable]
+  val quorumPolicy = mock[JacksonSimpleBroadcastPolicyClient] // mock[SimpleBroadcastPolicyClient[Int, JavaTypeable]]
   val backOffPolicy = mock[BackOffPolicy]
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
@@ -53,49 +64,68 @@ class ClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 {
     serversIds = Set(),
     thresholds = QuorumSystemThresholds(1, 2, 3))
 
+  //4-servers scenario
+  // val serversIds = List(0 to 4).toList.map("s" + _).toList
+  val serversIds = (1 to 4 toList).map("s" + _).toList
+  val serversIdsAsSet = serversIds.toSet
+
+  def generateKey(a: String, b: String) = "k" + a + b
+  def keysForServer2(serverId: String): Map[ServerId, String] =
+    serversIds.map(otherServerId => otherServerId -> generateKey(serverId, otherServerId)).toMap //    serverId -> serversIds.map(otherServerId => serverId -> "k" + serverId + otherServerId).toMap
+  val serversKeys = serversIds.map(id => id -> keysForServer2(id)).toMap
+  println("serversKeys are: " + serversKeys)
+
+  val updateQuorum: MockFunction4[Option[Operation[Unit, Int]], OHS, JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[(Option[Unit], Int, OHS)]] = (quorumPolicy.quorum[Unit](_: Option[Operation[Unit, Int]], _: OHS)(_: JavaTypeable[Request[Unit, Int]],
+    _: JavaTypeable[Response[Option[Unit]]]))
+
+  //determinism in tests
+  implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
   describe("A client") {
+
     //UPDATE (inc che ritorna unit)
     describe("when requesting an update operation and receiving an ohs with order >= q") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should return the correct answer in a single round of communication") {
 
-        (quorumPolicy.quorum[Unit](_: Option[Operation[Unit, Int]], _:OHS)(_: JavaTypeable[Request[Unit, Int]],
-          _: JavaTypeable[Response[Option[Unit]]]))
-          .expects(*, *, *, *)
+        updateQuorum.expects(* /*Some(IncrementAsObj)*/ , /*emptyOhs(serversIdsAsSet)*/ *, *, *).noMoreThanOnce().returning(Future.successful(
+          (Some(()), 2, ohsWithInlineMethodFor(serversKeys, 2))))
 
-        inSequence {
-          quorumPolicy.quorum()
+        whenReady(client.submit[Unit](IncrementAsObj)) {
+          _ should be(())
         }
-
       }
     }
-    describe("when requesting an update operation") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
+    /*describe("when requesting an update operation") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should keep asking the quorum of servers and backing off until order of the received ohs is >=q (repair)") {
-
+        succeed
       }
     }
     //to be merged with upper tests
     describe("when repairing to deal with ohs with order < q") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should keep asking the quorum by sending to servers the null operation") {
-
+        succeed
       }
       it("should keep asking the quorum by sending to servers the ohs updated resulting from previous communications") {
-
+        succeed
       }
       it("should not ask the quorum and back off after a method results from ohs") { //keep asking the quorum until a method is established"){
-
+        succeed
       }
     }
+
+
+
+
     //QUERY
     describe("when requesting a query operation and receiving an ohs with order >= q") {
       it(" should return the correct answer in a single round of communication") {
-
+        succeed
       }
     }
     describe("when requesting an query operation and receiving an ohs with order < q but classified as a " +
       "method (query executed optimistically)") {
       it(" should return the correct answer in a single round of communication") {
-
+        succeed
       }
     }
     //1 o più scambi (lo scenario con più scambi generalizza)
@@ -170,7 +200,7 @@ class ClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 {
         }*/
         succeed
       }
-    }
+    }*/
   }
   //***BASIC FUNCTIONING***
   //client returns if order >= q (and with...)
