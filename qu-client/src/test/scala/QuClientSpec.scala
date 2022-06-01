@@ -52,6 +52,18 @@ class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with Sca
   class JacksonSimpleBroadcastPolicyClient(private val thresholds: QuorumSystemThresholds,
                                            private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]]) extends SimpleBroadcastPolicyClient[Int, JavaTypeable](thresholds, servers)
 
+
+
+  //4-servers scenario
+  val serversIds = (1 to 4 toList).map("s" + _).toList
+  val serversIdsAsSet = serversIds.toSet
+  def generateKey(a: String, b: String) = "k" + a + b
+  def keysForServer(serverId: String): Map[ServerId, String] =
+    serversIds.map(otherServerId => otherServerId -> generateKey(serverId, otherServerId)).toMap //    serverId -> serversIds.map(otherServerId => serverId -> "k" + serverId + otherServerId).toMap
+  val serversKeys = serversIds.map(id => id -> keysForServer(id)).toMap
+
+
+
   //todo should go in fixture
   //stubbed dependencies
   val quorumPolicy = mock[JacksonSimpleBroadcastPolicyClient] // mock[SimpleBroadcastPolicyClient[Int, JavaTypeable]]
@@ -61,19 +73,8 @@ class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with Sca
   val client = new AuthenticatedQuClientImpl[Int, JavaTypeable](
     policy = quorumPolicy,
     backoffPolicy = backOffPolicy,
-    serversIds = Set(),
+    serversIds = serversIds.toSet,
     thresholds = QuorumSystemThresholds(1, 2, 3))
-
-  //4-servers scenario
-  // val serversIds = List(0 to 4).toList.map("s" + _).toList
-  val serversIds = (1 to 4 toList).map("s" + _).toList
-  val serversIdsAsSet = serversIds.toSet
-
-  def generateKey(a: String, b: String) = "k" + a + b
-  def keysForServer2(serverId: String): Map[ServerId, String] =
-    serversIds.map(otherServerId => otherServerId -> generateKey(serverId, otherServerId)).toMap //    serverId -> serversIds.map(otherServerId => serverId -> "k" + serverId + otherServerId).toMap
-  val serversKeys = serversIds.map(id => id -> keysForServer2(id)).toMap
-  println("serversKeys are: " + serversKeys)
 
   val updateQuorum: MockFunction4[Option[Operation[Unit, Int]], OHS, JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[(Option[Unit], Int, OHS)]] = (quorumPolicy.quorum[Unit](_: Option[Operation[Unit, Int]], _: OHS)(_: JavaTypeable[Request[Unit, Int]],
     _: JavaTypeable[Response[Option[Unit]]]))
@@ -87,7 +88,7 @@ class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with Sca
     describe("when requesting an update operation and receiving an ohs with order >= q") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should return the correct answer in a single round of communication") {
 
-        updateQuorum.expects(* /*Some(IncrementAsObj)*/ , /*emptyOhs(serversIdsAsSet)*/ *, *, *).noMoreThanOnce().returning(Future.successful(
+        updateQuorum.expects(Some(IncrementAsObj), emptyOhs(serversIdsAsSet), *, *).noMoreThanOnce().returning(Future.successful(
           (Some(()), 2, ohsWithInlineMethodFor(serversKeys, 2))))
 
         whenReady(client.submit[Unit](IncrementAsObj)) {
