@@ -1,6 +1,7 @@
 package qu.model
 
 import qu.model.ConcreteQuModel.ConcreteLogicalTimestamp
+import qu.model.StatusCode.StatusCode
 
 import scala.collection.SortedSet
 
@@ -51,7 +52,7 @@ trait AbstractAbstractQuModel extends QuModel {
 
   override type ClientId = String
 
-  override type ReplicaHistory = List[Candidate]  //SortedSet[Candidate] for avoid hitting bug https://github.com/FasterXML/jackson-module-scala/issues/410
+  override type ReplicaHistory = List[Candidate] //SortedSet[Candidate] for avoid hitting bug https://github.com/FasterXML/jackson-module-scala/issues/410
 
   type HMAC
 
@@ -72,12 +73,12 @@ trait AbstractAbstractQuModel extends QuModel {
   def fillAuthenticator(keys: Map[ServerId, String])(fun: Key => HMAC): α =
     keys.view.mapValues(fun(_)).toMap
 
-  def fillAuthenticatorFor(keys: Map[ServerId, String])(serverIdToUpdate: ServerId)(fun: (Key) => HMAC): α =
+  def fillAuthenticatorFor(keys: Map[ServerId, Key])(serverIdToUpdate: ServerId)(fun: Key => HMAC): α =
     fillAuthenticator(keys.view.filterKeys(_ == serverIdToUpdate).toMap)(fun) //fillAuthenticator(keys.filter(kv => kv._1  == serverIdToUpdate))(fun)
 
   def nullAuthenticator(): α //= Map[String, String]()
 
-  val emptyAuthenticatedRh: AuthenticatedReplicaHistory = (emptyRh, nullAuthenticator())//emptyRh -> nullAuthenticator
+  val emptyAuthenticatedRh: AuthenticatedReplicaHistory = (emptyRh, nullAuthenticator()) //emptyRh -> nullAuthenticator
 
   def emptyOhs(serverIds: Set[ServerId]): OHS =
     serverIds.map(_ -> emptyAuthenticatedRh).toMap
@@ -86,7 +87,6 @@ trait AbstractAbstractQuModel extends QuModel {
 
   type OperationRepresentation = String
   type OHSRepresentation = String
-
 
 
   //candidate ordering leverages the implicit ordering of tuples and of MyLogicalTimestamp
@@ -101,7 +101,7 @@ trait AbstractAbstractQuModel extends QuModel {
       .max
 
   def contains(replicaHistory: ReplicaHistory, candidate: Candidate) =
-    replicaHistory.contains(candidate)//with ReplicaHistory as SortedSet: replicaHistory(candidate)
+    replicaHistory.contains(candidate) //with ReplicaHistory as SortedSet: replicaHistory(candidate)
 
   override def latestTime(rh: ReplicaHistory): LogicalTimestamp =
     rh
@@ -121,8 +121,13 @@ trait AbstractAbstractQuModel extends QuModel {
       .map(rh => rh._1.max) //I can filter by order > repairableThreshold first first (and taking the max then) or viceversa
       .filter(candidate => order(candidate, ohs) > repairableThreshold)
       .max*/
+    //println("printing the ohs inside latestCandidate: " + ohs)
     ohs
       .values //authenticated rhs here
+      .map(e => {
+        //println(e)
+        e
+      })
       .flatMap(rh => rh._1) //candidates of rhs here
       .filter(order(_, ohs) >= repairableThreshold)
       .max
@@ -154,14 +159,21 @@ trait AbstractAbstractQuModel extends QuModel {
     (LogicalTimestamp, LogicalTimestamp)) = {
     val latestObjectVersion = latestCandidate(ohs, barrierFlag = false, repairableThreshold)
     val latestBarrierVersion = latestCandidate(ohs, barrierFlag = true, repairableThreshold)
+    println("il latestObjectVersion : " + latestObjectVersion)
+    println("il latestBarrierVersion : " + latestBarrierVersion)
+
     val ltLatest = latestTime(ohs)
     //renaming without using custom case class instead of tuples...
     val (latestObjectVersionLT, _) = latestObjectVersion
     val (latestBarrierVersionLT, _) = latestBarrierVersion
 
+
+    println("codition 1: " + (latestObjectVersionLT == ltLatest))
+    println("codition 2: [order(latestObjectVersion, ohs)= " + order(latestObjectVersion, ohs)+", quorumThreshold= " + quorumThreshold + "]" + (order(latestObjectVersion, ohs) >= quorumThreshold))
+
     val operationType = if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) >= quorumThreshold) ConcreteOperationTypes.METHOD
     else if (latestObjectVersionLT == ltLatest && order(latestObjectVersion, ohs) >= repairableThreshold) ConcreteOperationTypes.INLINE_METHOD
-    else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) >= quorumThreshold) ConcreteOperationTypes.COPY
+    else if (latestBarrierVersionLT == ltLatest && order(latestBarrierVersion, ohs) >= quorumThreshold) ConcreteOperationTypes.COPY
     else if (latestBarrierVersionLT == ltLatest && order(latestObjectVersion, ohs) >= repairableThreshold) ConcreteOperationTypes.INLINE_BARRIER
     else ConcreteOperationTypes.BARRIER
     (operationType, latestObjectVersion, latestBarrierVersion)
@@ -248,6 +260,8 @@ object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticat
                                       clientId: Option[ClientId],
                                       operation: Option[OperationRepresentation],
                                       ohs: Option[OHSRepresentation])
+
+ // case class ServerInfo(server)
 }
 
 
