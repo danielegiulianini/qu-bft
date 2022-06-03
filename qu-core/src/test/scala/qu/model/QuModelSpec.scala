@@ -11,6 +11,7 @@ import org.scalatest.matchers.must.Matchers.be
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.matchers.should.Matchers.{convertToAnyShouldWrapper, equal}
 import org.scalacheck.{Gen, Prop}
+import org.scalatest.Assertion
 import org.scalatest.prop.TableDrivenPropertyChecks.whenever
 import org.scalatestplus.scalacheck.{Checkers, ScalaCheckPropertyChecks}
 import org.scalatestplus.scalacheck.Checkers.check
@@ -22,8 +23,13 @@ import scala.math.Ordered.orderingToOrdered
 
 class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers with OHSFixture2 {
 
+
   //todo: could improve passing only timestamp by (instead of all the params)
-  def ltGenerator(timeGen: Gen[Int], barrierGen: Gen[Boolean], clientGen: Gen[Option[String]], opGen: Gen[Option[String]], ohsGen: Gen[Option[String]]) =
+  def ltGenerator(timeGen: Gen[Int],
+                  barrierGen: Gen[Boolean],
+                  clientGen: Gen[Option[String]],
+                  opGen: Gen[Option[String]],
+                  ohsGen: Gen[Option[String]]) =
     for {
       time <- timeGen
       barrierFlag <- barrierGen
@@ -32,11 +38,11 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       ohs <- ohsGen
     } yield ConcreteLogicalTimestamp(time, barrierFlag, clientId, operation, ohs)
 
-  def customizableArbitraryLt(timePred: Int => Boolean = truePred,
-                              barrierPred: Boolean => Boolean = truePred,
-                              clientPred: Option[String] => Boolean = truePred,
-                              opReprPred: Option[String] => Boolean = truePred,
-                              ohsReprPred: Option[String] => Boolean = truePred) = {
+  def customizableArbitraryLt(timePred: Int => Boolean = truePred(),
+                              barrierPred: Boolean => Boolean = truePred(),
+                              clientPred: Option[String] => Boolean = truePred(),
+                              opReprPred: Option[String] => Boolean = truePred(),
+                              ohsReprPred: Option[String] => Boolean = truePred()) = {
     ltGenerator(
       Arbitrary.arbitrary[Int] suchThat (time => time >= 0 && timePred(time)),
       Arbitrary.arbitrary[Boolean] suchThat (barrierPred(_)),
@@ -244,24 +250,22 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   val exampleServersIds = (1 to 4 toList).map("s" + _)
   val exampleServersKeys: Map[ServerId, Map[ConcreteQuModel.ServerId, ServerId]] =
     exampleServersIds.map(id => id -> keysForServer(id, exampleServersIds.toSet)).toMap
-
   val r = 2
   val q = 4
+  println("la ohs con inline method *******************************")
+  println(ohsWithInlineMethodFor(exampleServersKeys, r))
 
-
-  //todo can be replaced with a more sophisticated generator approach
+  //todo can be replaced with a more sophisticated generator approach (using generators so it's already set for it)
   val ohsWithMethodGen =
     Gen.oneOf(ohsWithMethodFor(exampleServersKeys), emptyOhs(exampleServersIds.toSet))
 
-  val ohsWithInlineMethodGen: Gen[OHS] = Gen.const(ohsWithInlineMethodFor(exampleServersKeys, r)) //Table("ohs", ohsWithInlineMethodFor(exampleServersKeys, r))
+  val ohsWithInlineMethodGen: Gen[OHS] = Gen.const(ohsWithInlineMethodFor(exampleServersKeys, r))
 
   val ohsWithInlineBarrierGen: Gen[OHS] = Gen.const(ohsWithInlineBarrierFor(exampleServersKeys, r))
 
   val ohsWithBarrierGen: Gen[OHS] = Gen.const(ohsWithBarrierFor(exampleServersKeys))
 
   val ohsWithCopyGen: Gen[OHS] = Gen.const(ohsWithCopyFor(exampleServersKeys))
-
-  println("ttttttttttttttttttttttttttttttttttttttttttttttttttttttttla mptyOhs: " + emptyOhs(exampleServersIds.toSet))
 
   val ohsGen: Gen[OHS] = Gen.oneOf(ohsWithMethodGen,
     ohsWithInlineMethodGen,
@@ -270,24 +274,33 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     ohsWithCopyGen)
 
   def checkOpType(ohsGen: Gen[OHS], opType2: OperationType) =
-    forAll(ohsGen) { ohs => {
-      val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-      assert(opType == opType2)
-    }
+  /*forAll(ohsGen) { ohs => {
+    val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+    assert(opType == opType2)
+  }*/
+  //for solving bug https://www.47deg.com/blog/a-common-scalacheck-problem/
+    check {
+      Prop.forAllNoShrink(ohsGen) { ohs => {
+        val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+        opType == opType2
+      }
+      }
     }
 
-  def checkLatestObjCand(ohsGen: Gen[OHS]) =
-    forAll(ohsGen) { ohs => {
-      val (_, latestObjectCandidate, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-      assert(latestObjectCandidate == latestCandidate(ohs = ohs, barrierFlag = false, repairableThreshold = r))
-    }
+  def checkLatestObjCand(ohsGen: Gen[OHS]): Assertion =
+    forAll(ohsGen) {
+      ohs => {
+        val (_, latestObjectCandidate, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+        assert(latestObjectCandidate == latestCandidate(ohs = ohs, barrierFlag = false, repairableThreshold = r))
+      }
     }
 
-  def checkLatestBarCand(ohsGen: Gen[OHS]) = {
-    forAll(ohsWithMethodGen) { ohs => {
-      val (_, _, latestBarrierCandidate) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-      assert(latestBarrierCandidate == latestCandidate(ohs = ohs, barrierFlag = true, repairableThreshold = r))
-    }
+  def checkLatestBarCand(ohsGen: Gen[OHS]): Assertion = {
+    forAll(ohsGen) {
+      ohs => {
+        val (_, _, latestBarrierCandidate) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+        assert(latestBarrierCandidate == latestCandidate(ohs = ohs, barrierFlag = true, repairableThreshold = r))
+      }
     }
   }
 
@@ -387,10 +400,11 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       //latest time
       describe("when queried for its latest time") {
         it("should not contain any time greater than the one it returns") {
+
           import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT}
 
           latestTime(ohsWithMethodFor(exampleServersKeys)) should be(LT(1,
-            true,
+            false,
             Some("client1"),
             aOperationRepresentation,
             emptyOhsRepresentation(exampleServersIds)))
@@ -400,9 +414,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
 
     describe("An empty OHS") {
-      //since using object model.. here I must refer to the same structure as above
-      //ordering and  comparing
-      //se inserisco 2 volte in diverso ordine sono comunque uguali le ohs ...
+      //comparing (se inserisco 2 volte in diverso ordine sono comunque uguali le ohs ...)
 
       //---classify---
       describe("when classified") {
@@ -464,8 +476,5 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
         }
       }
     }
-
-
-    //must test setup here
   }
 }
