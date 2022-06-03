@@ -54,7 +54,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
   def truePred[T](): T => Flag = (_: T) => true
 
-  val arbitraryLt: Gen[ConcreteLogicalTimestamp] = ltGenerator(
+  def arbitraryLt: Gen[ConcreteLogicalTimestamp] = ltGenerator(
     Gen.choose(0, 2000), //Arbitrary.arbitrary[Int] suchThat (_ >= 0),
     Arbitrary.arbitrary[Boolean] suchThat truePred(),
     Arbitrary.arbitrary[Option[String]] suchThat truePred(),
@@ -84,10 +84,15 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
   def ltWithSameTimeOfAndBarrierGreaterThan(time: Int, barrierFlag: Boolean): Gen[ConcreteLogicalTimestamp] = ltGenerator(
     Gen.const(time),
-    Arbitrary.arbitrary[Boolean] suchThat (_ > barrierFlag),
+    Gen.const(barrierFlag),
     Arbitrary.arbitrary[Option[String]],
     Arbitrary.arbitrary[Option[String]],
     Arbitrary.arbitrary[Option[String]])
+
+  for {
+    n <- Gen.chooseNum(5, 20)
+    chars <- Gen.listOfN(n, Gen.asciiPrintableChar)
+  } yield chars.mkString
 
   def ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(time: Int, barrier: Boolean, clientId: Option[String])
   = ltGenerator(
@@ -128,7 +133,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical time and a greater barrier flag") {
-        forAll(arbitraryLt) { aLt =>
+        forAll(customizableArbitraryLt(barrierPred = _ == false)) { aLt =>
           forAll(ltWithSameTimeOfAndBarrierGreaterThan(aLt.time, aLt.barrierFlag)) { lt =>
             lt should be > aLt
           }
@@ -197,7 +202,8 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
   //candidate
   describe("A candidate") {
-
+    //ordering, equals
+    //setup
     describe("when it is set up from a ohs with an established barrier as latest ") {
 
       it("should ") {
@@ -254,6 +260,8 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   val ohsWithBarrierGen: Gen[OHS] = Gen.const(ohsWithBarrierFor(exampleServersKeys))
 
   val ohsWithCopyGen: Gen[OHS] = Gen.const(ohsWithCopyFor(exampleServersKeys))
+
+  println("ttttttttttttttttttttttttttttttttttttttttttttttttttttttttla mptyOhs: " + emptyOhs(exampleServersIds.toSet))
 
   val ohsGen: Gen[OHS] = Gen.oneOf(ohsWithMethodGen,
     ohsWithInlineMethodGen,
@@ -375,8 +383,19 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
           //assert(initialWorld.currentIteration == 0)
         }
       }
-      //latest time
 
+      //latest time
+      describe("when queried for its latest time") {
+        it("should not contain any time greater than the one it returns") {
+          import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT}
+
+          latestTime(ohsWithMethodFor(exampleServersKeys)) should be(LT(1,
+            true,
+            Some("client1"),
+            aOperationRepresentation,
+            emptyOhsRepresentation(exampleServersIds)))
+        }
+      }
     }
 
 
@@ -388,27 +407,36 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       //---classify---
       describe("when classified") {
         it("should trigger method") {
-          //assert(initialWorld.currentIteration == 0)
+          val (opType, _, _) = classify(emptyOhs(exampleServersIds.toSet),
+            repairableThreshold = r,
+            quorumThreshold = q)
+          opType should be(METHOD)
         }
-        it("should not return a barrier candidate as it latest barrier candidate") {
-          //assert(initialWorld.currentIteration == 0)
+        it("should None as it latest barrier candidate") {
+          val (_, _, latestBarrierCandidate) = classify(emptyOhs(exampleServersIds.toSet),
+            repairableThreshold = r,
+            quorumThreshold = q)
+          latestBarrierCandidate should be(Option.empty[Candidate])
         }
-        it("should return a the empty candidate as it latest object candidate") {
-          //assert(initialWorld.currentIteration == 0)
+        it("should return the empty candidate as it latest object candidate") {
+          val (_, latestObjectCandidate, _) = classify(emptyOhs(exampleServersIds.toSet),
+            repairableThreshold = r,
+            quorumThreshold = q)
+          latestObjectCandidate should be(Some(emptyCandidate))
         }
       }
       //latest candidate
       describe("when queried for its latest barrier candidate") {
-        it("should return an empty barrier candidate") {
-          //assert(initialWorld.currentIteration == 0)
+        it("should return None") {
+          latestCandidate(emptyOhs(exampleServersIds.toSet), true, r) should be(Option.empty[Candidate])
         }
-        it("should return a the empty candidate as it latest objet candidate") {
-          //assert(initialWorld.currentIteration == 0)
+        it("should return the empty candidate as it latest objet candidate") {
+          latestCandidate(emptyOhs(exampleServersIds.toSet), false, r) should be(Some(emptyCandidate))
         }
       }
       //latest_time
       it("should return the empty Logical timestamp as it latest time") {
-        assert(latestTime(emptyRh) == emptyLT)
+        latestTime(emptyRh) should be(emptyLT)
       }
     }
 

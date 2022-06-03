@@ -65,7 +65,7 @@ trait AbstractAbstractQuModel extends QuModel {
   override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
   val startingTime = 0
-  val emptyLT = ConcreteLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty)
+  val emptyLT = ConcreteLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty) //false because it must allow client to exit from repairing (if al servers sent the empty ohs)
   val emptyCandidate: Candidate = (emptyLT, emptyLT)
   val emptyRh: ReplicaHistory = List(emptyCandidate)
 
@@ -114,18 +114,11 @@ trait AbstractAbstractQuModel extends QuModel {
                      ohs: OHS): Int =
     ohs.values.count(_._1.contains(candidate)) //foreach replicahistory count if it contains the given candidate
 
-  //it might not exist (if requesting
+  //it might not exist (if requesting latest barrier candidate on the emptyOhs)
   override def latestCandidate(ohs: OHS,
                                barrierFlag: Boolean,
                                repairableThreshold: Int):
   Option[(ConcreteLogicalTimestamp, ConcreteLogicalTimestamp)] = {
-    /*ohs
-      .values
-      .map(rh => rh._1.max) //I can filter by order > repairableThreshold first first (and taking the max then) or viceversa
-      .filter(candidate => order(candidate, ohs) > repairableThreshold)
-      .max*/
-    //println("printing the ohs inside latestCandidate: " + ohs)
-
     println("le rh:")
     ohs
       .values //authenticated rhs here
@@ -169,11 +162,12 @@ trait AbstractAbstractQuModel extends QuModel {
     //println("il latestBarrierVersion : " + latestBarrierVersion)
     val ltLatest = latestTime(ohs)
     val opType = (latestObjectVersion, latestBarrierVersion) match {
-      case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) > quorumThreshold => ConcreteOperationTypes.METHOD
-      case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) > repairableThreshold => ConcreteOperationTypes.INLINE_METHOD
-      case (_, Some((barrierLt, barrierLtCo))) if barrierLt == ltLatest & order((barrierLt, barrierLtCo), ohs) > quorumThreshold => ConcreteOperationTypes.COPY
-      case (_, Some((barrierLt, barrierLtCo))) if barrierLt == ltLatest & order((barrierLt, barrierLtCo), ohs) > repairableThreshold => ConcreteOperationTypes.INLINE_BARRIER
-      case _ => ConcreteOperationTypes.COPY
+        //before the most restrictive (pattern matching implicitly breaks)
+      case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= quorumThreshold => ConcreteOperationTypes.METHOD
+      case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= repairableThreshold => ConcreteOperationTypes.INLINE_METHOD
+      case (_, Some((barrierLt, barrierLtCo))) if barrierLt == ltLatest & order((barrierLt, barrierLtCo), ohs) >= quorumThreshold => ConcreteOperationTypes.COPY
+      case (_, Some((barrierLt, barrierLtCo))) if barrierLt == ltLatest & order((barrierLt, barrierLtCo), ohs) >= repairableThreshold => ConcreteOperationTypes.INLINE_BARRIER
+      case _ => ConcreteOperationTypes.BARRIER
     }
     (opType, latestObjectVersion, latestBarrierVersion)
   }
@@ -284,4 +278,12 @@ object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticat
 //object sync response:
 //1. reuse response (some fields are null)
 //2. new class:
+
+//old latest candidate
+/*ohs
+  .values
+  .map(rh => rh._1.max) //I can filter by order > repairableThreshold first first (and taking the max then) or viceversa
+  .filter(candidate => order(candidate, ohs) > repairableThreshold)
+  .max*/
+//println("printing the ohs inside latestCandidate: " + ohs)
 
