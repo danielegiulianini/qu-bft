@@ -222,25 +222,27 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
   val r = 2
   val q = 4
-  //todo can be replaced with a more sophisticated generator approach
 
-  val ohsWithMethodGen =//Table("ohsWithMethod", ohsWithInlineMethodFor(exampleServersKeys, r))/* Gen.oneOf(
+
+  //todo can be replaced with a more sophisticated generator approach
+  val ohsWithMethodGen =
     Gen.oneOf(ohsWithMethodFor(exampleServersKeys), emptyOhs(exampleServersIds.toSet))
 
+  val ohsWithInlineMethodGen: Gen[OHS] = Gen.const(ohsWithInlineMethodFor(exampleServersKeys, r)) //Table("ohs", ohsWithInlineMethodFor(exampleServersKeys, r))
 
-  val ohsGen : Gen[OHS]= Gen.oneOf(ohsWithMethodGen,
+  val ohsWithInlineBarrierGen: Gen[OHS] = Gen.const(ohsWithInlineBarrierFor(exampleServersKeys, r))
+
+  val ohsWithBarrierGen: Gen[OHS] = Gen.const(ohsWithBarrierFor(exampleServersKeys))
+
+  val ohsWithCopyGen: Gen[OHS] = Gen.const(ohsWithCopyFor(exampleServersKeys))
+
+  val ohsGen: Gen[OHS] = Gen.oneOf(ohsWithMethodGen,
     ohsWithInlineMethodGen,
     ohsWithInlineBarrierGen,
     ohsWithBarrierGen,
     ohsWithCopyGen)
 
-  val ohsWithInlineMethodGen= Gen.const(ohsWithInlineMethodFor(exampleServersKeys, r)) //Table("ohs", ohsWithInlineMethodFor(exampleServersKeys, r))
 
-  val ohsWithInlineBarrierGen = Gen.const(ohsWithInlineBarrierFor(exampleServersKeys, r))
-
-  val ohsWithBarrierGen = Gen.const(ohsWithBarrierFor(exampleServersKeys))
-
-  val ohsWithCopyGen = Gen.const(ohsWithCopyFor(exampleServersKeys))
   //ohs
   //todo: can also be expressed on functions rather on obj (a <function invocation> (ex.classification) when ... should ...) or a <method> invocation when ... should ... or <method> , when invoked on ..., it should...
   describe("An OHS") {
@@ -249,21 +251,25 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     //---classify--- (testing all its branches)
     describe("when a established barrier is latest") {
       it("classification should trigger a copy") {
-
         forAll(ohsWithMethodGen) { ohs => {
           val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
           opType == METHOD
         }
-
         }
       }
-
       it("should return its latest object candidate as latest object candidate") {
-        //assert(initialWorld.currentIteration == 0)
+        forAll(ohsWithMethodGen) { ohs => {
+          val (_, latestObjectCandidate, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+          latestObjectCandidate == latestCandidate(ohs = ohs, barrierFlag = false, repairableThreshold = r)
+        }
+        }
       }
-
       it("should return its latest barrier candidate as latest barrier candidate") {
-        //assert(initialWorld.currentIteration == 0)
+        forAll(ohsWithMethodGen) { ohs => {
+          val (_, _, latestBarrierCandidate) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+          latestBarrierCandidate == latestCandidate(ohs = ohs, barrierFlag = true, repairableThreshold = r)
+        }
+        }
       }
     }
     describe("when a established object is latest") {
@@ -323,6 +329,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
     }
     //latest time
+
   }
 
 
@@ -362,8 +369,9 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   describe("An OHS representation") {
     describe("when compared to another representation of it") {
       it("should be equals to it") {
-        forAll(ohsGen) { ohs =>
+        forAll(ohsGen) { ohs => {
           assert(represent(ohs) == represent(ohs))
+        }
         }
       }
     }
