@@ -2,6 +2,7 @@ package qu.model
 
 import org.scalatest.funspec.AnyFunSpec
 import qu.model.ConcreteQuModel._
+import qu.model.ConcreteQuModel.ConcreteOperationTypes._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalacheck.Prop.forAll
 import org.scalacheck.Test.Parameters.default.minSuccessfulTests
@@ -18,7 +19,6 @@ import qu.model.SharedContainer.keysForServer
 
 import scala.language.postfixOps
 import scala.math.Ordered.orderingToOrdered
-import scala.reflect.internal.Flags.METHOD
 
 class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers with OHSFixture2 {
 
@@ -55,7 +55,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   def truePred[T](): T => Flag = (_: T) => true
 
   val arbitraryLt: Gen[ConcreteLogicalTimestamp] = ltGenerator(
-    Arbitrary.arbitrary[Int] suchThat (_ >= 0),
+    Gen.choose(0, 2000),//Arbitrary.arbitrary[Int] suchThat (_ >= 0),
     Arbitrary.arbitrary[Boolean] suchThat truePred(),
     Arbitrary.arbitrary[Option[String]] suchThat truePred(),
     Arbitrary.arbitrary[Option[String]] suchThat truePred(),
@@ -68,14 +68,15 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     Arbitrary.arbitrary[Option[String]])*/
 
   val arbitraryLtInfo: Gen[(Int, Flag, Option[OperationRepresentation], Option[OperationRepresentation], Option[OperationRepresentation])] = for {
-    a <- Arbitrary.arbitrary[Int] suchThat (_ >= 0)
+    a <- Gen.choose(0, 2000)//Arbitrary.arbitrary[Int] suchThat (_ >= 0)
     b <- Arbitrary.arbitrary[Boolean]
     c <- Arbitrary.arbitrary[Option[String]]
     d <- Arbitrary.arbitrary[Option[String]]
     e <- Arbitrary.arbitrary[Option[String]]} yield (a, b, c, d, e)
 
   def logicalTimestampWithGreaterTimeThan(time: Int): Gen[ConcreteLogicalTimestamp] = ltGenerator(
-    Arbitrary.arbitrary[Int] suchThat (tme => tme >= 0 && tme > time),
+    //Arbitrary.arbitrary[Int] suchThat (tme => tme >= 0 && tme > time),
+    Gen.choose(0.max(time), 2000),
     Arbitrary.arbitrary[Boolean],
     Arbitrary.arbitrary[Option[String]],
     Arbitrary.arbitrary[Option[String]],
@@ -113,37 +114,43 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
 
   //todo can be replaced with a nested generator
-  val aLt = ConcreteLogicalTimestamp(10, false, Some("client1"), Some("query"), Some("ohs")) //time: Int, barrierFlag: Boolean, clientId: Option[ClientId],operation: Option[OperationRepresentation],ohs: Option[OHSRepresentation])
+  val aLt2 = ConcreteLogicalTimestamp(10, false, Some("client1"), Some("query"), Some("ohs")) //time: Int, barrierFlag: Boolean, clientId: Option[ClientId],operation: Option[OperationRepresentation],ohs: Option[OHSRepresentation])
   describe("A ConcreteLogicalTimestamp") {
     //test ordering
     describe("when initialized with a logical time") {
       it("should be classified as previous to a ConcreteLogicalTimestamp with a greater logical time") {
-        forAll(logicalTimestampWithGreaterTimeThan(aLt.time)) { lt =>
-          println("tested lt: " + lt)
-          lt < aLt
-        } //assert(aLt>aLt2)
+        forAll(arbitraryLt) { aLt =>
+          forAll(logicalTimestampWithGreaterTimeThan(aLt.time)) { lt =>
+            println("tested couple, alt:" + aLt +", lt:" + lt)
+           assert(true)// aLt should be < lt //assert(aLt>aLt2)
+          }
+        }
       }
+      311777623
+      1686993279
+
+
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical time and a greater barrier flag") {
-        forAll(ltWithSameTimeOfAndBarrierGreaterThan(aLt.time, aLt.barrierFlag)) { lt =>
+        forAll(ltWithSameTimeOfAndBarrierGreaterThan(aLt2.time, aLt2.barrierFlag)) { lt =>
           println("tested lt: " + lt)
-          lt < aLt
+          lt should be > aLt2
         }
       }
 
       //todo verify if actually it generates them
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, same barrier flag but lexicographically greater clientId") {
         println("hello")
-        forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt =>
+        forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId)) { lt =>
           println("tested lt: " + lt)
-          lt < aLt //_ < aLt
+          lt < aLt2 //_ < aLt
         }
       }
 
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, barrier flag, clientId, but lexicographically greater OperationRepresentation") {
-        forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation)) {
-          _ < aLt
+        forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId, aLt2.operation)) {
+          _ < aLt2
         }
       }
 
@@ -242,6 +249,28 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     ohsWithBarrierGen,
     ohsWithCopyGen)
 
+  def checkOpType(ohsGen: Gen[OHS], opType2: OperationType) =
+    forAll(ohsGen) { ohs => {
+      val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+      assert(opType == opType2)
+    }
+    }
+
+  def checkLatestObjCand(ohsGen: Gen[OHS]) =
+    forAll(ohsGen) { ohs => {
+      val (_, latestObjectCandidate, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+      assert(latestObjectCandidate == latestCandidate(ohs = ohs, barrierFlag = false, repairableThreshold = r))
+    }
+    }
+
+  def checkLatestBarCand(ohsGen: Gen[OHS]) = {
+    forAll(ohsWithMethodGen) { ohs => {
+      val (_, _, latestBarrierCandidate) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+      assert(latestBarrierCandidate == latestCandidate(ohs = ohs, barrierFlag = true, repairableThreshold = r))
+    }
+    }
+  }
+
 
   //ohs
   //todo: can also be expressed on functions rather on obj (a <function invocation> (ex.classification) when ... should ...) or a <method> invocation when ... should ... or <method> , when invoked on ..., it should...
@@ -249,145 +278,154 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     //equals
     //aggiornamento in base al server
     //---classify--- (testing all its branches)
-    describe("when a established barrier is latest") {
-      it("classification should trigger a copy") {
-        forAll(ohsWithMethodGen) { ohs => {
-          val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-          opType == METHOD
-        }
-        }
+    describe("when a established barrier is latest and performing classification") {
+      it("it should trigger a copy") { //or identifies instead of trigger
+        checkOpType(ohsWithCopyGen, COPY)
       }
-      it("should return its latest object candidate as latest object candidate") {
-        forAll(ohsWithMethodGen) { ohs => {
-          val (_, latestObjectCandidate, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-          latestObjectCandidate == latestCandidate(ohs = ohs, barrierFlag = false, repairableThreshold = r)
-        }
-        }
+      it("it should return its latest object candidate as latest object candidate") {
+        checkLatestObjCand(ohsWithCopyGen)
       }
-      it("should return its latest barrier candidate as latest barrier candidate") {
-        forAll(ohsWithMethodGen) { ohs => {
-          val (_, _, latestBarrierCandidate) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-          latestBarrierCandidate == latestCandidate(ohs = ohs, barrierFlag = true, repairableThreshold = r)
-        }
-        }
+      it("it should return its latest barrier candidate as latest barrier candidate") {
+        checkLatestBarCand(ohsWithCopyGen)
       }
     }
-    describe("when a established object is latest") {
+    describe("when a established object is latest and performing classification") {
       it("should trigger a method") {
-        //assert(initialWorld.worldHistory.isEmpty)
+        checkOpType(ohsWithMethodGen, METHOD)
       }
 
       it("should return its latest object candidate as latest object candidate") {
-        //assert(initialWorld.currentIteration == 0)
+        checkLatestObjCand(ohsWithMethodGen)
       }
 
       it("should return its latest barrier candidate as latest barrier candidate") {
-        //assert(initialWorld.currentIteration == 0)
+        checkLatestBarCand(ohsWithMethodGen)
       }
     }
-    describe("when a repairable barrier is latest") {
-      it("should trigger a method") {
-        //assert(initialWorld.worldHistory.isEmpty)
+    describe("when a repairable barrier is latest and performing classification") {
+      it("should trigger a inline barrier") {
+        checkOpType(ohsWithInlineBarrierGen, INLINE_BARRIER)
       }
 
       it("should return its latest object candidate as latest object candidate") {
-        //assert(initialWorld.currentIteration == 0)
+        checkLatestObjCand(ohsWithInlineBarrierGen)
       }
 
       it("should return its latest barrier candidate as latest barrier candidate") {
-        //assert(initialWorld.currentIteration == 0)
+        checkLatestBarCand(ohsWithInlineBarrierGen)
+
       }
     }
-    describe("when a repairable object is latest") {
-      it("should trigger a method") {
-        //assert(initialWorld.worldHistory.isEmpty)
+    describe("when a repairable object is latest and performing classification") {
+      it("should trigger a inline method") {
+        checkOpType(ohsWithInlineMethodGen, INLINE_METHOD)
       }
 
       it("should return its latest object candidate as latest object candidate") {
-        //assert(initialWorld.currentIteration == 0)
+        checkLatestObjCand(ohsWithInlineMethodGen)
       }
 
       it("should return its latest barrier candidate as latest barrier candidate") {
-        //assert(initialWorld.currentIteration == 0)
+        checkLatestBarCand(ohsWithInlineMethodGen)
       }
     }
-    //latest_candidate
-    describe("when queried for its latest object candidate") {
-      it("should return the greatest object candidate it contains") {
-        //assert(initialWorld.currentIteration == 0)
-      }
-      it("should return a object candidate and not a barrier candidate") {
-        //assert(initialWorld.currentIteration == 0)
-      }
-    }
-    describe("when queried for its latest barrier candidate") {
-      it("should return the greatest barrier candidate it contains") {
-        //assert(initialWorld.currentIteration == 0)
-      }
-      it("should return a barrier candidate and not a object candidate") {
-        //assert(initialWorld.currentIteration == 0)
-      }
-    }
-    //latest time
 
-  }
-
-
-  describe("An empty OHS") {
-    //since using object model.. here I must refer to the same structure as above
-    //ordering and  comparing
-    //se inserisco 2 volte in diverso ordine sono comunque uguali le ohs ...
-
-    //---classify---
-    describe("when classified") {
-      it("should trigger method") {
-        //assert(initialWorld.currentIteration == 0)
+    describe("when performing classification and " +
+      "nor an established object candidate" +
+      "nor an established barrier candidate " +
+      "nor a repairable object candidate " +
+      "nor a repairable barrier candidate are there") {
+      it("should trigger a barrier") {
+        checkOpType(ohsWithInlineMethodGen, BARRIER)
       }
-      it("should not return a barrier candidate as it latest barrier candidate") {
-        //assert(initialWorld.currentIteration == 0)
+      it("should return its latest object candidate as latest object candidate") {
+        checkLatestObjCand(ohsWithInlineMethodGen)
       }
-      it("should return a the empty candidate as it latest object candidate") {
-        //assert(initialWorld.currentIteration == 0)
-      }
-    }
-    //latest candidate
-    describe("when queried for its latest barrier candidate") {
-      it("should return an empty barrier candidate") {
-        //assert(initialWorld.currentIteration == 0)
-      }
-      it("should return a the empty candidate as it latest objet candidate") {
-        //assert(initialWorld.currentIteration == 0)
-      }
-    }
-    //latest_time
-    it("should return the empty Logical timestamp as it latest time") {
-      assert(latestTime(emptyRh) == emptyLT)
-    }
-  }
 
+      it("should return its latest barrier candidate as latest barrier candidate") {
+        checkLatestBarCand(ohsWithInlineMethodGen)
+      }
 
-  describe("An OHS representation") {
-    describe("when compared to another representation of it") {
-      it("should be equals to it") {
-        forAll(ohsGen) { ohs => {
-          assert(represent(ohs) == represent(ohs))
+      //latest_candidate
+      describe("when queried for its latest object candidate") {
+        it("should return the greatest object candidate it contains") {
+          //assert(initialWorld.currentIteration == 0)
         }
+        it("should return a object candidate and not a barrier candidate") {
+          //assert(initialWorld.currentIteration == 0)
         }
       }
-    }
-  }
+      describe("when queried for its latest barrier candidate") {
+        it("should return the greatest barrier candidate it contains") {
+          //assert(initialWorld.currentIteration == 0)
+        }
+        it("should return a barrier candidate and not a object candidate") {
+          //assert(initialWorld.currentIteration == 0)
+        }
+      }
+      //latest time
 
-  val opGen = Gen.oneOf(IncrementAsObj, new GetObj)
-  describe("An Operation representation") {
-    describe("when compared to another representation of it") {
-      it("should be equals to it") {
-        forAll(opGen) { op =>
-          assert(represent(Some(op)) == represent(Some(op)))
+    }
+
+
+    describe("An empty OHS") {
+      //since using object model.. here I must refer to the same structure as above
+      //ordering and  comparing
+      //se inserisco 2 volte in diverso ordine sono comunque uguali le ohs ...
+
+      //---classify---
+      describe("when classified") {
+        it("should trigger method") {
+          //assert(initialWorld.currentIteration == 0)
+        }
+        it("should not return a barrier candidate as it latest barrier candidate") {
+          //assert(initialWorld.currentIteration == 0)
+        }
+        it("should return a the empty candidate as it latest object candidate") {
+          //assert(initialWorld.currentIteration == 0)
+        }
+      }
+      //latest candidate
+      describe("when queried for its latest barrier candidate") {
+        it("should return an empty barrier candidate") {
+          //assert(initialWorld.currentIteration == 0)
+        }
+        it("should return a the empty candidate as it latest objet candidate") {
+          //assert(initialWorld.currentIteration == 0)
+        }
+      }
+      //latest_time
+      it("should return the empty Logical timestamp as it latest time") {
+        assert(latestTime(emptyRh) == emptyLT)
+      }
+    }
+
+
+    describe("An OHS representation") {
+      describe("when compared to another representation of it") {
+        it("should be equals to it") {
+          forAll(ohsGen) {
+            ohs => {
+              assert(represent(ohs) == represent(ohs))
+            }
+          }
         }
       }
     }
+
+    val opGen = Gen.oneOf(IncrementAsObj, new GetObj)
+    describe("An Operation representation") {
+      describe("when compared to another representation of it") {
+        it("should be equals to it") {
+          forAll(opGen) {
+            op =>
+              assert(represent(Some(op)) == represent(Some(op)))
+          }
+        }
+      }
+    }
+
+
+    //must test setup here
   }
-
-
-  //must test setup here
 }
