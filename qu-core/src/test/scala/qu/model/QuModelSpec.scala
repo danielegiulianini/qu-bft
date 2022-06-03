@@ -223,26 +223,24 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   val r = 2
   val q = 4
   //todo can be replaced with a more sophisticated generator approach
-  val ohsGen = Gen.oneOf(ohsWithMethodGen,
+
+  val ohsWithMethodGen =//Table("ohsWithMethod", ohsWithInlineMethodFor(exampleServersKeys, r))/* Gen.oneOf(
+    Gen.oneOf(ohsWithMethodFor(exampleServersKeys), emptyOhs(exampleServersIds.toSet))
+
+
+  val ohsGen : Gen[OHS]= Gen.oneOf(ohsWithMethodGen,
     ohsWithInlineMethodGen,
     ohsWithInlineBarrierGen,
     ohsWithBarrierGen,
     ohsWithCopyGen)
 
-  val ohsWithMethodGen = Gen.oneOf(
-    ohsWithMethodFor(exampleServersKeys))
+  val ohsWithInlineMethodGen= Gen.const(ohsWithInlineMethodFor(exampleServersKeys, r)) //Table("ohs", ohsWithInlineMethodFor(exampleServersKeys, r))
 
-  val ohsWithInlineMethodGen = Gen.oneOf(
-    ohsWithInlineMethodFor(exampleServersKeys, 2))
+  val ohsWithInlineBarrierGen = Gen.const(ohsWithInlineBarrierFor(exampleServersKeys, r))
 
-  val ohsWithInlineBarrierGen = Gen.oneOf(
-    ohsWithInlineBarrierFor(exampleServersKeys, 2))
+  val ohsWithBarrierGen = Gen.const(ohsWithBarrierFor(exampleServersKeys))
 
-  val ohsWithBarrierGen = Gen.oneOf(
-    ohsWithBarrierFor(exampleServersKeys))
-
-  val ohsWithCopyGen = Gen.oneOf(
-    ohsWithCopyFor(exampleServersKeys))
+  val ohsWithCopyGen = Gen.const(ohsWithCopyFor(exampleServersKeys))
   //ohs
   //todo: can also be expressed on functions rather on obj (a <function invocation> (ex.classification) when ... should ...) or a <method> invocation when ... should ... or <method> , when invoked on ..., it should...
   describe("An OHS") {
@@ -251,9 +249,10 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     //---classify--- (testing all its branches)
     describe("when a established barrier is latest") {
       it("classification should trigger a copy") {
+
         forAll(ohsWithMethodGen) { ohs => {
-          val (opType, _, _) = classify(ohs, repairableThreshold=r, quorumThreshold=q)
-        opType == METHOD
+          val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+          opType == METHOD
         }
 
         }
