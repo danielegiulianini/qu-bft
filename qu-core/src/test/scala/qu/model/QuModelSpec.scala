@@ -55,7 +55,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   def truePred[T](): T => Flag = (_: T) => true
 
   val arbitraryLt: Gen[ConcreteLogicalTimestamp] = ltGenerator(
-    Gen.choose(0, 2000),//Arbitrary.arbitrary[Int] suchThat (_ >= 0),
+    Gen.choose(0, 2000), //Arbitrary.arbitrary[Int] suchThat (_ >= 0),
     Arbitrary.arbitrary[Boolean] suchThat truePred(),
     Arbitrary.arbitrary[Option[String]] suchThat truePred(),
     Arbitrary.arbitrary[Option[String]] suchThat truePred(),
@@ -68,7 +68,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     Arbitrary.arbitrary[Option[String]])*/
 
   val arbitraryLtInfo: Gen[(Int, Flag, Option[OperationRepresentation], Option[OperationRepresentation], Option[OperationRepresentation])] = for {
-    a <- Gen.choose(0, 2000)//Arbitrary.arbitrary[Int] suchThat (_ >= 0)
+    a <- Gen.choose(0, 2000) //Arbitrary.arbitrary[Int] suchThat (_ >= 0)
     b <- Arbitrary.arbitrary[Boolean]
     c <- Arbitrary.arbitrary[Option[String]]
     d <- Arbitrary.arbitrary[Option[String]]
@@ -114,44 +114,56 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
 
   //todo can be replaced with a nested generator
-  val aLt2 = ConcreteLogicalTimestamp(10, false, Some("client1"), Some("query"), Some("ohs")) //time: Int, barrierFlag: Boolean, clientId: Option[ClientId],operation: Option[OperationRepresentation],ohs: Option[OHSRepresentation])
+  // val aLt2 = ConcreteLogicalTimestamp(10, false, Some("client1"), Some("query"), Some("ohs")) //time: Int, barrierFlag: Boolean, clientId: Option[ClientId],operation: Option[OperationRepresentation],ohs: Option[OHSRepresentation])
   describe("A ConcreteLogicalTimestamp") {
     //test ordering
     describe("when initialized with a logical time") {
       it("should be classified as previous to a ConcreteLogicalTimestamp with a greater logical time") {
         forAll(arbitraryLt) { aLt =>
           forAll(logicalTimestampWithGreaterTimeThan(aLt.time)) { lt =>
-            println("tested couple, alt:" + aLt +", lt:" + lt)
-           assert(true)// aLt should be < lt //assert(aLt>aLt2)
+            println("tested couple, alt:" + aLt + ", lt:" + lt)
+            assert(true) // aLt should be < lt //assert(aLt>aLt2)
           }
         }
       }
-      311777623
-      1686993279
-
-
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical time and a greater barrier flag") {
-        forAll(ltWithSameTimeOfAndBarrierGreaterThan(aLt2.time, aLt2.barrierFlag)) { lt =>
+        forAll(arbitraryLt) { aLt =>
+          forAll(ltWithSameTimeOfAndBarrierGreaterThan(aLt.time, aLt.barrierFlag)) { lt =>
+            lt should be > aLt
+          }
+        }
+        /*forAll(ltWithSameTimeOfAndBarrierGreaterThan(aLt2.time, aLt2.barrierFlag)) { lt =>
           println("tested lt: " + lt)
           lt should be > aLt2
-        }
+        }*/
       }
 
       //todo verify if actually it generates them
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, same barrier flag but lexicographically greater clientId") {
-        println("hello")
+        forAll(arbitraryLt) { aLt =>
+          forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt =>
+            println("tested lt: " + lt)
+            lt should be < aLt //_ < aLt
+          }
+        }
+        /*println("hello")
         forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId)) { lt =>
           println("tested lt: " + lt)
           lt < aLt2 //_ < aLt
-        }
+        }*/
       }
 
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, barrier flag, clientId, but lexicographically greater OperationRepresentation") {
-        forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId, aLt2.operation)) {
-          _ < aLt2
+        forAll(arbitraryLt) { aLt =>
+          forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation)) {
+            _ < aLt
+          }
         }
+        /*forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId, aLt2.operation)) {
+          _ < aLt2
+        }*/
       }
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, barrier flag, clientId, OperationRepresentation, but lexicographically greater OHSRepresentation") {
