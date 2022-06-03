@@ -274,7 +274,8 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     ohsWithCopyGen)
 
   def checkOpType(ohsGen: Gen[OHS], opType2: OperationType) =
-  /*forAll(ohsGen) { ohs => {
+  /*without shrinking:
+  forAll(ohsGen) { ohs => {
     val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
     assert(opType == opType2)
   }*/
@@ -385,7 +386,12 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
           //assert(initialWorld.currentIteration == 0)
         }
         it("should return a object candidate and not a barrier candidate") {
-          //assert(initialWorld.currentIteration == 0)
+          val barrierFlag = false
+          forAll(ohsGen) { ohs =>
+            for {
+              (lt, ltCo) <- latestCandidate(ohs, barrierFlag, r)
+            } yield assert(lt.barrierFlag == ltCo.barrierFlag == barrierFlag)
+          }
         }
       }
       describe("when queried for its latest barrier candidate") {
@@ -393,88 +399,92 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
           //assert(initialWorld.currentIteration == 0)
         }
         it("should return a barrier candidate and not a object candidate") {
-          //assert(initialWorld.currentIteration == 0)
+          val barrierFlag = true
+          forAll(ohsGen) { ohs =>
+            for {
+              (lt, ltCo) <- latestCandidate(ohs, barrierFlag, r)
+            } yield assert(lt.barrierFlag == ltCo.barrierFlag == barrierFlag)
+          }
+        }
+
+        //latest time
+        describe("when queried for its latest time") {
+          it("should not contain any time greater than the one it returns") {
+
+            import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT}
+
+            latestTime(ohsWithMethodFor(exampleServersKeys)) should be(LT(1,
+              false,
+              Some("client1"),
+              aOperationRepresentation,
+              emptyOhsRepresentation(exampleServersIds)))
+          }
         }
       }
 
-      //latest time
-      describe("when queried for its latest time") {
-        it("should not contain any time greater than the one it returns") {
 
-          import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT}
+      describe("An empty OHS") {
+        //comparing (se inserisco 2 volte in diverso ordine sono comunque uguali le ohs ...)
 
-          latestTime(ohsWithMethodFor(exampleServersKeys)) should be(LT(1,
-            false,
-            Some("client1"),
-            aOperationRepresentation,
-            emptyOhsRepresentation(exampleServersIds)))
+        //---classify---
+        describe("when classified") {
+          it("should trigger method") {
+            val (opType, _, _) = classify(emptyOhs(exampleServersIds.toSet),
+              repairableThreshold = r,
+              quorumThreshold = q)
+            opType should be(METHOD)
+          }
+          it("should None as it latest barrier candidate") {
+            val (_, _, latestBarrierCandidate) = classify(emptyOhs(exampleServersIds.toSet),
+              repairableThreshold = r,
+              quorumThreshold = q)
+            latestBarrierCandidate should be(Option.empty[Candidate])
+          }
+          it("should return the empty candidate as it latest object candidate") {
+            val (_, latestObjectCandidate, _) = classify(emptyOhs(exampleServersIds.toSet),
+              repairableThreshold = r,
+              quorumThreshold = q)
+            latestObjectCandidate should be(Some(emptyCandidate))
+          }
+        }
+        //latest candidate
+        describe("when queried for its latest barrier candidate") {
+          it("should return None") {
+            latestCandidate(emptyOhs(exampleServersIds.toSet), true, r) should be(Option.empty[Candidate])
+          }
+          it("should return the empty candidate as it latest objet candidate") {
+            latestCandidate(emptyOhs(exampleServersIds.toSet), false, r) should be(Some(emptyCandidate))
+          }
+        }
+        //latest_time
+        it("should return the empty Logical timestamp as it latest time") {
+          latestTime(emptyRh) should be(emptyLT)
         }
       }
-    }
 
 
-    describe("An empty OHS") {
-      //comparing (se inserisco 2 volte in diverso ordine sono comunque uguali le ohs ...)
-
-      //---classify---
-      describe("when classified") {
-        it("should trigger method") {
-          val (opType, _, _) = classify(emptyOhs(exampleServersIds.toSet),
-            repairableThreshold = r,
-            quorumThreshold = q)
-          opType should be(METHOD)
-        }
-        it("should None as it latest barrier candidate") {
-          val (_, _, latestBarrierCandidate) = classify(emptyOhs(exampleServersIds.toSet),
-            repairableThreshold = r,
-            quorumThreshold = q)
-          latestBarrierCandidate should be(Option.empty[Candidate])
-        }
-        it("should return the empty candidate as it latest object candidate") {
-          val (_, latestObjectCandidate, _) = classify(emptyOhs(exampleServersIds.toSet),
-            repairableThreshold = r,
-            quorumThreshold = q)
-          latestObjectCandidate should be(Some(emptyCandidate))
+      describe("An OHS representation") {
+        describe("when compared to another representation of it") {
+          it("should be equals to it") {
+            forAll(ohsGen) {
+              ohs => {
+                assert(represent(ohs) == represent(ohs))
+              }
+            }
+          }
         }
       }
-      //latest candidate
-      describe("when queried for its latest barrier candidate") {
-        it("should return None") {
-          latestCandidate(emptyOhs(exampleServersIds.toSet), true, r) should be(Option.empty[Candidate])
-        }
-        it("should return the empty candidate as it latest objet candidate") {
-          latestCandidate(emptyOhs(exampleServersIds.toSet), false, r) should be(Some(emptyCandidate))
-        }
-      }
-      //latest_time
-      it("should return the empty Logical timestamp as it latest time") {
-        latestTime(emptyRh) should be(emptyLT)
-      }
-    }
 
-
-    describe("An OHS representation") {
-      describe("when compared to another representation of it") {
-        it("should be equals to it") {
-          forAll(ohsGen) {
-            ohs => {
-              assert(represent(ohs) == represent(ohs))
+      val opGen = Gen.oneOf(IncrementAsObj, new GetObj)
+      describe("An Operation representation") {
+        describe("when compared to another representation of it") {
+          it("should be equals to it") {
+            forAll(opGen) {
+              op =>
+                assert(represent(Some(op)) == represent(Some(op)))
             }
           }
         }
       }
     }
-
-    val opGen = Gen.oneOf(IncrementAsObj, new GetObj)
-    describe("An Operation representation") {
-      describe("when compared to another representation of it") {
-        it("should be equals to it") {
-          forAll(opGen) {
-            op =>
-              assert(represent(Some(op)) == represent(Some(op)))
-          }
-        }
-      }
-    }
   }
-}
