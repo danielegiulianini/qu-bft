@@ -257,7 +257,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
         lt.barrierFlag should be(true)
         lt.clientId should be(clientId)
         lt.operation should be(Option.empty[Operation[Any, Int]])
-        lt.ohs should be(ohsClassifiedAsBarrier)
+        lt.ohs should be(Some(represent(ohsClassifiedAsBarrier)))
       }
       it("should return the latest object version lt as the ltCo") {
         ltCo should be(latestLt)
@@ -284,9 +284,9 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       it("should return the latest object version lt as the ltCo") {
         ltCo should be(latestLt)
       }
-      it("should return the latest object version lt as the current lt") {
+      it("should return the latest barrier version lt as the current lt") {
         ltCur should be({
-          val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, false, r).get
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, true, r).get
           latestLt
         })
       }

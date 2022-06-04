@@ -2,8 +2,6 @@ package qu.model
 
 import qu.model.ConcreteQuModel.ConcreteLogicalTimestamp
 import qu.model.StatusCode.StatusCode
-
-import scala.Option
 import scala.collection.SortedSet
 
 
@@ -217,7 +215,7 @@ trait AbstractAbstractQuModel extends QuModel {
         time = latestTime(ohs).time + 1,
         barrierFlag = true,
         clientId = Some(clientId),
-        operation = Some(represent(operation)),
+        operation = Option.empty,//Some(represent(operation)),
         ohs = Some(represent(ohs)))
       (opType,
         //candidate
@@ -241,7 +239,7 @@ trait AbstractAbstractQuModel extends QuModel {
           //ltCurrent
           latestBarrierVersionLt)
       }
-      else /*OperationType1.INLINE_BARRIER*/ {
+      else /*INLINE_BARRIER*/ {
         (opType,
           //candidate
           (latestBarrierVersionLt, latestBarrierVersionLtCo),
