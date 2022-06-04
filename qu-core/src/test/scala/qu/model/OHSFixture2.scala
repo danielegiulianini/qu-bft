@@ -1,6 +1,9 @@
 package qu.model
 
-import qu.model.ConcreteQuModel.{Candidate, Key, OHS, ReplicaHistory, ServerId, emptyCandidate, emptyLT, updateAuthenticatorFor, α, ConcreteLogicalTimestamp => LT}
+import qu.model.ConcreteQuModel.{
+  Candidate, Key, OHS, ReplicaHistory, ServerId, authenticateRh, emptyCandidate, emptyLT,
+  α, ConcreteLogicalTimestamp => LT
+}
 
 import scala.collection.immutable.{Map, List => RH}
 import scala.language.postfixOps
@@ -69,8 +72,11 @@ trait OHSFixture2 {
   def rhsWithCopyFor(serverIds: List[ServerId]): Map[ServerId, ReplicaHistory] =
     unanimousRhsFor(serverIds, true)
 
-  def generateOhsFromRHsAndKeys(rhs: Map[ServerId, ReplicaHistory], keys: Map[ServerId, Map[ServerId, Key]]): OHS =
-    keys.map { case (id, keys) => id -> (rhs(id), updateAuthenticatorFor(keys)(id)(rhs(id))) }
+  def generateOhsFromRHsAndKeys(rhs: Map[ServerId, ReplicaHistory], keys: Map[ServerId, Map[ServerId, Key]]): OHS = {
+    keys.map { case (serverId, serverKeys) => serverId ->
+      (rhs(serverId), authenticateRh(rhs(serverId), serverKeys))
+    }
+  }
 
   def ohsWithMethodFor(serverKeys: Map[ServerId, Map[ServerId, Key]]): OHS =
     generateOhsFromRHsAndKeys(rhsWithMethodFor(serverKeys.keySet.toList), serverKeys)
