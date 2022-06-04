@@ -95,12 +95,13 @@ trait AbstractAbstractQuModel extends QuModel {
   implicit def ConcreteTimestampOrdering: Ordering[ConcreteLogicalTimestamp] =
     Ordering.by(lt => (lt.time, lt.barrierFlag, lt.clientId, lt.operation, lt.ohs))
 
-  def latestTime(ohs: OHS): LogicalTimestamp =
+  def latestTime(ohs: OHS): LogicalTimestamp = {
     ohs
       .values
       .map(_._1)
       .map(latestTime)
       .max
+  }
 
   def contains(replicaHistory: ReplicaHistory, candidate: Candidate) =
     replicaHistory.contains(candidate) //with ReplicaHistory as SortedSet: replicaHistory(candidate)
@@ -119,11 +120,11 @@ trait AbstractAbstractQuModel extends QuModel {
                                barrierFlag: Boolean,
                                repairableThreshold: Int):
   Option[(ConcreteLogicalTimestamp, ConcreteLogicalTimestamp)] = {
-    println("le rh:")
+    //println("le rh:")
     ohs
       .values //authenticated rhs here
       .map(e => {
-        println(e._1)
+        //println(e._1)
         e
       })
       .flatMap(rh => rh._1) //candidates of rhs here
@@ -156,15 +157,28 @@ trait AbstractAbstractQuModel extends QuModel {
   (OperationType,
     Option[Candidate],
     Option[Candidate]) = {
+
+    //    if (ohs == Map()) throw new Exception("ohs empty!")
+
     val latestObjectVersion = latestCandidate(ohs, barrierFlag = false, repairableThreshold)
     val latestBarrierVersion = latestCandidate(ohs, barrierFlag = true, repairableThreshold)
     //println("il latestObjectVersion : " + latestObjectVersion)
     //println("il latestBarrierVersion : " + latestBarrierVersion)
     val ltLatest = latestTime(ohs)
+    (latestObjectVersion, latestBarrierVersion) match {
+      //before the most restrictive (pattern matching implicitly breaks)
+      case (Some((objectLt, objectLtCo)), _) =>{
+        println("1o test: " + ( objectLt == ltLatest) + ", il latest time is: " + ltLatest  + "l'objectLt:" + objectLt)
+        println("2o test: " +( order((objectLt, objectLtCo), ohs) >= repairableThreshold))
+
+      }
+    }
     val opType = (latestObjectVersion, latestBarrierVersion) match {
-        //before the most restrictive (pattern matching implicitly breaks)
+      //before the most restrictive (pattern matching implicitly breaks)
       case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= quorumThreshold => ConcreteOperationTypes.METHOD
-      case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= repairableThreshold => ConcreteOperationTypes.INLINE_METHOD
+      case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= repairableThreshold =>  {
+        ConcreteOperationTypes.INLINE_METHOD
+      }
       case (_, Some((barrierLt, barrierLtCo))) if barrierLt == ltLatest & order((barrierLt, barrierLtCo), ohs) >= quorumThreshold => ConcreteOperationTypes.COPY
       case (_, Some((barrierLt, barrierLtCo))) if barrierLt == ltLatest & order((barrierLt, barrierLtCo), ohs) >= repairableThreshold => ConcreteOperationTypes.INLINE_BARRIER
       case _ => ConcreteOperationTypes.BARRIER
@@ -181,7 +195,7 @@ trait AbstractAbstractQuModel extends QuModel {
                   quorumThreshold: Int,
                   repairableThreshold: Int,
                   clientId: String): (OperationType, Candidate, LogicalTimestamp) = {
-    val (opType, latestObjectVersion, latestBarrierVersion) = classify(ohs, quorumThreshold, repairableThreshold)
+    val (opType, latestObjectVersion, latestBarrierVersion) = classify(ohs, repairableThreshold, quorumThreshold)
     val latestObjectVersionFilled = latestObjectVersion.getOrElse(
       throw new Exception("with a correct quorum system thresholds setting a ohs should always a latest object candidate"))
     val (conditionedOnLogicalTimestamp, _) = latestObjectVersionFilled
