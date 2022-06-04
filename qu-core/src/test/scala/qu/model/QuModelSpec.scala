@@ -206,15 +206,127 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     }
   }
 
+  //todo can be shared with quClientSpec in ascenario case class
+  val exampleServersIds = (1 to 4 toList).map("s" + _)
+  val exampleServersKeys: Map[ServerId, Map[ConcreteQuModel.ServerId, ServerId]] =
+    exampleServersIds.map(id => id -> keysForServer(id, exampleServersIds.toSet)).toMap
+  val r = 2
+  val q = 4
+  println("la ohs con inline method *******************************")
+  println(ohsWithInlineMethodFor(exampleServersKeys, r))
+
   //candidate
   describe("A candidate") {
     //ordering, equals
     //setup
-    describe("when it is set up from a ohs with an established barrier as latest ") {
-
-      it("should ") {
+    val operation = Some(IncrementAsObj)
+    val clientId = "client1"
+    describe("when it is set up from a ohs with an established method as latest ") {
+      val ohsClassifiedAsMethod = ohsWithMethodFor(exampleServersKeys)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsMethod, q, r, clientId)
+      it("should return a method as operation type") {
+        opType should be(METHOD)
+      }
+      it("should return the correct lt as the new lt") {
+        lt.barrierFlag should be(false)
+        lt.clientId should be(clientId)
+        lt.operation should be(operation)
+        lt.ohs should be(ohsClassifiedAsMethod)
+      }
+      it("should return the latest object version lt as the ltCo") {
+        ltCo should be(latestCandidate(ohsClassifiedAsMethod, false, r))
+      }
+      it("should return the latest object version lt as the current lt") {
+        ltCur should be(latestCandidate(ohsClassifiedAsMethod, false, r))
       }
     }
+    describe("when it is set up from a ohs without an established object candidate" +
+      "nor an established barrier candidate " +
+      "nor a repairable object candidate " +
+      "nor a repairable barrier candidate are there") {
+        val ohsClassifiedAsBarrier = ohsWithBarrierFor(exampleServersKeys)
+        val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsBarrier, q, r, clientId)
+        it("should return a method as operation type") {
+          opType should be(BARRIER)
+        }
+        it("should return the correct lt as the new lt") {
+          lt.barrierFlag should be(true)
+          lt.clientId should be(clientId)
+          lt.operation should be(Option.empty[Any])
+          lt.ohs should be(ohsClassifiedAsBarrier)
+        }
+        it("should return the latest object version lt as the ltCo") {
+          ltCo should be(latestCandidate(ohsClassifiedAsBarrier, false, r))
+        }
+        it("should return the latest object version lt as the current lt") {
+          ltCur should be(lt)
+        }
+
+    }
+    describe("when it is set up from a ohs with an established barrier as latest ") {
+      val ohsClassifiedAsCopy = ohsWithCopyFor(exampleServersKeys)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsCopy, q, r, clientId)
+      it("should return a method as operation type") {
+        opType should be(COPY)
+      }
+      it("should return the correct lt as the new lt") {
+        lt.barrierFlag should be(false)
+        lt.clientId should be(clientId)
+        lt.operation should be(ltCo.operation)
+        lt.ohs should be(ohsClassifiedAsCopy)
+      }
+      it("should return the latest object version lt as the ltCo") {
+        ltCo should be(latestCandidate(ohsClassifiedAsCopy, false, r))
+      }
+      it("should return the latest object version lt as the current lt") {
+        ltCur should be(latestCandidate(ohsClassifiedAsCopy, true, r))
+      }
+    }
+    describe("when it is set up from a ohs with a repairable method as latest ") {
+      val ohsClassifiedAsInlineMethod = ohsWithInlineMethodFor(exampleServersKeys, r)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsInlineMethod, q, r, clientId)
+      it("should return a method as operation type") {
+        opType should be(INLINE_METHOD)
+      }
+      it("should return the correct lt as the new lt") {
+        lt should be ({
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineMethod, false, r).get
+          latestLt
+        })
+      }
+      it("should return the latest object version lt as the ltCo") {
+        ltCo should be({
+          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineMethod, false, r).get
+          latestCo
+        })
+      }
+      it("should return the latest object version lt as the current lt") {
+        ltCur should be(lt)
+      }
+    }
+    describe("when it is set up from a ohs with a repairable method as latest ") {
+      val ohsClassifiedAsInlineBarrier = ohsWithInlineBarrierFor(exampleServersKeys, r)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsInlineBarrier, q, r, clientId)
+      it("should return a method as operation type") {
+        opType should be(INLINE_BARRIER)
+      }
+      it("should return the correct lt as the new lt") {
+        lt should be ({
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineBarrier, true, r).get
+          latestLt
+        })
+      }
+      it("should return the latest object version lt as the ltCo") {
+        ltCo should be({
+          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineBarrier, true, r).get
+          latestCo
+        })
+      }
+      it("should return the latest object version lt as the current lt") {
+        ltCur should be(lt)
+      }
+    }
+
     //order in ohs
   }
 
@@ -246,14 +358,6 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     }
   }
 
-  //todo can be shared with quClientSpec in ascenario case class
-  val exampleServersIds = (1 to 4 toList).map("s" + _)
-  val exampleServersKeys: Map[ServerId, Map[ConcreteQuModel.ServerId, ServerId]] =
-    exampleServersIds.map(id => id -> keysForServer(id, exampleServersIds.toSet)).toMap
-  val r = 2
-  val q = 4
-  println("la ohs con inline method *******************************")
-  println(ohsWithInlineMethodFor(exampleServersKeys, r))
 
   //todo can be replaced with a more sophisticated generator approach (using generators so it's already set for it)
   val ohsWithMethodGen =
@@ -279,7 +383,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
     assert(opType == opType2)
   }*/
-  //for solving bug https://www.47deg.com/blog/a-common-scalacheck-problem/
+  //for solving bug https://www.47deg.com/blog/a-common-scalacheck-problem/, not using shrinking here:
     check {
       Prop.forAllNoShrink(ohsGen) { ohs => {
         val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
@@ -407,17 +511,22 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
           }
         }
 
+        //def rhWithLatestLtAs(logicalTimestamp: LogicalTimestamp) = emptyRh + logicalTimestamp
         //latest time
         describe("when queried for its latest time") {
           it("should not contain any time greater than the one it returns") {
 
             import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT}
 
-            latestTime(ohsWithMethodFor(exampleServersKeys)) should be(LT(1,
+            val latestTimestamp = LT(1,
               false,
               Some("client1"),
               aOperationRepresentation,
-              emptyOhsRepresentation(exampleServersIds)))
+              emptyOhsRepresentation(exampleServersIds))
+
+            // val rhWithLatestTime: ReplicaHistory = emptyRh :+ (latestTimestamp -> emptyLT)
+            //val ohsWithLatestTime = generateOhsFromRHsAndKeys(unanimousRhsFor(exampleServersIds, List((emptyLT, latestTimestamp))))
+            //latestTime(ohsWithMethodFor(exampleServersKeys)) should be(latestTimestamp)
           }
         }
       }
@@ -488,3 +597,4 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
     }
   }
+}
