@@ -88,15 +88,15 @@ class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with Sca
     //UPDATE (inc che ritorna unit)
     describe("when requesting an update operation and receiving a response with order >= q and an ohs with method") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should return the correct answer in a single round of communication") {
-        /*val expectedResponse = ()
+        val expectedResponse = ()
 
         updateQuorum.expects(Some(IncrementAsObj), emptyOhs(serversIdsAsSet), *, *).noMoreThanOnce().returning(Future.successful(
           (Some(expectedResponse), thresholds.q, ohsWithMethodFor(serversKeys))))
-        (backOffPolicy.backOff()(_: ExecutionContext)).expects(*).never()
+        (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).never()
 
         whenReady(client.submit[Unit](IncrementAsObj)) {
           _ should be(expectedResponse)
-        }*/
+        }
       }
     }
     describe("when requesting an update operation") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
@@ -132,7 +132,7 @@ class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with Sca
                 thresholds.q - 1, //not important this
                 ohsWithMethod))) //ohs with method causes client to escape from repair loop
 
-          updateQuorum.expects(Some(IncrementAsObj), ohsWithMethod, *, *) /*.noMoreThanOnce()*/ .returning(
+          updateQuorum.expects(Some(IncrementAsObj), ohsWithMethod, *, *).noMoreThanOnce().returning(
             Future.successful(
               (Some(expectedResponse),
                 thresholds.q, //order q makes it escape from loop
@@ -145,6 +145,24 @@ class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with Sca
           _ should be(expectedResponse)
         }
 
+      }
+    }
+    describe("when requesting a query operation and receiving a response with order >= q and an ohs with method") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
+      val queryQuorum: MockFunction4[Option[Operation[Int, Int]], OHS, JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[(Option[Int], Int, OHS)]] = mockedQuorumPolicy.quorum[Int](_: Option[Operation[Int, Int]], _: OHS)(_: JavaTypeable[Request[Int, Int]],
+        _: JavaTypeable[Response[Option[Int]]])
+      val queryOp = new GetObj[Int]      //todo o uso l'bject anche qui oppure deposito in una var e uso sempre quello (essendo generico non puoi creare un object!)
+
+
+      it("should return the correct answer in a single round of communication") {
+        val expectedResponse = initialValue + 1
+
+        queryQuorum.expects(Some(queryOp), emptyOhs(serversIdsAsSet), *, *).noMoreThanOnce().returning(Future.successful(
+          (Some(expectedResponse), thresholds.q, ohsWithMethodFor(serversKeys))))
+        (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).never()
+
+        whenReady(client.submit[Int](queryOp)) {
+          _ should be(expectedResponse)
+        }
       }
     }
     /*
