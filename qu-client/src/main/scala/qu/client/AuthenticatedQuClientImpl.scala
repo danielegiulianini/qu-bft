@@ -49,7 +49,7 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
       //perform a barrier or a copy
       (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, U]], ohs) //here Object is fundamental as server could return other than T
       (operationType, _, _) <- classifyAsync(ohs)
-      ohs <- backOffAndRetryUntilMethod(operationType)
+      ohs <- backOffAndRetryUntilMethod(operationType,ohs)
     } yield ohs
 
 
@@ -57,7 +57,7 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
       classify(ohs, thresholds.r, thresholds.q)
     }
 
-    def backOffAndRetryUntilMethod(operationType: ConcreteOperationTypes): Future[OHS] =
+    def backOffAndRetryUntilMethod(operationType: ConcreteOperationTypes, ohs:OHS): Future[OHS] =
       if (operationType != ConcreteOperationTypes.METHOD) backOffAndRetry() else Future {
         println("la ohs che metto in future is:  " + ohs)
         ohs
@@ -72,7 +72,7 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
       _ <- Future {
         println("after classifying, resulting type is: " + operationType)
       }
-      ohs <- backOffAndRetryUntilMethod(operationType)
+      ohs <- backOffAndRetryUntilMethod(operationType, ohs)
     } yield ohs
   }
 
