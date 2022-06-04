@@ -9,13 +9,11 @@ import qu.{OneShotAsyncScheduler, Shutdownable}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQuorumPolicy[U, Transportable] with Shutdownable,
+class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQuorumPolicy[U, Transportable] /* with Shutdownable*/ ,
                                                      private var backoffPolicy: BackOffPolicy,
                                                      private val serversIds: Set[String], //only servers ids are actually required in this class
                                                      private val thresholds: QuorumSystemThresholds)
   extends QuClient[U, Transportable] {
-
-  private val ohs: OHS = emptyOhs(serversIds)
 
   override def submit[T](op: Operation[T, U])(implicit
                                               ec: ExecutionContext,
@@ -24,15 +22,19 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
                                               transportableRequestObj: Transportable[Request[Object, U]],
                                               transportableResponseObj: Transportable[Response[Option[Object]]]):
   Future[T] = {
-    for {
-      (answer, order, ohs) <- policy.quorum(Some(op), ohs)
-      //todo mapping exceptions?
-      //todo optimistic query execution
-      answer <- if (order < thresholds.q) for {
-        _ <- repair(ohs) //this updates ohs
-        newAnswer <- submit(op)
-      } yield newAnswer else Future(answer.getOrElse(throw new RuntimeException("illegal protocol State exception..."))) //when using option: Future(answer.get)
-    } yield answer
+    def submitWithOhs(ohs: OHS): Future[T] = {
+      for {
+        (answer, order, updatedOhs) <- policy.quorum(Some(op), ohs)
+        //todo mapping exceptions?
+        //todo optimistic query execution
+        answer <- if (order < thresholds.q) for {
+          repairedOhs <- repair(updatedOhs) //todo this updates ohs must here it's ignored!
+          newAnswer <- submitWithOhs(repairedOhs)
+        } yield newAnswer else Future(answer.getOrElse(throw new RuntimeException("illegal protocol State exception..."))) //when using option: Future(answer.get)
+      } yield answer
+    }
+
+    submitWithOhs(emptyOhs(serversIds))
   }
 
   private def repair(ohs: OHS)(implicit executionContext: ExecutionContext,
@@ -41,6 +43,9 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
     //utilities
     def backOffAndRetry(): Future[OHS] = for {
       _ <- backoffPolicy.backOff()
+      _ <- Future {
+        println("after backing off")
+      }
       //perform a barrier or a copy
       (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, U]], ohs) //here Object is fundamental as server could return other than T
       (operationType, _, _) <- classifyAsync(ohs)
@@ -54,16 +59,24 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
 
     def backOffAndRetryUntilMethod(operationType: ConcreteOperationTypes): Future[OHS] =
       if (operationType != ConcreteOperationTypes.METHOD) backOffAndRetry() else Future {
+        println("la ohs che metto in future is:  " + ohs)
         ohs
       }
 
     //actual logic
     for {
-      (operationType, _, _) <- classifyAsync(ohs)
+      _ <- Future {
+        println("so, starting to repair...")
+      }
+      (operationType, _, _) <- classifyAsync(ohs) //todo could use futureSuccessful here
+      _ <- Future {
+        println("after classifying, resulting type is: " + operationType)
+      }
       ohs <- backOffAndRetryUntilMethod(operationType)
     } yield ohs
   }
 
-  override def shutdown(): Unit = policy.shutdown()
+  //todo
+  override def shutdown(): Unit = {} //policy.shutdown()
 }
 

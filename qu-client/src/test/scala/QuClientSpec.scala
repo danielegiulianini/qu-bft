@@ -12,7 +12,8 @@ import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import qu.{JwtGrpcClientStub, Shutdownable}
 import qu.client.{AuthenticatedClientBuilderInFunctionalStyle, AuthenticatedQuClientImpl, BackOffPolicy, ClientQuorumPolicy, SimpleBroadcastPolicyClient}
 import qu.model.Commands.{GetObj, Increment, IncrementAsObj}
-import qu.model.ConcreteQuModel.{LogicalTimestamp, OHS, ObjectSyncResponse, Operation, Request, Response, ServerId, emptyOhs}
+import qu.model.ConcreteQuModel.{LogicalTimestamp, OHS, ObjectSyncResponse, Operation, Request, Response, ServerId, classify, emptyOhs}
+import qu.model.SharedContainer.keysForServer
 import qu.model.{ConcreteQuModel, OHSFixture2, QuorumSystemThresholds}
 
 import java.util.concurrent.{Executors, ThreadPoolExecutor}
@@ -50,33 +51,33 @@ class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with Sca
   // PUò DARSI CHE DURANTE LO scambio l'order cambi ??
 
   class JacksonSimpleBroadcastPolicyClient(private val thresholds: QuorumSystemThresholds,
-                                           private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]]) extends SimpleBroadcastPolicyClient[Int, JavaTypeable](thresholds, servers)
+                                           private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])
+    extends SimpleBroadcastPolicyClient[Int, JavaTypeable](thresholds, servers)
 
 
-
-  //4-servers scenario
-  val serversIds = (1 to 4 toList).map("s" + _).toList
+  //4-servers scenario related stuff
+  val serversIds = (1 to 4 toList).map("s" + _)
   val serversIdsAsSet = serversIds.toSet
-  def generateKey(a: String, b: String) = "k" + a + b
-  def keysForServer(serverId: String): Map[ServerId, String] =
-    serversIds.map(otherServerId => otherServerId -> generateKey(serverId, otherServerId)).toMap //    serverId -> serversIds.map(otherServerId => serverId -> "k" + serverId + otherServerId).toMap
-  val serversKeys = serversIds.map(id => id -> keysForServer(id)).toMap
-
+  val serversKeys: Map[ServerId, Map[ConcreteQuModel.ServerId, ServerId]] =
+    serversIds.map(id => id -> keysForServer(id, serversIdsAsSet)).toMap
+  val initialValue = 1
+  val thresholds = QuorumSystemThresholds(t = 1, q = 3, b = 0)
 
 
   //todo should go in fixture
   //stubbed dependencies
-  val quorumPolicy = mock[JacksonSimpleBroadcastPolicyClient] // mock[SimpleBroadcastPolicyClient[Int, JavaTypeable]]
-  val backOffPolicy = mock[BackOffPolicy]
+  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastPolicyClient] // mock[SimpleBroadcastPolicyClient[Int, JavaTypeable]]
+  val mockedBackOffPolicy = mock[BackOffPolicy]
+
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
   val client = new AuthenticatedQuClientImpl[Int, JavaTypeable](
-    policy = quorumPolicy,
-    backoffPolicy = backOffPolicy,
+    policy = mockedQuorumPolicy,
+    backoffPolicy = mockedBackOffPolicy,
     serversIds = serversIds.toSet,
-    thresholds = QuorumSystemThresholds(1, 2, 3))
+    thresholds = thresholds)
 
-  val updateQuorum: MockFunction4[Option[Operation[Unit, Int]], OHS, JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[(Option[Unit], Int, OHS)]] = (quorumPolicy.quorum[Unit](_: Option[Operation[Unit, Int]], _: OHS)(_: JavaTypeable[Request[Unit, Int]],
+  val updateQuorum: MockFunction4[Option[Operation[Unit, Int]], OHS, JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[(Option[Unit], Int, OHS)]] = (mockedQuorumPolicy.quorum[Unit](_: Option[Operation[Unit, Int]], _: OHS)(_: JavaTypeable[Request[Unit, Int]],
     _: JavaTypeable[Response[Option[Unit]]]))
 
   //determinism in tests
@@ -85,24 +86,104 @@ class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with Sca
   describe("A client") {
 
     //UPDATE (inc che ritorna unit)
-    describe("when requesting an update operation and receiving an ohs with order >= q") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
+    describe("when requesting an update operation and receiving a response with order >= q and an ohs with method") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should return the correct answer in a single round of communication") {
+        /*val expectedResponse = ()
 
         updateQuorum.expects(Some(IncrementAsObj), emptyOhs(serversIdsAsSet), *, *).noMoreThanOnce().returning(Future.successful(
-          (Some(()), 2, ohsWithInlineMethodFor(serversKeys, 2))))
+          (Some(expectedResponse), thresholds.q, ohsWithMethodFor(serversKeys))))
+        (backOffPolicy.backOff()(_: ExecutionContext)).expects(*).never()
 
         whenReady(client.submit[Unit](IncrementAsObj)) {
-          _ should be(())
-        }
+          _ should be(expectedResponse)
+        }*/
       }
     }
-    /*describe("when requesting an update operation") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
+    describe("when requesting an update operation") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should keep asking the quorum of servers and backing off until order of the received ohs is >=q (repair)") {
-        succeed
+        println("la ohs with inline method che pare essere method is: \n " + ohsWithInlineMethodFor(serversKeys, thresholds.r))
+
+        val expectedResponse = ()
+        val ohsWithMethod = ohsWithMethodFor(serversKeys)
+        val ohsWithInlineMethod = ohsWithInlineMethodFor(serversKeys, thresholds.r)
+
+        inSequence {
+          updateQuorum.expects(Some(IncrementAsObj), emptyOhs(serversIdsAsSet), *, *).returning(Future.successful(
+            (Some(expectedResponse),
+              thresholds.q - 1, //less than q
+              ohsWithInlineMethod)))
+
+          (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).returning(Future.successful()) //must return a value (null pointer ex instead)!
+
+          //--possibly many of these...
+          updateQuorum.expects(Option.empty, ohsWithInlineMethodFor(serversKeys, thresholds.r), *, *).returning(
+            Future.successful(
+              /*2 CONSTRAINTs: Option.empty and send ohs received before*/
+              (Some(expectedResponse),
+                thresholds.q - 1, //less than q
+                ohsWithInlineMethod)))
+
+          (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).returning(Future.successful())
+          //-------------------
+
+          updateQuorum.expects(Option.empty, ohsWithInlineMethodFor(serversKeys, thresholds.r), *, *).returning(
+            Future.successful(
+              (Some(expectedResponse),
+                thresholds.q - 1, //not important this
+                ohsWithMethod))) //ohs with method causes client to escape from repair loop
+
+          updateQuorum.expects(Some(IncrementAsObj), ohsWithMethod, *, *) /*.noMoreThanOnce()*/ .returning(
+            Future.successful(
+              (Some(expectedResponse),
+                thresholds.q, //order q makes it escape from loop
+                ohsWithMethod))) //not important this
+
+          //(mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).never().returning(Future.successful())
+        }
+
+        whenReady(client.submit[Unit](IncrementAsObj)) {
+          _ should be(expectedResponse)
+        }
+
       }
     }
+    /*
+    describe("when requesting an update operation 2") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
+      it("should keep asking the quorum of servers and backing off until order of the received ohs is >=q (repair)") {
+        println("la ohs with inline method che pare essere method is: \n " + ohsWithInlineMethodFor(serversKeys, thresholds.r))
+        val expectedResponse = ()
+        val ohsWithMethod = ohsWithMethodFor(serversKeys)
+
+        inSequence {
+          updateQuorum.expects(Some(IncrementAsObj), emptyOhs(serversIdsAsSet), *, *).returning(Future.successful(
+            (Some(expectedResponse), thresholds.q - 1, ohsWithInlineMethodFor(serversKeys, thresholds.r))))
+          (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*)
+
+          //--possibly many of these...
+          updateQuorum.expects(Option.empty, ohsWithMethod, *, *).returning(Future.successful(/*2 CONSTRAINTs: Option.empty and same ohs */
+            (Some(expectedResponse), thresholds.q - 1, ohsWithInlineMethodFor(serversKeys, thresholds.r))))
+          (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*)
+          //-------------------
+
+          updateQuorum.expects(Option.empty, ohsWithInlineMethodFor(serversKeys, thresholds.r), *, *).returning(Future.successful(
+            (Some(expectedResponse), thresholds.q, ohsWithMethod))) //ohs with method causes client to escape from repair loop
+
+          updateQuorum.expects(Some(IncrementAsObj), ohsWithMethod, *, *).noMoreThanOnce().returning(Future.successful(
+            (Some(expectedResponse), thresholds.q, ohsWithMethod)))
+
+          (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).never()
+        }
+
+        whenReady(client.submit[Unit](IncrementAsObj)) {
+          _ should be(expectedResponse)
+        }
+
+      }
+    }
+*/
+
     //to be merged with upper tests
-    describe("when repairing to deal with ohs with order < q") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
+    /*describe("when repairing to deal with ohs with order < q") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should keep asking the quorum by sending to servers the null operation") {
         succeed
       }
