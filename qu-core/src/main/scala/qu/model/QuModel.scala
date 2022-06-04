@@ -228,7 +228,7 @@ trait AbstractAbstractQuModel extends QuModel {
       (opType,
         latestObjectVersionFilled,
         conditionedOnLogicalTimestamp) else {
-      val (latestBarrierVersionLt, latestBarrierVersionLtCo) = latestObjectVersion.getOrElse(
+      val (latestBarrierVersionLt, latestBarrierVersionLtCo) = latestBarrierVersion.getOrElse(
         throw new Exception("with a correct quorum system thresholds setting a ohs with a operation type classified as COPY or INLINE_BARRIER should always a latest barrier candidate"))
       if (opType == ConcreteOperationTypes.COPY) {
         (opType,
