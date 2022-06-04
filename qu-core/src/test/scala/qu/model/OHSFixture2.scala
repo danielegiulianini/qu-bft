@@ -100,18 +100,10 @@ trait OHSFixture2 {
   def ohsWithLatestTime(serverKeys: Map[ServerId, Map[ServerId, Key]]): OHS =
     generateOhsFromRHsAndKeys(rhsWithCopyFor(serverKeys.keySet.toList), serverKeys)
 
-  /*
-    def invalidateAuthenticatorForServer(serverKeys: Map[ServerId, Map[ServerId, Key]], serverId: ServerId, reparairbleThreshlold: Int): α = {
-      val (_, originalAuthenticator) = ohsWithInlineMethodFor(serverKeys, reparairbleThreshlold)
-      originalAuthenticator.map {
-        case (id, _) if id == serverId => id -> "corrupted"
-      }
-    }
-  */
-  /*def ohsWithInvalidAuthenticatorFor(serverId: ServerId): OHS =
-    ohsWithMethod.map { case (sid, (rh, _)) if sid == serverId => (sid, (rh, invalidateAuthenticatorForServer(sid))) }
-*/
-
+  def ohsWithInvalidAuthenticatorFor(ohs: OHS, serverId: ServerId): OHS = {
+    ohs.map { case (sid, (rh, a)) => (sid, (rh, a.map { case (serverId2, hmac) =>
+      if (serverId2 == serverId) (serverId2, "corrupted") else (serverId2, hmac )})) }
+  }
 }
 
 
@@ -120,3 +112,23 @@ trait OHSFixture2 {
 //  override type α = Map[ServerId, HMAC]
 //  override type AuthenticatedReplicaHistory = (ReplicaHistory, α)
 //  override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
+
+
+/*
+  def invalidateAuthenticatorForServer(serverKeys: Map[ServerId, Map[ServerId, Key]],
+                                       serverId: ServerId,
+                                       reparairbleThreshlold: Int): α = {
+    val (_, originalAuthenticator) = ohsWithInlineMethodFor(serverKeys, reparairbleThreshlold)
+    originalAuthenticator.map {
+      case (id, _) if id == serverId => id -> "corrupted"
+    }
+
+    keys.map { case (serverId, serverKeys) => serverId ->
+      (rhs(serverId), authenticateRh(rhs(serverId), serverKeys))
+    }
+  }
+
+  def ohsWithInvalidAuthenticatorFor2(ohs: OHS, serverId: ServerId): OHS = {
+    //lascio quella che c'è altrimenti
+    ohs.map { case (sid, (rh, _)) if sid == serverId => (sid, (rh, invalidateAuthenticatorForServer(sid))) }
+  }*/
