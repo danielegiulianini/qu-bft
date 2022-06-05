@@ -9,7 +9,7 @@ import scala.collection.immutable.{Map, List => RH}
 import scala.language.postfixOps
 
 //todo can also be a object of utilities (instead of a trait to mix)
-trait OHSFixture2 {
+trait OHSFixture {
   //some utilities for constructing ohs, rhs and authenticators
 
   def emptyOhsRepresentation(servers: List[ServerId]): Some[Key] = Some("ohsrepr") //represent(emptyOhs(servers)))
