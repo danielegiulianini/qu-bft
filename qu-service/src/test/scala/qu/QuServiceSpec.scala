@@ -19,56 +19,14 @@ import scala.concurrent.Future
 
 //since Async(FunSpec) is used Async(MockFactory) must be used (see https://scalamock.org/user-guide/integration/)
 class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
-  with OHSFixture with ServersFixture with /*QuServerFixture with */AuthStubFixture /*with UnAuthStubFixture*/ {
+  with OHSFixture with ServersFixture with QuServerFixture with AuthStubFixture with UnAuthStubFixture {
 
   //for client stub fixture
   override protected val serverInfo: RecipientInfo = RecipientInfo(quServer1.ip, quServer1.port)
 
-
-  val mockedQuorumPolicy = mock[ServerQuorumPolicy[JavaTypeable, Int]]
-
-  //using constructor (instead of builder) for wiring SUT with stubbed dependencies
-  var service: AbstractQuService[JavaTypeable, Int] = new QuServiceImpl[JavaTypeable, Int](
-    methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
-    policyFactory = (_, _) => mockedQuorumPolicy,
-    ip = quServer1WithKey.ip,
-    port = quServer1WithKey.port,
-    privateKey = quServer1WithKey.keySharedWithMe,
-    obj = InitialObject,
-    thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount))
-
-  //todo could use QuServer construsctor too... (but it would not be in-process...)
-  //so simulating here una InprocessQuServer (could reify in (fixture) class)
-  service = service.addServer(quServer2WithKey)
-    .addServer(quServer3WithKey)
-    .addServer(quServer4WithKey)
-    .addOperationOutput[Int]()
-    .addOperationOutput[Unit]()
-
-
-  override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
-    // Perform setup
-    val server = InProcessServerBuilder
-      .forName(id(quServer1))
-      .intercept(new JwtAuthorizationServerInterceptor())
-      .addService(service)
-      .build
-
-
-    complete {
-      println("performing setup...")
-      server.start()
-      super.withFixture(test) // To be stackable, must call super.withFixture
-    } lastly {
-      // Perform cleanup here
-      server.shutdown()
-      server.shutdown.awaitTermination
-    }
-  }
-
   describe("A Service") {
 
-    /*describe("when contacted by an unauthenticated user") {
+    describe("when contacted by an unauthenticated user") {
 
       it("should fail") {
         recoverToSucceededIf[StatusRuntimeException] {
@@ -76,7 +34,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             Request(operation = Some(new Increment()),
               ohs = emptyOhs(serverIds)))
         }
-      }*/
+      }
       describe("when OHS contains all valid authenticators") {
         describe("and OHS is not current and the requested operation is an update") {
           lazy val responseForUpdateWithOutdatedOhs = for {
@@ -109,134 +67,136 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
           }
         }
-      }/*
-        describe("and OHS is not current and the requested operation is a query") {
-          val responseForQueryWithOutdatedOhs = for {
-            _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-              Request(operation = Some(new Increment()),
-                ohs = emptyOhs(serverIds)))
-            response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-              Request(operation = Some(new GetObj()), //sending a QUERY operation
-                ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
-          } yield response
-          it("should fail") {
-            responseForQueryWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
-          }
-          it("should return the updated answer (optimistic query execution)") {
-            responseForQueryWithOutdatedOhs.map(response => assert(response.answer.contains(2023)))
-          }
-          it("should return its updated replica history (optimistic query execution)") {
-            for {
-              firstResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-                Request(operation = Some(new Increment()),
-                  ohs = emptyOhs(serverIds)))
-              response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-                Request(operation = Some(new GetObj()),
-                  ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
-            } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
-          }
-        }
-
-        //testing all the branches of service impl
-        describe("and OHS is current") {
-          describe("and OHS is not classifiable as a a barrier") {
-            describe("and object version is not stored at the contacted server side") {
-              it("should object sync") {
-                //potrei simulare uno scambio (anziché one shot scenario) e verificare che continua
-                // a fare object sync sinché chiedo oggetto che non ha...
-
-                val (_, ltCo) = latestCandidate(aOhsWithMethod, true, thresholds.r).get
-                (mockedQuorumPolicy.objectSync(_: LogicalTimestamp)(_: JavaTypeable[LogicalTimestamp],
-                  _: JavaTypeable[ObjectSyncResponse[Int]]))
-                  .expects(ltCo /* * */ , *, *).returning(Future.successful(InitialObject + 1)) //per sicurezza ritorno il valore giusto
-
+        /*
+            describe("and OHS is not current and the requested operation is a query") {
+              val responseForQueryWithOutdatedOhs = for {
+                _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+                  Request(operation = Some(new Increment()),
+                    ohs = emptyOhs(serverIds)))
+                response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
+                  Request(operation = Some(new GetObj()), //sending a QUERY operation
+                    ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
+              } yield response
+              it("should fail") {
+                responseForQueryWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
+              }
+              it("should return the updated answer (optimistic query execution)") {
+                responseForQueryWithOutdatedOhs.map(response => assert(response.answer.contains(2023)))
+              }
+              it("should return its updated replica history (optimistic query execution)") {
                 for {
-                  response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+                  firstResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
                     Request(operation = Some(new Increment()),
-                      ohs = aOhsWithMethod)) //... sending ohs with obj versions that servers doesn't have to trigger sync
-                } yield response.responseCode should be(SUCCESS)
+                      ohs = emptyOhs(serverIds)))
+                  response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
+                    Request(operation = Some(new GetObj()),
+                      ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
+                } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
               }
             }
-          }
-          describe("and OHS is classifiable as a method") {
 
-            describe("and operation class is update") {
-              val correctRh = emptyRh //RH(emptyLT)emptyL
+            //testing all the branches of service impl
+            describe("and OHS is current") {
+              describe("and OHS is not classifiable as a a barrier") {
+                describe("and object version is not stored at the contacted server side") {
+                  it("should object sync") {
+                    //potrei simulare uno scambio (anziché one shot scenario) e verificare che continua
+                    // a fare object sync sinché chiedo oggetto che non ha...
 
-              describe("and conditioned-on object is stored at service side") {
-                //it should not trigger object sync
-              }
-              it("should edit its replica history correctly") {
-                //devo sapere la rh nuova
-                fail("still to impl")
-              }
-              it("should update server authenticators correctly") {
-                fail("still to impl")
-              }
-              //should return correct answer
-              //should return success
+                    val (_, ltCo) = latestCandidate(aOhsWithMethod, true, thresholds.r).get
+                    (mockedQuorumPolicy.objectSync(_: LogicalTimestamp)(_: JavaTypeable[LogicalTimestamp],
+                      _: JavaTypeable[ObjectSyncResponse[Int]]))
+                      .expects(ltCo /* * */ , *, *).returning(Future.successful(InitialObject + 1)) //per sicurezza ritorno il valore giusto
 
-            }
-            describe("and operation class is query") {
-              it("should not edit its replica history") {
-                fail("still to impl")
+                    for {
+                      response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+                        Request(operation = Some(new Increment()),
+                          ohs = aOhsWithMethod)) //... sending ohs with obj versions that servers doesn't have to trigger sync
+                    } yield response.responseCode should be(SUCCESS)
+                  }
+                }
               }
-              describe("and conditioned-on object is stored at service side") {
-                //it should not trigger object sync
-              }
-              it("should succeed") {
-                fail("still to impl")
-              }
-              //should return correct answer
+              describe("and OHS is classifiable as a method") {
 
-            }
-          }
-          describe("and OHS is classifiable as a inline method") {
-            //copy the ones of method (query vs update)
-          }
-          describe("and OHS is classifiable as a copy") {
-            describe("and conditioned-on object is stored at service side") {
-              //it should not trigger object sync
-            }
-            //update rh correctly
-            it("should copy latest (lt,ltCo) forward") {
-              fail("still to impl")
-            }
-          }
-          describe("and OHS is classifiable as a inline barrier") {
-            //it should not ever trigger object sync
-            it("should copy latest (lt,ltCo) forward") {
-              fail("still to impl")
-            }
-            //todo
+                describe("and operation class is update") {
+                  val correctRh = emptyRh //RH(emptyLT)emptyL
 
-          }
-          describe("and OHS is classifiable as a barrier") {
-            //it should not ever trigger object sync
-            //update rh correctly:
-            it("should always be accepted ") {
-              fail("still to impl") //even if in contention
+                  describe("and conditioned-on object is stored at service side") {
+                    //it should not trigger object sync
+                  }
+                  it("should edit its replica history correctly") {
+                    //devo sapere la rh nuova
+                    fail("still to impl")
+                  }
+                  it("should update server authenticators correctly") {
+                    fail("still to impl")
+                  }
+                  //should return correct answer
+                  //should return success
+
+                }
+                describe("and operation class is query") {
+                  it("should not edit its replica history") {
+                    fail("still to impl")
+                  }
+                  describe("and conditioned-on object is stored at service side") {
+                    //it should not trigger object sync
+                  }
+                  it("should succeed") {
+                    fail("still to impl")
+                  }
+                  //should return correct answer
+
+                }
+              }
+              describe("and OHS is classifiable as a inline method") {
+                //copy the ones of method (query vs update)
+              }
+              describe("and OHS is classifiable as a copy") {
+                describe("and conditioned-on object is stored at service side") {
+                  //it should not trigger object sync
+                }
+                //update rh correctly
+                it("should copy latest (lt,ltCo) forward") {
+                  fail("still to impl")
+                }
+              }
+              describe("and OHS is classifiable as a inline barrier") {
+                //it should not ever trigger object sync
+                it("should copy latest (lt,ltCo) forward") {
+                  fail("still to impl")
+                }
+                //todo
+
+              }
+              describe("and OHS is classifiable as a barrier") {
+                //it should not ever trigger object sync
+                //update rh correctly:
+                it("should always be accepted ") {
+                  fail("still to impl") //even if in contention
+                }
+              }
             }
           }
-        }
+
+          describe("when OHS contains invalid authenticator referred to its replica history") {
+            it("should cull it") {
+              for {
+                _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+                  Request(operation = Some(new Increment()), //updating server rh (since with emptyLt I cannot detect...)
+                    ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
+                response <- authStub.send[Request[Int, Int], Response[Option[Unit]]](
+                  Request(operation = Some(new GetObj[Int]),
+                    ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
+              } yield assert(response.responseCode == FAIL) //getting fail since because of culling client ohs become the emptyOhs (all are invalidated!)
+            }
+          }*/
       }
-
-      describe("when OHS contains invalid authenticator referred to its replica history") {
-        it("should cull it") {
-          for {
-            _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-              Request(operation = Some(new Increment()), //updating server rh (since with emptyLt I cannot detect...)
-                ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
-            response <- authStub.send[Request[Int, Int], Response[Option[Unit]]](
-              Request(operation = Some(new GetObj[Int]),
-                ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
-          } yield assert(response.responseCode == FAIL) //getting fail since because of culling client ohs become the emptyOhs (all are invalidated!)
-        }
-      }*/
     }
   }
+  override protected val clientId: OperationRepresentation = "client1"
 
-
+}
 
 /*  //utility for more readability (not working...) (not used...)
   def sendRequest[AnswerT, ObjectT](grpcClientStub: GrpcClientStub[JavaTypeable],

@@ -1,21 +1,28 @@
 package qu
 
+import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.inprocess.InProcessServerBuilder
-import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, Outcome, Suite, SuiteMixin}
+import org.scalamock.scalatest.AsyncMockFactory
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome, Outcome, Suite, SuiteMixin}
 import qu.RecipientInfo.id
+import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, latestCandidate}
+import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.jacksonSimpleQuorumServiceFactory
-import qu.service.JwtAuthorizationServerInterceptor
+import qu.service.{AbstractQuService, JwtAuthorizationServerInterceptor, QuServiceImpl, ServerQuorumPolicy}
 
 import java.util.concurrent.TimeUnit
+import scala.concurrent.Future
 
 //'withFixture(NoArgTest)' scalatest pattern (from:
 // https://www.scalatest.org/user_guide/sharing_fixtures#withFixtureNoArgTest) as:
 // 1. most or all tests of a suite need the same fixture
 // 2. An exception in fixture code should fail the test, and not abort the suite (use a before-and-after trait instead)
-trait QuServerFixture extends AsyncTestSuiteMixin {
+trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
   self: AsyncTestSuite with ServersFixture =>
 
+  /* service without mocking...
   val serviceFactory = jacksonSimpleQuorumServiceFactory[Int]()
 
   var service = serviceFactory(quServer1WithKey,
@@ -26,25 +33,58 @@ trait QuServerFixture extends AsyncTestSuiteMixin {
     .addServer(quServer3WithKey)
     .addServer(quServer4WithKey)
     .addOperationOutput[Int]()
-    .addOperationOutput[Unit]()
+    .addOperationOutput[Unit]()*/
+
+  val mockedQuorumPolicy = mock[ServerQuorumPolicy[JavaTypeable, Int]]
+
+  //using constructor (instead of builder) for wiring SUT with stubbed dependencies
+  var service: AbstractQuService[JavaTypeable, Int] = new QuServiceImpl[JavaTypeable, Int](
+    methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
+    policyFactory = (_, _) => mockedQuorumPolicy,
+    ip = quServer1WithKey.ip,
+    port = quServer1WithKey.port,
+    privateKey = quServer1WithKey.keySharedWithMe,
+    obj = InitialObject,
+    thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount))
 
   //todo could use QuServer construsctor too... (but it would not be in-process...)
   //so simulating here una InprocessQuServer (could reify in (fixture) class)
-  val server = InProcessServerBuilder
-    .forName(id(quServer1))
-    .intercept(new JwtAuthorizationServerInterceptor())
-    .addService(service)
-    .build
+  service = service.addServer(quServer2WithKey)
+    .addServer(quServer3WithKey)
+    .addServer(quServer4WithKey)
+    .addOperationOutput[Int]()
+    .addOperationOutput[Unit]()
 
 
-  abstract override def withFixture(test: NoArgAsyncTest) = {
+   override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
     // Perform setup
-    server.start()
-    try super.withFixture(test) // To be stackable, must call super.withFixture
-    finally {
-      // Perform cleanup (run at end of each test)
-      server.shutdown() //.append("ScalaTest is ")
-      server.awaitTermination(5, TimeUnit.SECONDS)
+    val server = InProcessServerBuilder
+      .forName(id(quServer1))
+      .intercept(new JwtAuthorizationServerInterceptor())
+      .addService(service)
+      .build
+
+
+    complete {
+      println("during setup il service is: " + service)
+      server.start()
+      //Thread.sleep(1000)
+      super.withFixture(test) // To be stackable, must call super.withFixture
+    } lastly {
+      // Perform cleanup here
+      server.shutdown()
+      server.shutdown.awaitTermination
     }
+    /*finally {
+      // Perform cleanup (run at end of each test)
+
+    }*/
+
+
+   /*complete {
+      super.withFixture(test) // Invoke the test function
+    } lastly {
+      // Perform cleanup here
+    }*/
   }
 }
