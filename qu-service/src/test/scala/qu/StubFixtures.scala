@@ -8,47 +8,40 @@ import qu.StubFactories.{inNamedProcessJacksonStubFactory, inProcessJacksonJwtSt
 import qu.auth.Constants
 
 
-// 'BeforeAndAfterEach' scalatest pattern (from:
-// https://www.scalatest.org/user_guide/sharing_fixtures#withFixtureNoArgTest) as:
-// 1. most or all tests need the same fixture
-// 2. ix in a before-and-after trait when you want an aborted suite, not a failed test, if the fixture code fails.
-trait AuthStubFixture extends BeforeAndAfterEach {
-  this: Suite =>
-  //a protected val to reuse stub with different recipient servers
-  protected val serverInfo: RecipientInfo
+trait AuthStubFixture extends BeforeAndAfterAll {
+  this: AsyncTestSuite =>
 
   //lazy val for dealing with initialization issues
-  lazy val authStub: JwtGrpcClientStub[JavaTypeable] = inProcessJacksonJwtStubFactory(getJwt,
-    serverInfo.ip,
-    serverInfo.port)
+  lazy val authStub: JwtGrpcClientStub[JavaTypeable] = {
+    println("creating authstub")
+
+    inProcessJacksonJwtStubFactory(getJwt,
+      serverInfo.ip,
+      serverInfo.port)
+  }
+
+  override def afterAll(): Unit =  authStub.shutdown()
+
+  //a protected val to make stub reusable with different recipient servers
+  protected val serverInfo: RecipientInfo
 
   private def getJwt: String = {
     Jwts.builder.setSubject("GreetingClient").signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact
   }
-
-  override def beforeEach() {
-    super.beforeEach() // To be stackable, must call super.beforeEach
-  }
-
-  override def afterEach(): Unit = {
-    try super.afterEach() // To be stackable, must call super.afterEach
-    finally authStub.shutdown()
-  }
 }
 
-trait UnAuthStubFixture extends BeforeAndAfterEach {
+trait UnAuthStubFixture extends BeforeAndAfterAll {
   this: Suite =>
+
+
+  lazy val unAuthStub = {
+    println("creating unauthstub")
+    inNamedProcessJacksonStubFactory(serverInfo.ip, serverInfo.port)
+  }
+
+  override def afterAll(): Unit =  {
+println("shutting down ...")
+    unAuthStub.shutdown()
+  }
   protected val serverInfo: RecipientInfo
-
-  lazy val unAuthStub = inNamedProcessJacksonStubFactory(serverInfo.ip, serverInfo.port)
-
-  //todo: understand if needed or not.
-  override def beforeEach() {
-    super.beforeEach() // To be stackable, must call super.beforeEach
-  }
-
-  override def afterEach(): Unit = {
-    try super.afterEach() // To be stackable, must call super.afterEach
-    finally unAuthStub.shutdown()
-  }
 }
