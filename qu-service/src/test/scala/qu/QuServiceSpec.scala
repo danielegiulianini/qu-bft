@@ -2,28 +2,73 @@ package qu
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.StatusRuntimeException
+import io.grpc.inprocess.InProcessServerBuilder
 import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
-import org.scalatest.funspec.{AsyncFunSpec}
+import org.scalatest.FutureOutcome
+import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should.Matchers
 import qu.RecipientInfo.id
 import qu.model.Commands.{GetObj, Increment}
 import qu.model.ConcreteQuModel._
 import qu.model.{OHSFixture, QuorumSystemThresholds, StatusCode}
 import qu.model.StatusCode.{FAIL, SUCCESS}
-import qu.service.{QuServiceImpl, ServerQuorumPolicy}
+import qu.service.{AbstractQuService, JwtAuthorizationServerInterceptor, QuServiceImpl, ServerQuorumPolicy}
+
 import scala.concurrent.Future
 
 
 //since Async(FunSpec) is used Async(MockFactory) must be used (see https://scalamock.org/user-guide/integration/)
-class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory with OHSFixture with ServersFixture
-  with QuServerFixture with AuthStubFixture with UnAuthStubFixture {
+class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
+  with OHSFixture with ServersFixture with /*QuServerFixture with */AuthStubFixture /*with UnAuthStubFixture*/ {
 
   //for client stub fixture
   override protected val serverInfo: RecipientInfo = RecipientInfo(quServer1.ip, quServer1.port)
 
+
+  val mockedQuorumPolicy = mock[ServerQuorumPolicy[JavaTypeable, Int]]
+
+  //using constructor (instead of builder) for wiring SUT with stubbed dependencies
+  var service: AbstractQuService[JavaTypeable, Int] = new QuServiceImpl[JavaTypeable, Int](
+    methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
+    policyFactory = (_, _) => mockedQuorumPolicy,
+    ip = quServer1WithKey.ip,
+    port = quServer1WithKey.port,
+    privateKey = quServer1WithKey.keySharedWithMe,
+    obj = InitialObject,
+    thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount))
+
+  //todo could use QuServer construsctor too... (but it would not be in-process...)
+  //so simulating here una InprocessQuServer (could reify in (fixture) class)
+  service = service.addServer(quServer2WithKey)
+    .addServer(quServer3WithKey)
+    .addServer(quServer4WithKey)
+    .addOperationOutput[Int]()
+    .addOperationOutput[Unit]()
+
+
+  override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
+    // Perform setup
+    val server = InProcessServerBuilder
+      .forName(id(quServer1))
+      .intercept(new JwtAuthorizationServerInterceptor())
+      .addService(service)
+      .build
+
+
+    complete {
+      println("performing setup...")
+      server.start()
+      super.withFixture(test) // To be stackable, must call super.withFixture
+    } lastly {
+      // Perform cleanup here
+      server.shutdown()
+      server.shutdown.awaitTermination
+    }
+  }
+
   describe("A Service") {
 
-    describe("when contacted by an unauthenticated user") {
+    /*describe("when contacted by an unauthenticated user") {
 
       it("should fail") {
         recoverToSucceededIf[StatusRuntimeException] {
@@ -31,10 +76,10 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory wit
             Request(operation = Some(new Increment()),
               ohs = emptyOhs(serverIds)))
         }
-      }
+      }*/
       describe("when OHS contains all valid authenticators") {
         describe("and OHS is not current and the requested operation is an update") {
-          val responseForUpdateWithOutdatedOhs = for {
+          lazy val responseForUpdateWithOutdatedOhs = for {
             _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
               Request(operation = Some(new Increment()),
                 ohs = emptyOhs(serverIds)))
@@ -43,6 +88,8 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory wit
                 ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
           } yield response
           it("should fail") {
+            println("starting wit a test...")
+
             responseForUpdateWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
           }
           it("should return an empty answer") {
@@ -62,6 +109,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory wit
             } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
           }
         }
+      }/*
         describe("and OHS is not current and the requested operation is a query") {
           val responseForQueryWithOutdatedOhs = for {
             _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
@@ -94,27 +142,6 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory wit
           describe("and OHS is not classifiable as a a barrier") {
             describe("and object version is not stored at the contacted server side") {
               it("should object sync") {
-
-                val mockedQuorumPolicy = mock[ServerQuorumPolicy[JavaTypeable, Int]]
-
-                //using constructor (instead of builder) for wiring SUT with stubbed dependencies
-                var serviceWithMockedPolicy = new QuServiceImpl[JavaTypeable, Int](
-                  methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
-                  policyFactory = (_, _) => mockedQuorumPolicy, //simpleDistributedJacksonServerQuorumFactory[Int](),
-                  ip = "ip", //quServer1WithKey.ip,
-                  port = 2, //quServer1WithKey.port,
-                  privateKey = "key", //quServer1WithKey.keySharedWithMe,
-                  obj = InitialObject,
-                  thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount))
-
-                service = service.addServer(quServer2WithKey)
-                  .addServer(quServer3WithKey)
-                  .addServer(quServer4WithKey)
-                  .addOperationOutput[Int]()
-                  .addOperationOutput[Unit]()
-
-                //server...
-
                 //potrei simulare uno scambio (anziché one shot scenario) e verificare che continua
                 // a fare object sync sinché chiedo oggetto che non ha...
 
@@ -205,11 +232,10 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory wit
                 ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
           } yield assert(response.responseCode == FAIL) //getting fail since because of culling client ohs become the emptyOhs (all are invalidated!)
         }
-      }
+      }*/
     }
   }
 
-}
 
 
 /*  //utility for more readability (not working...) (not used...)
