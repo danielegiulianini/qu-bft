@@ -2,7 +2,7 @@ package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.StubFactories.unencryptedDistributedJacksonStubFactory
-import qu.{AbstractQuorumPolicy, GrpcClientStub, Shutdownable}
+import qu.{ResponsesGatherer, GrpcClientStub, Shutdownable}
 import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
 
@@ -20,7 +20,9 @@ trait ServerQuorumPolicy[Transportable[_], ObjectT] {
 class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[String, GrpcClientStub[Transportable]],
                                                           private val thresholds: QuorumSystemThresholds,
                                                           private val retryingTime: FiniteDuration = 3.seconds)
-  extends AbstractQuorumPolicy[Transportable](servers, retryingTime) with ServerQuorumPolicy[Transportable, ObjectT] with Shutdownable {
+  extends ResponsesGatherer[Transportable](servers, retryingTime)
+    with ServerQuorumPolicy[Transportable, ObjectT]
+    with Shutdownable {
 
   override def objectSync(lt: LogicalTimestamp)
                          (implicit

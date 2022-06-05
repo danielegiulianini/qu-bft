@@ -33,9 +33,9 @@ object QuServer {
 // - interceptor (call authentication)... (one field more), and for
 // - inprocess (fixture)? another dependencies (or could be the same if abstracting all in one)
 // - tls support
-class QuServerImpl[Marshallable[_], U](authorizationInterceptor: ServerInterceptor,
-                                       quService: AbstractQuService[Marshallable, U],
-                                       port: Int) extends QuServer {
+class QuServerImpl[Transportable[_], U](authorizationInterceptor: ServerInterceptor,
+                                        quService: AbstractQuService[Transportable, U],
+                                        port: Int) extends QuServer {
 
   //here can plug creds with tls
   private val grpcServer = ServerBuilder
@@ -55,29 +55,29 @@ class QuServerImpl[Marshallable[_], U](authorizationInterceptor: ServerIntercept
 }
 
 //alternative to apply in companion object
-class QuServerBuilder[Marshallable[_], U](private val serviceFactory: ServiceFactory[Marshallable, U],
-                                          private val authorizationInterceptor: ServerInterceptor,
-                                          //user (injected) dependencies:
-                                          private val ip: String,
-                                          private val port: Int,
-                                          private val privateKey: String,
-                                          //private val
-                                          private val quorumSystemThresholds: QuorumSystemThresholds,
-                                          private val obj: U) {
+class QuServerBuilder[Transportable[_], U](private val serviceFactory: ServiceFactory[Transportable, U],
+                                           private val authorizationInterceptor: ServerInterceptor,
+                                           //user (injected) dependencies:
+                                           private val ip: String,
+                                           private val port: Int,
+                                           private val privateKey: String,
+                                           //private val
+                                           private val quorumSystemThresholds: QuorumSystemThresholds,
+                                           private val obj: U) {
 
-  private val quService: AbstractQuService[Marshallable, U] = serviceFactory(ServerInfo(ip, port,privateKey), obj, quorumSystemThresholds)
+  private val quService: AbstractQuService[Transportable, U] = serviceFactory(ServerInfo(ip, port,privateKey), obj, quorumSystemThresholds)
 
   def addOperation[T: TypeTag](implicit
-                               marshallableRequest: Marshallable[Request[T, U]],
-                               marshallableResponse: Marshallable[Response[Option[T]]],
-                               marshallableLogicalTimestamp: Marshallable[LogicalTimestamp],
-                               marshallableObjectSyncResponse: Marshallable[ObjectSyncResponse[U]]):
-    QuServerBuilder[Marshallable, U] = {
-    quService.addOp[T]()
+                               marshallableRequest: Transportable[Request[T, U]],
+                               marshallableResponse: Transportable[Response[Option[T]]],
+                               marshallableLogicalTimestamp: Transportable[LogicalTimestamp],
+                               marshallableObjectSyncResponse: Transportable[ObjectSyncResponse[U]]):
+    QuServerBuilder[Transportable, U] = {
+    quService.addOperationOutput[T]()
     this
   }
 
-  def addServer(ip: String, port: Int, keySharedWithMe: String): QuServerBuilder[Marshallable, U] = {
+  def addServer(ip: String, port: Int, keySharedWithMe: String): QuServerBuilder[Transportable, U] = {
     quService.addServer(ip, port, keySharedWithMe)
     this
   }

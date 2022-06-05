@@ -4,15 +4,11 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome, Suite, SuiteMixin, fixture}
 import qu.RecipientInfo.id
 import qu.model.ConcreteQuModel.{Key, OHS, ReplicaHistory, ServerId, emptyCandidate, emptyLT, α}
-import qu.model.OHSFixture2
+import qu.model.OHSFixture
 
 //todo could now go together with serverFixture
-trait OHSFixtures { self:OHSFixture2 with ServerFixture =>
+trait ServerOhsFixture { self:OHSFixture with ServersFixture =>
 
-  val aOhsWithMethod: OHS = ohsWithMethodFor(keysByServer)
-  val aOhsWithInlineMethod: OHS = ohsWithInlineMethodFor(keysByServer, thresholds.r)
-  val aOhsWithInlineBarrier: OHS = ohsWithInlineBarrierFor(keysByServer, thresholds.r)
-  val aOhsWithBarrier: OHS = ohsWithBarrierFor(keysByServer)
 }
 
 
@@ -117,6 +113,6 @@ trait AsyncStub extends SuiteMixin { this: Suite =>
 
 
 //prder of declaration affects initialization order!
-object Prova222 extends App with ServerFixture with OHSFixture2 with OHSFixtures  {
+object Prova222 extends App with ServersFixture with OHSFixture with ServerOhsFixture  {
 println("ciao")
 }

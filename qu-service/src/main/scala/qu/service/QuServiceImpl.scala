@@ -79,7 +79,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
     def cullRh(ohs: OHS): OHS = ohs. //todo map access like this (to authenticator) could raise exception
       //if there's not the authenticator or if it is invalid the corresponding rh is culled
-      map { case (serverId, (rh, authenticator)) => if (!authenticator.contains(getId(ip, port)) || authenticator(getId(ip, port)) != hmac(keys(serverId), rh))
+      map { case (serverId, (rh, authenticator)) => if (!authenticator.contains(getId(ip, port)) || authenticator(getId(ip, port)) != hmac(keysSharedWithMe(serverId), rh))
         (serverId, (emptyRh, authenticator)) else (serverId, (rh, authenticator)) //keep authentictor untouched (as in paper)
       }
 
@@ -103,9 +103,8 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
       logger.log(Level.INFO, "stall ohs detected!", 2)
       logger.log(Level.INFO, "the name of the oper class is " + request.operation.getOrElse(false).getClass, 2)
 
-println(
 
-)      // optimistic query execution
+   // optimistic query execution
       if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) {
         logger.log(Level.INFO, "Since query is required, optimistic query execution, retrieving obj with lt "+ lt, 2)
         val obj = storage.retrieveObject(latestTime(replicaHistory))
@@ -164,7 +163,7 @@ println(
         logger.log(Level.INFO, "updating ohs and authenticator...", 2)
 
         val updatedReplicaHistory: ReplicaHistory = replicaHistory.appended(lt -> ltCo) //with rh as sortedset: replicaHistory + (lt -> ltCo)
-        val updatedAuthenticator = updateAuthenticatorFor(keys)(ip)(updatedReplicaHistory)
+        val updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe)//updateAuthenticatorFor(keysSharedWithMe)(ip)(updatedReplicaHistory)
         authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
 
         //overriding answer since it's ignored at client side

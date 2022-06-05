@@ -1,3 +1,0 @@
-package qu trait ServerFixture {
-
-}
