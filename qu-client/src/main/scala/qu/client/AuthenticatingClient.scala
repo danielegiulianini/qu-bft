@@ -5,7 +5,7 @@ import qu.auth.AuthClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import qu.client.AuthenticatedClientBuilderInFunctionalStyle.simpleJacksonQuClientBuilderInFunctionalStyle
+import qu.client.AuthenticatedClientBuilder.simpleJacksonQuClientBuilderInFunctionalStyle
 import qu.model.QuorumSystemThresholds
 
 //client for providing username (or registering)
@@ -25,7 +25,7 @@ case class AuthenticatingClient[U](ip:String, port:Int,
   }
 
   def authorize():
-  Future[AuthenticatedClientBuilderInFunctionalStyle[U, JavaTypeable]] = {
+  Future[AuthenticatedClientBuilder[U, JavaTypeable]] = {
     //se mi da il token correttamente allora ok altrimenti mi da future failed (dovrebbe già
     //tutto essere incapsulato nella chiamata)
     val token = ""

@@ -4,7 +4,7 @@ package qu.client.datastructures
 //this packages contains some data structures implementations built over Qu core
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.client.{AuthenticatedClientBuilderInFunctionalStyle, AuthenticatingClient, QuClient}
+import qu.client.{AuthenticatedClientBuilder, AuthenticatingClient, QuClient}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
 
