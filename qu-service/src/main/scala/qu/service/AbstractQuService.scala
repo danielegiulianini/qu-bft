@@ -7,7 +7,8 @@ import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.ServerInfo
 import qu.service.ServerQuorumPolicy.{ServerQuorumPolicyFactory, simpleDistributedJacksonServerQuorumFactory}
-import qu.{CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory}
+import qu.{AbstractRecipientInfo, CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory, RecipientInfo}
+import qu.RecipientInfo._
 
 import java.util.Objects
 import scala.reflect.runtime.universe._
@@ -17,13 +18,12 @@ import scala.reflect.runtime.universe._
 import qu.model.ConcreteQuModel._
 
 
-
-class CachingServiceServerDefinitionBuilder2(private var serviceName:String) {
+class CachingServiceServerDefinitionBuilder2(private var serviceName: String) {
   private val builder = ServerServiceDefinition.builder(serviceName)
   private var mds = Set[String]()
 
   def addMethod[ReqT, RespT](`def`: MethodDescriptor[ReqT, RespT], handler: ServerCallHandler[ReqT, RespT]): CachingServiceServerDefinitionBuilder2 = {
-  // println("requestng...")
+    // println("requestng...")
     if (!mds.contains(`def`.getFullMethodName)) {
       mds = mds + `def`.getFullMethodName
       builder.addMethod(`def`, handler)
@@ -31,8 +31,9 @@ class CachingServiceServerDefinitionBuilder2(private var serviceName:String) {
     this
   }
 
-  def build():ServerServiceDefinition = builder.build
+  def build(): ServerServiceDefinition = builder.build
 }
+
 object CachingServiceServerDefinitionBuilder2 {
   def apply(serviceName: String) =
     new CachingServiceServerDefinitionBuilder2(serviceName)
@@ -72,10 +73,10 @@ abstract class AbstractQuService[Transportable[_], U](
   private val ssd = CachingServiceServerDefinitionBuilder2(SERVICE_NAME)
 
   protected var servers = Map[String, Int]()
-  protected val keysSharedWithMe: Map[ServerId, Key] = Map[ServerId, String]() //this contains mykey too (needed)
+  protected var keysSharedWithMe: Map[ServerId, Key] = Map[ServerId, String]() //this contains mykey too (needed)
   protected var quorumPolicy: ServerQuorumPolicy[Transportable, U] = policyFactory(servers, thresholds)
 
-  insertKeyForServer(ip, privateKey)
+  insertKeyForServer(id(RecipientInfo(ip, port)), privateKey)
 
   //this precluded me the possibility of using scala name constr as builder
   def addOperationOutput[OperationOutputT]()(implicit
@@ -89,24 +90,31 @@ abstract class AbstractQuService[Transportable[_], U](
       ssd.addMethod(
         methodDescriptorFactory.generateMethodDescriptor5[X, Y](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME),
         ServerCalls.asyncUnaryCall[X, Y](handler))
+
     addMethod[Request[OperationOutputT, U], Response[Option[OperationOutputT]]]((request, obs) => sRequest(request, obs))
     addMethod[LogicalTimestamp, ObjectSyncResponse[U]]((request, obs) => sObjectRequest(request, obs))
     this
   }
 
   def addServer(ip: String, port: Int, keySharedWithMe: String): AbstractQuService[Transportable, U] = {
+    println("------------------aggiungo il server con ip " + ip + " e port: " + port)
+
     servers = servers + (ip -> port)
-    insertKeyForServer(ip, keySharedWithMe)
+    insertKeyForServer(id(ServerInfo(ip, port, keySharedWithMe)), keySharedWithMe)
     quorumPolicy = policyFactory(servers, thresholds)
     this
   }
 
   def addServer(serverInfo: ServerInfo): AbstractQuService[Transportable, U] = {
     Objects.requireNonNull(serverInfo) //require(serverInfo != null)
+    insertKeyForServer(id(serverInfo), serverInfo.keySharedWithMe)
     addServer(serverInfo.ip, serverInfo.port, serverInfo.keySharedWithMe)
   }
 
-  private def insertKeyForServer(ip: String, keySharedWithMe: String): Unit = keysSharedWithMe + ip -> keySharedWithMe
+  private def insertKeyForServer(id: ServerId, keySharedWithMe: Key): Unit = {
+    println("------------------aggiungo il server con id " + id)
+    keysSharedWithMe = keysSharedWithMe + (id -> keySharedWithMe)
+  }
 
   override def bindService(): ServerServiceDefinition = ssd.build
 }
@@ -115,7 +123,7 @@ abstract class AbstractQuService[Transportable[_], U](
 object AbstractQuService {
 
   //for reducing number of parameters
-  case class ServerInfo(ip: String, port: Int, keySharedWithMe: String)
+  case class ServerInfo(ip: String, port: Int, keySharedWithMe: String) extends AbstractRecipientInfo
 
   type ServiceFactory[Transportable[_], U] =
     (ServerInfo, U, QuorumSystemThresholds) => AbstractQuService[Transportable, U]
