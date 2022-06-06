@@ -10,30 +10,25 @@ import qu.model.QuorumSystemThresholds
 
 //client for providing username (or registering)
 //now modeled as normal class, then could think of a builder
-case class AuthenticatingClient[U](ip:String, port:Int,
+case class AuthenticatingClient[U](ip:String,
+                                   port:Int,
                                    username: String,
                                    password: String) {
-  //creates the channel and passes it to stubs
-
   //APIs: authorize, register, remove, edit, get, getall
- // AuthClient()
 
-  def register(): Future[QuClient[U, JavaTypeable]] = {
-    //call to auth service...
-    //for { registered <- register }
-    null
+  val authClient = AuthClient(ip, port)
+
+  def register(): Future[Unit] = {  //Future[QuClient[U, JavaTypeable]]
+    for {
+      _ <- authClient.register(username, password)
+    } yield()
   }
 
   def authorize():
   Future[AuthenticatedClientBuilder[U, JavaTypeable]] = {
-    //se mi da il token correttamente allora ok altrimenti mi da future failed (dovrebbe già
-    //tutto essere incapsulato nella chiamata)
-    val token = ""
-
-    //call to auth service...
-    //it's to be inserted in for comprehension
-    Future {
-      simpleJacksonQuClientBuilderInFunctionalStyle[U](token = token)
-    }
+    //se mi da il token correttamente allora ok altrimenti mi da future failed (dovrebbe già tutto essere incapsulato nella chiamata)
+    for {
+      token <- authClient.authorize(username, password)
+    } yield simpleJacksonQuClientBuilderInFunctionalStyle[U](token = token)
   }
 }

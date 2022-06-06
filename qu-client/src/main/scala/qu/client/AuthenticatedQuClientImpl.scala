@@ -9,18 +9,18 @@ import qu.{OneShotAsyncScheduler, Shutdownable}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQuorumPolicy[U, Transportable] /* with Shutdownable*/ ,
-                                                     private var backoffPolicy: BackOffPolicy,
-                                                     private val serversIds: Set[String], //only servers ids are actually required in this class
-                                                     private val thresholds: QuorumSystemThresholds)
-  extends QuClient[U, Transportable] {
+class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPolicy[ObjectT, Transportable] /* with Shutdownable*/ ,
+                                                           private var backoffPolicy: BackOffPolicy,
+                                                           private val serversIds: Set[String], //only servers ids are actually required in this class
+                                                           private val thresholds: QuorumSystemThresholds)
+  extends QuClient[ObjectT, Transportable] {
 
-  override def submit[T](op: Operation[T, U])(implicit
-                                              ec: ExecutionContext,
-                                              transportableRequest: Transportable[Request[T, U]],
-                                              transportableResponse: Transportable[Response[Option[T]]],
-                                              transportableRequestObj: Transportable[Request[Object, U]],
-                                              transportableResponseObj: Transportable[Response[Option[Object]]]):
+  override def submit[T](op: Operation[T, ObjectT])(implicit
+                                                    ec: ExecutionContext,
+                                                    transportableRequest: Transportable[Request[T, ObjectT]],
+                                                    transportableResponse: Transportable[Response[Option[T]]],
+                                                    transportableRequestObj: Transportable[Request[Object, ObjectT]],
+                                                    transportableResponseObj: Transportable[Response[Option[Object]]]):
   Future[T] = {
     def submitWithOhs(ohs: OHS): Future[T] = {
       for {
@@ -38,7 +38,7 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
   }
 
   private def repair(ohs: OHS)(implicit executionContext: ExecutionContext,
-                               transportableRequest: Transportable[Request[Object, U]],
+                               transportableRequest: Transportable[Request[Object, ObjectT]],
                                transportableResponse: Transportable[Response[Option[Object]]]): Future[OHS] = {
     //utilities
     def backOffAndRetry(): Future[OHS] = for {
@@ -47,7 +47,7 @@ class AuthenticatedQuClientImpl[U, Transportable[_]](private var policy: ClientQ
         println("after backing off")
       }
       //perform a barrier or a copy
-      (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, U]], ohs) //here Object is fundamental as server could return other than T
+      (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, ObjectT]], ohs) //here Object is fundamental as server could return other than T
       (operationType, _, _) <- classifyAsync(ohs)
       ohs <- backOffAndRetryUntilMethod(operationType,ohs)
     } yield ohs

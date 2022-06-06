@@ -34,7 +34,7 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
 
   //todo should go in fixture (to be shutdown)
   //stubbed dependencies
-  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastClientPolicy]
+  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastClientPolicy[Int]]
   val mockedBackOffPolicy = mock[BackOffPolicy]
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies

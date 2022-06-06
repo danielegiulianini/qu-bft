@@ -2,6 +2,7 @@ package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.RecipientInfo.id
+import qu.auth.Token
 import qu.{RecipientInfo, Shutdownable}
 import qu.client.ClientQuorumPolicy.{ClientPolicyFactory, simpleJacksonPolicyFactoryUnencrypted}
 import qu.model.QuorumSystemThresholds
@@ -13,7 +14,7 @@ case class AuthenticatedClientBuilder[ObjectT, Transportable[_]]( //programmer d
                                                                   //user dependencies
                                                                   private val serversInfo: Set[RecipientInfo],
                                                                   private val thresholds: Option[QuorumSystemThresholds],
-                                                                                 ) {
+                                                                ) {
 
   def addServer(ip: String, port: Int): AuthenticatedClientBuilder[ObjectT, Transportable] =
     this.copy(serversInfo = serversInfo + RecipientInfo(ip, port)) //could create channels here instead of creating in policy
@@ -34,7 +35,8 @@ case class AuthenticatedClientBuilder[ObjectT, Transportable[_]]( //programmer d
 //builder companion object specific builder instance-related utility
 object AuthenticatedClientBuilder {
 
-  def builder[U](token: String): AuthenticatedClientBuilder[U, JavaTypeable] =
+  //choosing an implementation as the default
+  def builder[U](token: Token): AuthenticatedClientBuilder[U, JavaTypeable] =
     simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 
   private def empty[U, Transferable[_]](policyFactory: ClientPolicyFactory[Transferable, U],
@@ -46,7 +48,7 @@ object AuthenticatedClientBuilder {
       Option.empty)
 
   //builder implementations
-  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: String):
+  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: Token):
   AuthenticatedClientBuilder[U, JavaTypeable] =
     AuthenticatedClientBuilder.empty[U, JavaTypeable](
       simpleJacksonPolicyFactoryUnencrypted(token),

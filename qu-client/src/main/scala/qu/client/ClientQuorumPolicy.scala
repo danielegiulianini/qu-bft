@@ -4,6 +4,7 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.RecipientInfo.id
 import qu.{JwtGrpcClientStub, RecipientInfo, ResponsesGatherer, Shutdownable}
 import qu.StubFactories.distributedJacksonJwtStubFactory
+import qu.auth.Token
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -21,11 +22,16 @@ trait ClientQuorumPolicy[ObjectT, Transportable[_]] {
                       transportableRequest: Transportable[Request[AnswerT, ObjectT]],
                       transportableResponse: Transportable[Response[Option[AnswerT]]]): Future[(Option[AnswerT], Int, OHS)]
 }
+/*
+trait ShutdownablePolicy[ObjectT, Transportable[_]] {
+  self: SimpleBroadcastClientPolicy[ObjectT, Transportable] =>
+  override def shutdown(): Unit = self.servers.foreach { case (_, stub) => stub.shutdown() }
+}*/
 
 
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
 class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
-                                                             private val servers: Map[ServerId, JwtGrpcClientStub[Transportable]],
+                                                             protected val servers: Map[ServerId, JwtGrpcClientStub[Transportable]],
                                                              private val retryingTime: FiniteDuration = 3.seconds)
   extends ResponsesGatherer[Transportable](servers, retryingTime) with ClientQuorumPolicy[ObjectT, Transportable] {
 
@@ -66,21 +72,21 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
 }
 
 
-class JacksonSimpleBroadcastClientPolicy(private val thresholds: QuorumSystemThresholds,
+class JacksonSimpleBroadcastClientPolicy[ObjectT](private val thresholds: QuorumSystemThresholds,
                                          private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])
-  extends SimpleBroadcastClientPolicy[Int, JavaTypeable](thresholds, servers)
+  extends SimpleBroadcastClientPolicy[ObjectT, JavaTypeable](thresholds, servers)
 
 
 object ClientQuorumPolicy {
 
   //policy factories
-  type ClientPolicyFactory[Transportable[_], U] =
-    (Set[RecipientInfo], QuorumSystemThresholds) => ClientQuorumPolicy[U, Transportable] with Shutdownable
+  type ClientPolicyFactory[Transportable[_], ObjectT] =
+    (Set[RecipientInfo], QuorumSystemThresholds) => ClientQuorumPolicy[ObjectT, Transportable] with Shutdownable
 
   //without tls
-  def simpleJacksonPolicyFactoryUnencrypted[U](jwtToken: String): ClientPolicyFactory[JavaTypeable, U]  =
+  def simpleJacksonPolicyFactoryUnencrypted[ObjectT](jwtToken: Token): ClientPolicyFactory[JavaTypeable, ObjectT] =
     (servers, thresholds) => new SimpleBroadcastClientPolicy(thresholds,
-      servers.map { recipientInfo => id(recipientInfo) -> distributedJacksonJwtStubFactory(jwtToken, recipientInfo.ip, recipientInfo.port) } .toMap)
+      servers.map { recipientInfo => id(recipientInfo) -> distributedJacksonJwtStubFactory(jwtToken, recipientInfo.ip, recipientInfo.port) }.toMap)
 
   //with tls
   def simpleJacksonPolicyFactoryWithTls[U](jwtToken: String): ClientPolicyFactory[JavaTypeable, U] = ???
