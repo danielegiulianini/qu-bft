@@ -18,7 +18,7 @@ case class AuthenticatingClient[U](ip:String,
 
   val authClient = AuthClient(ip, port)
 
-  def register(): Future[Unit] = {  //Future[QuClient[U, JavaTypeable]]
+  def register(): Future[Unit] = {
     for {
       _ <- authClient.register(username, password)
     } yield()

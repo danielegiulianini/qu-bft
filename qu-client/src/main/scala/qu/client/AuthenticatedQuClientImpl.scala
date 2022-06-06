@@ -25,12 +25,14 @@ class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: C
     def submitWithOhs(ohs: OHS): Future[T] = {
       for {
         (answer, order, updatedOhs) <- policy.quorum(Some(op), ohs)
-        //todo mapping exceptions?
+        //todo mapping grpc exceptions to custom
         //todo optimistic query execution
         answer <- if (order < thresholds.q) for {
           repairedOhs <- repair(updatedOhs) //todo this updates ohs must here it's ignored!
           newAnswer <- submitWithOhs(repairedOhs)
-        } yield newAnswer else Future(answer.getOrElse(throw new RuntimeException("illegal protocol State exception..."))) //when using option: Future(answer.get)
+        } yield newAnswer else Future(answer.getOrElse(
+          throw new RuntimeException("illegal protocol State exception..."))
+        )
       } yield answer
     }
 
@@ -47,7 +49,8 @@ class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: C
         println("after backing off")
       }
       //perform a barrier or a copy
-      (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, ObjectT]], ohs) //here Object is fundamental as server could return other than T
+      (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, ObjectT]],
+        ohs) //here Object is fundamental as server could return other than T (could use Any too??)
       (operationType, _, _) <- classifyAsync(ohs)
       ohs <- backOffAndRetryUntilMethod(operationType, ohs)
     } yield ohs
@@ -59,7 +62,6 @@ class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: C
 
     def backOffAndRetryUntilMethod(operationType: ConcreteOperationTypes, ohs: OHS): Future[OHS] =
       if (operationType != ConcreteOperationTypes.METHOD) backOffAndRetry() else Future {
-        println("la ohs che metto in future is:  " + ohs)
         ohs
       }
 
