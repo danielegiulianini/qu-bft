@@ -9,7 +9,7 @@ import qu.RecipientInfo.id
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, latestCandidate}
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.jacksonSimpleQuorumServiceFactory
-import qu.service.{AbstractQuService, JwtAuthorizationServerInterceptor, QuServiceImpl, ServerQuorumPolicy}
+import qu.service.{AbstractQuService, JwtAuthorizationServerInterceptor, QuServiceImpl, ServerQuorumPolicy, SimpleServerQuorumPolicy}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -35,7 +35,9 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
     .addOperationOutput[Int]()
     .addOperationOutput[Unit]()*/
 
-  val mockedQuorumPolicy = mock[ServerQuorumPolicy[JavaTypeable, Int]]
+  //class ShutdownableJacksonQuorumPolicy extends ServerQuorumPolicy[JavaTypeable, Int] with Shutdownable
+
+  val mockedQuorumPolicy = mock[SimpleServerQuorumPolicy[JavaTypeable, Int]]
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
   var service: AbstractQuService[JavaTypeable, Int] = new QuServiceImpl[JavaTypeable, Int](
@@ -64,27 +66,13 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
       .addService(service)
       .build
 
-
     complete {
-      println("during setup il service is: " + service)
       server.start()
-      //Thread.sleep(1000)
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
       server.shutdown()
       server.shutdown.awaitTermination
     }
-    /*finally {
-      // Perform cleanup (run at end of each test)
-
-    }*/
-
-
-   /*complete {
-      super.withFixture(test) // Invoke the test function
-    } lastly {
-      // Perform cleanup here
-    }*/
   }
 }
