@@ -13,25 +13,25 @@ trait ServersFixture {
 
   val quServer1 = RecipientInfo(ip = "ciao2", port = 1)
   val quServer2 = RecipientInfo(ip = "localhost", port = 2)
-  val quServer3 = RecipientInfo(ip = "localhost", port = 3)
-  val quServer4 = RecipientInfo(ip = "localhost", port = 4)
+  val quServer3 = RecipientInfo(ip = "localhost2", port = 3)
+  val quServer4 = RecipientInfo(ip = "localhost3", port = 4)
 
   val keysByServer: Map[ServerId, Map[ServerId, Key]] = Map(
     id(quServer1) -> Map(id(quServer1) -> "ks1s1",
       id(quServer2) -> "ks1s2",
       id(quServer3) -> "ks1s3",
       id(quServer4) -> "ks1s4"),
-    id(quServer2) -> Map(id(quServer1) -> "ks2s1",
+    id(quServer2) -> Map(id(quServer1) -> "ks1s2",
       id(quServer2) -> "ks2s2",
       id(quServer3) -> "ks2s3",
       id(quServer4) -> "ks2s4"),
-    id(quServer3) -> Map(id(quServer1) -> "ks3s1",
-      id(quServer2) -> "ks3s2",
+    id(quServer3) -> Map(id(quServer1) -> "ks1s3",
+      id(quServer2) -> "ks2s3",
       id(quServer3) -> "ks3s3",
       id(quServer4) -> "ks3s4"),
-    id(quServer4) -> Map(id(quServer1) -> "ks4s1",
-      id(quServer2) -> "ks4s2",
-      id(quServer3) -> "ks4s3",
+    id(quServer4) -> Map(id(quServer1) -> "ks1s4",
+      id(quServer2) -> "ks2s4",
+      id(quServer3) -> "ks3s4",
       id(quServer4) -> "ks4s4"))
 
   val serverIds = keysByServer.keys.toSet
