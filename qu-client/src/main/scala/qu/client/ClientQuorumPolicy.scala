@@ -15,7 +15,7 @@ import scala.concurrent.{Future, Promise}
 import qu.model.ConcreteQuModel._
 
 
-trait ClientQuorumPolicy[ObjectT, Transportable[_]] {
+trait ClientQuorumPolicy[ObjectT, Transportable[_]] extends Shutdownable {
   def quorum[AnswerT](operation: Option[Operation[AnswerT, ObjectT]],
                       ohs: OHS)
                      (implicit
