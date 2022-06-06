@@ -20,13 +20,18 @@ trait AuthStubFixture extends BeforeAndAfterAll {
       serverInfo.port)
   }
 
-  override def afterAll(): Unit =  authStub.shutdown()
+  //afterAll takes care of async code too (see https://github.com/scalatest/scalatest/issues/953)
+  override def afterAll(): Unit = {
+    println("shutting down ...")
+    authStub.shutdown()
+  }
 
   //a protected val to make stub reusable with different recipient servers
   protected val serverInfo: RecipientInfo
+  protected val clientId: String
 
   private def getJwt: String = {
-    Jwts.builder.setSubject("GreetingClient").signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact
+    Jwts.builder.setSubject(clientId).signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact
   }
 }
 
@@ -39,9 +44,10 @@ trait UnAuthStubFixture extends BeforeAndAfterAll {
     inNamedProcessJacksonStubFactory(serverInfo.ip, serverInfo.port)
   }
 
-  override def afterAll(): Unit =  {
-println("shutting down ...")
+  override def afterAll(): Unit = {
+    println("shutting down ...")
     unAuthStub.shutdown()
   }
+
   protected val serverInfo: RecipientInfo
 }

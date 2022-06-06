@@ -8,6 +8,7 @@ import qu.service.AbstractQuService.ServerInfo
 //"fixture-context objects" pattern from https://www.scalatest.org/user_guide/sharing_fixtures#fixtureContextObjects
 //(as don't need to clean up after.)
 trait ServersFixture {
+  
   self: OHSFixture =>
 
   val quServer1 = RecipientInfo(ip = "ciao2", port = 1)

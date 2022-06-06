@@ -6,6 +6,7 @@ import qu.MethodDescriptorFactory
 import qu.auth.Constants
 import qu.model.ConcreteQuModel.hmac
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
+import qu.service.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.storage.ImmutableStorage
 
 import java.security.InvalidParameterException
@@ -22,7 +23,7 @@ import qu.model.ConcreteQuModel._
 
 class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen by programmer
                                                          private val methodDescriptorFactory: MethodDescriptorFactory[Transportable],
-                                                         private val policyFactory: (Map[String, Int], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, ObjectT],
+                                                         private val policyFactory: ServerQuorumPolicyFactory[Transportable, ObjectT],
                                                          //dependencies chosen by user
                                                          override val ip: String,
                                                          override val port: Int,
@@ -37,7 +38,6 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
   private var storage = ImmutableStorage[ObjectT]().store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)//.store[Any](emptyLT, (obj, Option.empty[Any]))
 
   val clientId: Context.Key[Key] = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
-
 
   import java.util.concurrent.Executors
 
@@ -120,7 +120,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
           //throw new InvalidParameterException("user sent an update operation as query")
         }
       }
-      logger.log(Level.INFO, "returing answer: " + answerToReturn, 2)
+      logger.log(Level.INFO, "returning answer: " + answerToReturn, 2)
 
 
       replyWith(Response(StatusCode.FAIL, answerToReturn, authenticatedReplicaHistory))
@@ -161,10 +161,15 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
       this.synchronized {
         logger.log(Level.INFO, "updating ohs and authenticator...", 2)
+        logger.log(Level.INFO, "    my eys at serv side: " + keysSharedWithMe, 2)
+
+        logger.log(Level.INFO, "    rh bef update: " + replicaHistory, 2)
 
         val updatedReplicaHistory: ReplicaHistory = replicaHistory.appended(lt -> ltCo) //with rh as sortedset: replicaHistory + (lt -> ltCo)
-        val updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe)//updateAuthenticatorFor(keysSharedWithMe)(ip)(updatedReplicaHistory)
+        val updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe) //updateAuthenticatorFor(keysSharedWithMe)(ip)(updatedReplicaHistory)
         authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
+        logger.log(Level.INFO, "    updated rh: " + updatedReplicaHistory, 2)
+        logger.log(Level.INFO, "    updated auth: " + updatedAuthenticator, 2)
 
         //overriding answer since it's ignored at client side
         if (opType == ConcreteOperationTypes.COPY) {

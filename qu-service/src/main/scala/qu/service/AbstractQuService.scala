@@ -72,7 +72,7 @@ abstract class AbstractQuService[Transportable[_], U](
   extends BindableService with QuService[Transportable, U] {
   private val ssd = CachingServiceServerDefinitionBuilder2(SERVICE_NAME)
 
-  protected var servers = Map[String, Int]()
+  protected var servers = Set[RecipientInfo]()
   protected var keysSharedWithMe: Map[ServerId, Key] = Map[ServerId, String]() //this contains mykey too (needed)
   protected var quorumPolicy: ServerQuorumPolicy[Transportable, U] = policyFactory(servers, thresholds)
 
@@ -98,8 +98,7 @@ abstract class AbstractQuService[Transportable[_], U](
 
   def addServer(ip: String, port: Int, keySharedWithMe: String): AbstractQuService[Transportable, U] = {
     println("------------------aggiungo il server con ip " + ip + " e port: " + port)
-
-    servers = servers + (ip -> port)
+    servers = servers +RecipientInfo(ip, port)
     insertKeyForServer(id(ServerInfo(ip, port, keySharedWithMe)), keySharedWithMe)
     quorumPolicy = policyFactory(servers, thresholds)
     this

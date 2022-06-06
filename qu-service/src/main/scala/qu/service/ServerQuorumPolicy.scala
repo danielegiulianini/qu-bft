@@ -1,8 +1,9 @@
 package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
+import qu.RecipientInfo.id
 import qu.StubFactories.unencryptedDistributedJacksonStubFactory
-import qu.{ResponsesGatherer, GrpcClientStub, Shutdownable}
+import qu.{GrpcClientStub, RecipientInfo, ResponsesGatherer, Shutdownable}
 import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
 
@@ -17,7 +18,7 @@ trait ServerQuorumPolicy[Transportable[_], ObjectT] {
   ): Future[ObjectT]
 }
 
-class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[String, GrpcClientStub[Transportable]],
+class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId, GrpcClientStub[Transportable]],
                                                           private val thresholds: QuorumSystemThresholds,
                                                           private val retryingTime: FiniteDuration = 3.seconds)
   extends ResponsesGatherer[Transportable](servers, retryingTime)
@@ -39,13 +40,13 @@ class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[String, G
 
 object ServerQuorumPolicy {
   type ServerQuorumPolicyFactory[Transportable[_], U] =
-    (Map[String, Int], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, U]
+    (Set[RecipientInfo], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, U]
 
   def simpleDistributedJacksonServerQuorumFactory[U](): ServerQuorumPolicyFactory[JavaTypeable, U] =
-    (serversMap, thresholds) => new SimpleServerQuorumPolicy[JavaTypeable, U](
-      servers = serversMap.map { case (serverIp, serverPort) =>
-        serverIp -> unencryptedDistributedJacksonStubFactory(serverIp, serverPort)
-      },
+    (serversSet, thresholds) => new SimpleServerQuorumPolicy[JavaTypeable, U](
+      servers = serversSet.map { recipientInfo =>
+        id(recipientInfo) -> unencryptedDistributedJacksonStubFactory(recipientInfo.ip, recipientInfo.port)
+      } .toMap,
       thresholds = thresholds
     )
 
