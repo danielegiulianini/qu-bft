@@ -34,38 +34,35 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
     .addServer(quServer4WithKey)
     .addOperationOutput[Int]()
     .addOperationOutput[Unit]()*/
-  /*class JacksonSimpleBroadcastClientPolicy(private val thresholds: QuorumSystemThresholds,
-                                           private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])
-    extends SimpleBroadcastClientPolicy[Int, JavaTypeable](thresholds, servers)*/
-  //class Shutdownable
 
   val mockedQuorumPolicy = mock[JacksonSimpleBroadcastServerPolicy[Int]]
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
-  var service: AbstractQuService[JavaTypeable, Int] = new QuServiceImpl[JavaTypeable, Int](
-    methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
-    policyFactory = (_, _) => mockedQuorumPolicy,
-    ip = quServer1WithKey.ip,
-    port = quServer1WithKey.port,
-    privateKey = quServer1WithKey.keySharedWithMe,
-    obj = InitialObject,
-    thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount))
+  def freshService(): AbstractQuService[JavaTypeable, Int] = {
+    val service  = new QuServiceImpl[JavaTypeable, Int](
+      methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
+      policyFactory = (_, _) => mockedQuorumPolicy,
+      ip = quServer1WithKey.ip,
+      port = quServer1WithKey.port,
+      privateKey = quServer1WithKey.keySharedWithMe,
+      obj = InitialObject,
+      thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount))
 
-  //todo could use QuServer construsctor too... (but it would not be in-process...)
-  //so simulating here una InprocessQuServer (could reify in (fixture) class)
-  service = service.addServer(quServer2WithKey)
-    .addServer(quServer3WithKey)
-    .addServer(quServer4WithKey)
-    .addOperationOutput[Int]()
-    .addOperationOutput[Unit]()
-
+    //todo could use QuServer construsctor too... (but it would not be in-process...)
+    //so simulating here una InprocessQuServer (could reify in (fixture) class)
+    service.addServer(quServer2WithKey)
+      .addServer(quServer3WithKey)
+      .addServer(quServer4WithKey)
+      .addOperationOutput[Int]()
+      .addOperationOutput[Unit]()
+  }
 
    override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
     // Perform setup
     val server = InProcessServerBuilder
       .forName(id(quServer1))
       .intercept(new JwtAuthorizationServerInterceptor())
-      .addService(service)
+      .addService(freshService())
       .build
 
     complete {
