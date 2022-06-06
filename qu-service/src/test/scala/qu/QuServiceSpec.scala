@@ -27,99 +27,127 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
 
   describe("A Service") {
 
+    describe("when contacted by another service requesting a object it doesn't store") {
+      val unStoredObjLt = ConcreteLogicalTimestamp(
+        time = 1,
+        barrierFlag = true, clientId = emptyLT.clientId, operation = emptyLT.operation, ohs = Some(represent(aOhsWithMethod))
+      )
+      lazy val storedObjResponse = authStub.send[LogicalTimestamp, ObjectSyncResponse[Int]](unStoredObjLt)
+
+      it("should succeed") {
+        storedObjResponse.map (_.responseCode should be (SUCCESS))
+      }
+
+      it("should respond with a empty Option") {
+        storedObjResponse.map (_.answer should be (Option.empty))
+
+      }
+    }
+    describe("when contacted by another service requesting a object it does store") {
+      val storeObjLt = emptyLT
+
+      lazy val unStoredObjResponse = authStub.send[LogicalTimestamp, ObjectSyncResponse[Int]](storeObjLt)
+      it("should succeed") {
+        unStoredObjResponse.map (_.responseCode should be (SUCCESS))
+      }
+
+      it("should respond with it") {
+        unStoredObjResponse.map (_.answer should be (Some(InitialObject)))
+      }
+    }
     describe("when contacted by an unauthenticated user") {
 
       /*it("should fail") {
-        recoverToSucceededIf[StatusRuntimeException] {
-          unAuthStub.send[Request[Unit, Int], Response[Option[Unit]]](
-            Request(operation = Some(IncrementAsObj),
-              ohs = emptyOhs(serverIds)))
-        }
+      recoverToSucceededIf[StatusRuntimeException] {
+      unAuthStub.send[Request[Unit, Int], Response[Option[Unit]]](
+      Request(operation = Some(IncrementAsObj),
+        ohs = emptyOhs(serverIds)))
+      }
       }
       describe("when OHS contains all valid authenticators") {
-        //laziness needed for correct initialization dependency and for performance reason
-        lazy val responseForUpdateWithOutdatedOhs = for {
+      //laziness needed for correct initialization dependency and for performance reason
+      lazy val responseForUpdateWithOutdatedOhs = for {
+      _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+      Request(operation = Some(IncrementAsObj),
+        ohs = emptyOhs(serverIds)))
+      response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+      Request(operation = Some(IncrementAsObj), //sending an UPDATE operation
+        ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
+      } yield response
+      describe("and OHS is not current and the requested operation is an update") {
+      it("should fail") {
+      responseForUpdateWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
+      }
+      it("should return an empty answer") {
+      responseForUpdateWithOutdatedOhs.map(response => {
+        assert(response.answer == Option.empty[Unit])
+      })
+      }
+      it("should return its updated replica history but without updating it again") {
+      for {
+        firstResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+          Request(operation = Some(IncrementAsObj),
+            ohs = emptyOhs(serverIds)))
+        response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+          Request(operation = Some(IncrementAsObj), //now sending an UPDATE op
+            ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
+      } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
+      }
+      }
+      /*
+      describe("and OHS is not current and the requested operation is a query") {
+        val responseForQueryWithOutdatedOhs = for {
           _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-            Request(operation = Some(IncrementAsObj),
+            Request(operation = Some(new Increment()),
               ohs = emptyOhs(serverIds)))
-          response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-            Request(operation = Some(IncrementAsObj), //sending an UPDATE operation
+          response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
+            Request(operation = Some(new GetObj()), //sending a QUERY operation
               ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
         } yield response
-        describe("and OHS is not current and the requested operation is an update") {
-          it("should fail") {
-            responseForUpdateWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
-          }
-          it("should return an empty answer") {
-            responseForUpdateWithOutdatedOhs.map(response => {
-              assert(response.answer == Option.empty[Unit])
-            })
-          }
-          it("should return its updated replica history but without updating it again") {
-            for {
-              firstResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-                Request(operation = Some(IncrementAsObj),
-                  ohs = emptyOhs(serverIds)))
-              response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-                Request(operation = Some(IncrementAsObj), //now sending an UPDATE op
-                  ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
-            } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
-          }
+        it("should fail") {
+          responseForQueryWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
         }
-        /*
-            describe("and OHS is not current and the requested operation is a query") {
-              val responseForQueryWithOutdatedOhs = for {
-                _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-                  Request(operation = Some(new Increment()),
-                    ohs = emptyOhs(serverIds)))
-                response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-                  Request(operation = Some(new GetObj()), //sending a QUERY operation
-                    ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
-              } yield response
-              it("should fail") {
-                responseForQueryWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
-              }
-              it("should return the updated answer (optimistic query execution)") {
-                responseForQueryWithOutdatedOhs.map(response => assert(response.answer.contains(2023)))
-              }
-              it("should return its updated replica history (optimistic query execution)") {
-                for {
-                  firstResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-                    Request(operation = Some(new Increment()),
-                      ohs = emptyOhs(serverIds)))
-                  response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-                    Request(operation = Some(new GetObj()),
-                      ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
-                } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
-              }
-            }*/
+        it("should return the updated answer (optimistic query execution)") {
+          responseForQueryWithOutdatedOhs.map(response => assert(response.answer.contains(2023)))
+        }
+        it("should return its updated replica history (optimistic query execution)") {
+          for {
+            firstResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+              Request(operation = Some(new Increment()),
+                ohs = emptyOhs(serverIds)))
+            response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
+              Request(operation = Some(new GetObj()),
+                ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
+          } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
+        }
+      }*/
 
-        //testing all the branches of service impl
-        describe("and OHS is current") {
-          describe("and OHS is not classifiable as a a barrier") {
-            describe("and object version is not stored at the contacted server side") {
-              it("should object sync") {
-                //potrei simulare uno scambio (anziché one shot scenario) e verificare che continua a fare object sync sinché chiedo oggetto che non ha...
+      //testing all the branches of service impl
+      describe("and OHS is current") {
+      describe("and OHS is not classifiable as a a barrier") {
+      describe("and object version is not stored at the contacted server side") {
+        it("should object sync") {
+          //potrei simulare uno scambio (anziché one shot scenario) e verificare che continua a fare object sync sinché chiedo oggetto che non ha...
 
-                println("il latest candidate is : " + latestCandidate(aOhsWithMethod, barrierFlag = false, thresholds.r))
-                val (_, ltCo) = latestCandidate(aOhsWithMethod, false, thresholds.r).get
-                (mockedQuorumPolicy.objectSync(_: LogicalTimestamp)(_: JavaTypeable[LogicalTimestamp],
-                  _: JavaTypeable[ObjectSyncResponse[Int]]))
-                  .expects(/*ltCo*/ * /* * */ , *, *).returning(Future.successful(InitialObject + 1)) //per sicurezza ritorno il valore giusto
+          println("il latest candidate is : " + latestCandidate(aOhsWithMethod, barrierFlag = false, thresholds.r))
+          val (_, ltCo) = latestCandidate(aOhsWithMethod, false, thresholds.r).get
+          (mockedQuorumPolicy.objectSync(_: LogicalTimestamp)(_: JavaTypeable[LogicalTimestamp],
+            _: JavaTypeable[ObjectSyncResponse[Int]]))
+            .expects(/*ltCo*/ * /* * */ , *, *).returning(Future.successful(InitialObject + 1)) //per sicurezza ritorno il valore giusto
 
-                for {
-                  response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-                    Request(operation = Some(IncrementAsObj),
-                      ohs = aOhsWithMethod)) //... sending ohs with obj versions that servers doesn't have to trigger sync
-                } yield response.responseCode should be(SUCCESS)
-              }
-            }
-          }*/
+          for {
+            response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+              Request(operation = Some(IncrementAsObj),
+                ohs = aOhsWithMethod)) //... sending ohs with obj versions that servers doesn't have to trigger sync
+          } yield response.responseCode should be(SUCCESS)
+        }
+      }
+      }*/
       describe("if ok") {
         describe("if ok") {
           describe("and OHS is classifiable as a method") {
             val ohs = emptyOhs(serverIds)
-            val op = Some(IncrementAsObj)
+            val op = Some(new Increment)
             lazy val responseForUpdate = for {
               response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
                 Request(operation = op,
@@ -135,7 +163,9 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                 //it should not trigger object sync
               }
               it("should edit its replica history correctly") {
-                responseForUpdate.map(_.authenticatedRh._1 should be(correctRh))
+                //responseForUpdate.map(_.authenticatedRh._1 should be(correctRh))
+                responseForUpdate.map(response => assert(response.authenticatedRh._1 == correctRh))
+
               }
               it("should update server authenticators correctly") {
                 println("at client side my keys are: " + keysByServer(id(quServer1)))
@@ -150,18 +180,25 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               }
             }
             describe("and operation class is query") {
+              val ohs = emptyOhs(serverIds)
+              val op = Some(new GetObj[Int])
+              lazy val responseForQuery = for {
+                response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
+                  Request(operation = op,
+                    ohs = ohs))
+              } yield response
               it("should not edit its replica history") {
-                fail("still to impl")
+                responseForQuery.map(_.authenticatedRh._1 should be(emptyOhs(serverIds)(id(quServer1))._1))
+              }
+              it("should succeed") {
+                responseForQuery.map(_.responseCode should be(SUCCESS))
+              }
+              it("should return correct answer") {
+                responseForQuery.map(_.answer should be(Some(InitialObject)))
               }
               describe("and conditioned-on object is stored at service side") {
                 //it should not trigger object sync
-
               }
-              it("should succeed") {
-                fail("still to impl")
-              }
-              //should return correct answer
-
             }
           }
           describe("and OHS is classifiable as a inline method") {
@@ -195,17 +232,17 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
       }
 
       /* describe("when OHS contains invalid authenticator referred to its replica history") {
-         it("should cull it") {
-           for {
-             _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-               Request(operation = Some(IncrementAsObj), //updating server rh (since with emptyLt I cannot detect...)
-                 ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
-             response <- authStub.send[Request[Int, Int], Response[Option[Unit]]](
-               Request(operation = Some(new GetObj[Int]),
-                 ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
-           } yield assert(response.responseCode == FAIL) //getting fail since because of culling client ohs become the emptyOhs (all are invalidated!)
-         }
-       }*/
+      it("should cull it") {
+      for {
+       _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+         Request(operation = Some(IncrementAsObj), //updating server rh (since with emptyLt I cannot detect...)
+           ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
+       response <- authStub.send[Request[Int, Int], Response[Option[Unit]]](
+         Request(operation = Some(new GetObj[Int]),
+           ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
+      } yield assert(response.responseCode == FAIL) //getting fail since because of culling client ohs become the emptyOhs (all are invalidated!)
+      }
+      }*/
     }
   }
 
@@ -214,17 +251,17 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
 
 
 /*  //utility for more readability (not working...) (not used...)
-  def sendRequest[AnswerT, ObjectT](grpcClientStub: GrpcClientStub[JavaTypeable],
-                                    operation: Option[Operation[AnswerT, ObjectT]],
-                                    ohs: OHS):
-  Future[Response[Option[AnswerT]]] =
-    grpcClientStub.send[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](Request[AnswerT, ObjectT](operation,
-      ohs))*/
+def sendRequest[AnswerT, ObjectT](grpcClientStub: GrpcClientStub[JavaTypeable],
+                        operation: Option[Operation[AnswerT, ObjectT]],
+                        ohs: OHS):
+Future[Response[Option[AnswerT]]] =
+grpcClientStub.send[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](Request[AnswerT, ObjectT](operation,
+ohs))*/
 
 /*
-  override type ReplicaHistory = List[Candidate] //SortedSet[Candidate] for avoid hitting bug https://github.com/FasterXML/jackson-module-scala/issues/410
-  type HMAC
-  override type α = Map[ServerId, HMAC]
-  type AuthenticatedReplicaHistory = (ReplicaHistory, α)
-  override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
- */
+override type ReplicaHistory = List[Candidate] //SortedSet[Candidate] for avoid hitting bug https://github.com/FasterXML/jackson-module-scala/issues/410
+type HMAC
+override type α = Map[ServerId, HMAC]
+type AuthenticatedReplicaHistory = (ReplicaHistory, α)
+override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
+*/
