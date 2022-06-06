@@ -9,7 +9,7 @@ import qu.RecipientInfo.id
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, latestCandidate}
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.jacksonSimpleQuorumServiceFactory
-import qu.service.{AbstractQuService, JwtAuthorizationServerInterceptor, QuServiceImpl, ServerQuorumPolicy, SimpleServerQuorumPolicy}
+import qu.service.{AbstractQuService, JacksonSimpleBroadcastServerPolicy, JwtAuthorizationServerInterceptor, QuServiceImpl, ServerQuorumPolicy, SimpleServerQuorumPolicy}
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -34,10 +34,12 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
     .addServer(quServer4WithKey)
     .addOperationOutput[Int]()
     .addOperationOutput[Unit]()*/
+  /*class JacksonSimpleBroadcastClientPolicy(private val thresholds: QuorumSystemThresholds,
+                                           private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])
+    extends SimpleBroadcastClientPolicy[Int, JavaTypeable](thresholds, servers)*/
+  //class Shutdownable
 
-  //class ShutdownableJacksonQuorumPolicy extends ServerQuorumPolicy[JavaTypeable, Int] with Shutdownable
-
-  val mockedQuorumPolicy = mock[SimpleServerQuorumPolicy[JavaTypeable, Int]]
+  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastServerPolicy[Int]]
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
   var service: AbstractQuService[JavaTypeable, Int] = new QuServiceImpl[JavaTypeable, Int](
@@ -67,6 +69,7 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
       .build
 
     complete {
+
       server.start()
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
