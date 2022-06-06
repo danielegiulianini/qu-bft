@@ -36,9 +36,9 @@ trait ServersFixture {
   val serverIds = keysByServer.keys.toSet
 
   val quServer1WithKey = ServerInfo(ip = quServer1.ip, port = quServer1.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer1)))
-  val quServer2WithKey = ServerInfo(ip = quServer1.ip, port = quServer1.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer2)))
-  val quServer3WithKey = ServerInfo(ip = quServer1.ip, port = quServer1.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer3)))
-  val quServer4WithKey = ServerInfo(ip = quServer1.ip, port = quServer1.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer4)))
+  val quServer2WithKey = ServerInfo(ip = quServer2.ip, port = quServer2.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer2)))
+  val quServer3WithKey = ServerInfo(ip = quServer3.ip, port = quServer3.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer3)))
+  val quServer4WithKey = ServerInfo(ip = quServer4.ip, port = quServer4.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer4)))
 
   val InitialObject = 2022
   val FaultyServersCount = 1
