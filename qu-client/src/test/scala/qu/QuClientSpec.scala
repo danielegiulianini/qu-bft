@@ -1,37 +1,23 @@
+package qu
+
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.grpc.StatusRuntimeException
-import org.scalamock.context.MockContext
 import org.scalamock.function.MockFunction4
-import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
-import org.scalamock.util.MacroAdapter.Context
-import org.scalatest.RecoverMethods.recoverToSucceededIf
+import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.funspec.{AnyFunSpec, AsyncFunSpec}
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers.be
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
-import qu.{JwtGrpcClientStub, Shutdownable}
-import qu.client.{AuthenticatedClientBuilderInFunctionalStyle, AuthenticatedQuClientImpl, BackOffPolicy, ClientQuorumPolicy, SimpleBroadcastPolicyClient}
-import qu.model.Commands.{GetObj, Increment, IncrementAsObj}
-import qu.model.ConcreteQuModel.{LogicalTimestamp, OHS, ObjectSyncResponse, Operation, Request, Response, ServerId, classify, emptyOhs}
+import qu.client.{AuthenticatedQuClientImpl, BackOffPolicy, JacksonSimpleBroadcastClientPolicy, SimpleBroadcastClientPolicy}
+import qu.model.Commands.{GetObj, IncrementAsObj}
+import qu.model.ConcreteQuModel.{Key, OHS, Operation, Request, Response, ServerId, emptyOhs}
 import qu.model.SharedContainer.keysForServer
-import qu.model.{ConcreteQuModel, OHSFixture2, QuorumSystemThresholds}
+import qu.model.{ConcreteQuModel, OHSFixture, QuorumSystemThresholds}
 
-import java.util.concurrent.{Executors, ThreadPoolExecutor}
+import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with ScalaFutures { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
-
-  /*
-  mocking server for verifying client
-  import io.grpc.stub.StreamObserver
-     @Test  def greet_messageDeliveredToServer(): Unit =  {
-     val requestCaptor: Nothing = ArgumentCaptor.forClass(classOf[Nothing])
-  client.greet("test name")
-  verify(serviceImpl).sayHello(requestCaptor.capture, ArgumentMatchers.any[StreamObserver[Nothing]])
-  assertEquals("test name", requestCaptor.getValue.getName)
-  }
-   */
+class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario with OHSFixture with ScalaFutures { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
 
   //c'è la questione delle fasi'
   //devo tirar su tanti server... no basta una quorum policy
@@ -45,30 +31,11 @@ class QuClientSpec extends AnyFunSpec with MockFactory with OHSFixture2 with Sca
   //non devo attribuire al client errori del server ...
 
 
-  //deve inviare la stessa ohs ricevuta... IL VERO DUBBIO di questa suite è SE/come USARE PIù STADI O NO...
 
-  //...al primo giro invia la ohs vuota
-  // PUò DARSI CHE DURANTE LO scambio l'order cambi ??
-
-  class JacksonSimpleBroadcastPolicyClient(private val thresholds: QuorumSystemThresholds,
-                                           private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])
-    extends SimpleBroadcastPolicyClient[Int, JavaTypeable](thresholds, servers)
-
-
-  //4-servers scenario related stuff
-  val serversIds = (1 to 4 toList).map("s" + _)
-  val serversIdsAsSet = serversIds.toSet
-  val serversKeys: Map[ServerId, Map[ConcreteQuModel.ServerId, ServerId]] =
-    serversIds.map(id => id -> keysForServer(id, serversIdsAsSet)).toMap
-  val initialValue = 1
-  val thresholds = QuorumSystemThresholds(t = 1, q = 3, b = 0)
-
-
-  //todo should go in fixture
+  //todo should go in fixture (to be shutdown)
   //stubbed dependencies
-  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastPolicyClient] // mock[SimpleBroadcastPolicyClient[Int, JavaTypeable]]
+  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastClientPolicy]
   val mockedBackOffPolicy = mock[BackOffPolicy]
-
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
   val client = new AuthenticatedQuClientImpl[Int, JavaTypeable](

@@ -8,6 +8,7 @@ import qu.model.QuorumSystemThresholds
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 
+class GetObj[ObjectT] extends QueryReturningObject[ObjectT]
 
 class Get[K, V](key: K) extends Query[Option[V], MutableMap[K, V]] {
   override def whatToReturn(obj: MutableMap[K, V]): Option[V] = obj.get(key)

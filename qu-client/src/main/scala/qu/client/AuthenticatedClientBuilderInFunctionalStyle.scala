@@ -1,39 +1,54 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.Shutdownable
+import qu.RecipientInfo.id
+import qu.{RecipientInfo, Shutdownable}
 import qu.client.ClientQuorumPolicy.{ClientPolicyFactory, simpleJacksonPolicyFactoryUnencrypted}
 import qu.model.QuorumSystemThresholds
 
 
-case class AuthenticatedClientBuilderInFunctionalStyle[U, Transportable[_]]( //programmer dependencies
-                                                                             private val policyFactory: (Map[String, Int], QuorumSystemThresholds) => ClientQuorumPolicy[U, Transportable] with Shutdownable,
-                                                                             private val backOffPolicy: BackOffPolicy,
-                                                                             //user dependencies
-                                                                             private val serversInfo: Map[String, Int],
-                                                                             private val thresholds: Option[QuorumSystemThresholds],
-                                                                           ) {
-  def addServer(ip: String, port: Int): AuthenticatedClientBuilderInFunctionalStyle[U, Transportable] =
-    this.copy(serversInfo = serversInfo + (ip -> port)) //could create channels here instead of creating in policy
+case class AuthenticatedClientBuilderInFunctionalStyle[ObjectT, Transportable[_]]( //programmer dependencies
+                                                                                   private val policyFactory: ClientPolicyFactory[Transportable, ObjectT],
+                                                                                   private val backOffPolicy: BackOffPolicy,
+                                                                                   //user dependencies
+                                                                                   private val serversInfo: Set[RecipientInfo],
+                                                                                   private val thresholds: Option[QuorumSystemThresholds],
+                                                                                 ) {
 
-  def withThresholds(thresholds: QuorumSystemThresholds): AuthenticatedClientBuilderInFunctionalStyle[U, Transportable] =
+  def addServer(ip: String, port: Int): AuthenticatedClientBuilderInFunctionalStyle[ObjectT, Transportable] =
+    this.copy(serversInfo = serversInfo + RecipientInfo(ip, port)) //could create channels here instead of creating in policy
+
+  def withThresholds(thresholds: QuorumSystemThresholds): AuthenticatedClientBuilderInFunctionalStyle[ObjectT, Transportable] =
     this.copy(thresholds = Some(thresholds))
 
-  def build: AuthenticatedQuClientImpl[U, Transportable] = {
+  def build: AuthenticatedQuClientImpl[ObjectT, Transportable] = {
+    
     //todo missing validation
-    new AuthenticatedQuClientImpl[U, Transportable](policyFactory(serversInfo, thresholds.get), backOffPolicy, serversInfo.keySet, thresholds.get)
+    new AuthenticatedQuClientImpl[ObjectT, Transportable](policyFactory(serversInfo, thresholds.get),
+      backOffPolicy,
+      serversInfo.map(id(_)),
+      thresholds.get)
   }
 }
 
 //builder companion object specific builder instance-related utility
 object AuthenticatedClientBuilderInFunctionalStyle {
 
-  def builder[U](token: String): AuthenticatedClientBuilderInFunctionalStyle[U, JavaTypeable] = simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
+  def builder[U](token: String): AuthenticatedClientBuilderInFunctionalStyle[U, JavaTypeable] =
+    simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 
-  private def empty[U, Transferable[_]](policyFactory: ClientPolicyFactory[Transferable, U] , policy: BackOffPolicy): AuthenticatedClientBuilderInFunctionalStyle[U, Transferable] =
-    AuthenticatedClientBuilderInFunctionalStyle((mySet, thresholds) => policyFactory(mySet, thresholds), policy, Map(), Option.empty)
+  private def empty[U, Transferable[_]](policyFactory: ClientPolicyFactory[Transferable, U],
+                                        policy: BackOffPolicy):
+  AuthenticatedClientBuilderInFunctionalStyle[U, Transferable] =
+    AuthenticatedClientBuilderInFunctionalStyle((mySet, thresholds) => policyFactory(mySet, thresholds),
+      policy,
+      Set(),
+      Option.empty)
 
   //builder implementations
-  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: String): AuthenticatedClientBuilderInFunctionalStyle[U, JavaTypeable] =
-    AuthenticatedClientBuilderInFunctionalStyle.empty[U, JavaTypeable](simpleJacksonPolicyFactoryUnencrypted(token), ExponentialBackOffPolicy())
+  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: String):
+  AuthenticatedClientBuilderInFunctionalStyle[U, JavaTypeable] =
+    AuthenticatedClientBuilderInFunctionalStyle.empty[U, JavaTypeable](
+      simpleJacksonPolicyFactoryUnencrypted(token),
+      ExponentialBackOffPolicy())
 }

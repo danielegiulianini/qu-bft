@@ -1,3 +1,5 @@
+package qu
+
 class SimpleClientQuorumPolicyTests {
   //sends to all servers
 

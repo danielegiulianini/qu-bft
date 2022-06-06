@@ -1,7 +1,8 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.{AbstractQuorumPolicy, JwtGrpcClientStub, Shutdownable}
+import qu.RecipientInfo.id
+import qu.{JwtGrpcClientStub, RecipientInfo, ResponsesGatherer, Shutdownable}
 import qu.StubFactories.distributedJacksonJwtStubFactory
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 
@@ -23,10 +24,10 @@ trait ClientQuorumPolicy[ObjectT, Transportable[_]] {
 
 
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
-class SimpleBroadcastPolicyClient[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
+class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
                                                              private val servers: Map[ServerId, JwtGrpcClientStub[Transportable]],
                                                              private val retryingTime: FiniteDuration = 3.seconds)
-  extends AbstractQuorumPolicy[Transportable](servers, retryingTime) with ClientQuorumPolicy[ObjectT, Transportable] {
+  extends ResponsesGatherer[Transportable](servers, retryingTime) with ClientQuorumPolicy[ObjectT, Transportable] {
 
 
   override def quorum[AnswerT](operation: Option[Operation[AnswerT, ObjectT]],
@@ -40,14 +41,11 @@ class SimpleBroadcastPolicyClient[ObjectT, Transportable[_]](private val thresho
       responses.view.mapValues(_.authenticatedRh).toMap
 
     def gatherResponsesAndOhs(): Future[(Set[Response[Option[AnswerT]]], OHS)] = {
-      val req =         Request[AnswerT, ObjectT](operation, ohs)
-
-      val  ss = gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
-        request = req,
-        responsesQuorum = thresholds.q,
-        filterSuccess = _.responseCode == StatusCode.SUCCESS)
       for {
-        responses <- ss
+        responses <- gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
+          request = Request[AnswerT, ObjectT](operation, ohs),
+          responsesQuorum = thresholds.q,
+          filterSuccess = _.responseCode == StatusCode.SUCCESS)
       } yield (responses.values.toSet, extractOhsFromResponses(responses))
     }
 
@@ -68,15 +66,21 @@ class SimpleBroadcastPolicyClient[ObjectT, Transportable[_]](private val thresho
 }
 
 
+class JacksonSimpleBroadcastClientPolicy(private val thresholds: QuorumSystemThresholds,
+                                         private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])
+  extends SimpleBroadcastClientPolicy[Int, JavaTypeable](thresholds, servers)
+
+
 object ClientQuorumPolicy {
 
   //policy factories
-  type ClientPolicyFactory[Trasportable[_], U] = (Map[String, Int], QuorumSystemThresholds) => ClientQuorumPolicy[U, Trasportable] with Shutdownable
+  type ClientPolicyFactory[Transportable[_], U] =
+    (Set[RecipientInfo], QuorumSystemThresholds) => ClientQuorumPolicy[U, Transportable] with Shutdownable
 
   //without tls
-  def simpleJacksonPolicyFactoryUnencrypted[U](jwtToken: String): (ClientPolicyFactory[JavaTypeable, U] ) =
-    (servers, thresholds) => new SimpleBroadcastPolicyClient(thresholds,
-      servers.map { case (ip, port) => ip -> distributedJacksonJwtStubFactory(jwtToken, ip, port) })
+  def simpleJacksonPolicyFactoryUnencrypted[U](jwtToken: String): ClientPolicyFactory[JavaTypeable, U]  =
+    (servers, thresholds) => new SimpleBroadcastClientPolicy(thresholds,
+      servers.map { recipientInfo => id(recipientInfo) -> distributedJacksonJwtStubFactory(jwtToken, recipientInfo.ip, recipientInfo.port) } .toMap)
 
   //with tls
   def simpleJacksonPolicyFactoryWithTls[U](jwtToken: String): ClientPolicyFactory[JavaTypeable, U] = ???
