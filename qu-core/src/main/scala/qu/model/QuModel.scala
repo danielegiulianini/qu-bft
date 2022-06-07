@@ -69,13 +69,7 @@ trait AbstractAbstractQuModel extends QuModel {
 
   type Key = String
 
-  //most general
- /* def fillAuthenticator(keys: Map[ServerId, String])(fun: Key => HMAC): α =
-    keys.view.mapValues(fun(_)).toMap
 
-  def fillAuthenticatorFor(keys: Map[ServerId, Key])(serverIdToUpdate: ServerId)(fun: Key => HMAC): α =
-    fillAuthenticator(keys.view.filterKeys(_ == serverIdToUpdate).toMap)(fun) //fillAuthenticator(keys.filter(kv => kv._1  == serverIdToUpdate))(fun)
-*/
   def nullAuthenticator(): α //= Map[String, String]()
 
   val emptyAuthenticatedRh: AuthenticatedReplicaHistory = (emptyRh, nullAuthenticator()) //emptyRh -> nullAuthenticator
