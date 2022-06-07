@@ -90,14 +90,14 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
                 Request(operation = Some(IncrementAsObj), //now sending an UPDATE op
                   ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
-            } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
+            } yield response.authenticatedRh should be(firstResponse.authenticatedRh)
           }
         }
 
         describe("and OHS is not current and the requested operation is a query") {
           lazy val responseForQueryWithOutdatedOhs = for {
             _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-              Request(operation = Some(new Increment()),
+              Request(operation = Some(Increment()),
                 ohs = emptyOhs(serverIds)))
             response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
               Request(operation = Some(GetObj()), //sending a QUERY operation

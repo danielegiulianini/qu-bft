@@ -2,7 +2,9 @@ package qu.model
 
 import qu.model.ConcreteQuModel.ConcreteLogicalTimestamp
 import qu.model.StatusCode.StatusCode
+
 import scala.collection.SortedSet
+import scala.math.Ordered.orderingToOrdered
 
 
 trait QuModel {
@@ -180,6 +182,9 @@ trait AbstractAbstractQuModel extends QuModel {
     (opType, latestObjectVersion, latestBarrierVersion)
   }
 
+  def prune(rh: ReplicaHistory, ltCoOfMostRecentUpdate: LogicalTimestamp): ReplicaHistory =
+    rh.filter { case (lt, _) => lt >= ltCoOfMostRecentUpdate }
+    
   def represent[T, U](operation: Option[Operation[T, U]]): OperationRepresentation
 
   def represent(OHSRepresentation: OHS): OHSRepresentation
