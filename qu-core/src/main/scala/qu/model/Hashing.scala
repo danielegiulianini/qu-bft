@@ -11,7 +11,7 @@ trait Hashing {
   override def represent(ohs: OHS): OHSRepresentation =
     hashObject(ohs)
 
-  private def hashObject(obj: Any): String =
+   def hashObject(obj: Any): String =
     //obj.hashCode().toString //obj.toString().md5.hex   //since obj is never null Objects.hashcode not required...(not to use in distributed applications
   {
     import java.nio.charset.StandardCharsets

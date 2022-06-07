@@ -21,7 +21,7 @@ import qu.model.SharedContainer.keysForServer
 import scala.language.postfixOps
 import scala.math.Ordered.orderingToOrdered
 
-class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers with OHSFixture2 {
+class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers with OHSFixture {
 
 
   //todo: could improve passing only timestamp by (instead of all the params)
@@ -211,7 +211,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   val exampleServersKeys: Map[ServerId, Map[ConcreteQuModel.ServerId, ServerId]] =
     exampleServersIds.map(id => id -> keysForServer(id, exampleServersIds.toSet)).toMap
   val r = 2
-  val q = 4
+  val q = 3
   println("la ohs con inline method *******************************")
   println(ohsWithInlineMethodFor(exampleServersKeys, r))
   println("++++++++++++++la classify lo sclassifica come: " + classify(ohsWithInlineMethodFor(exampleServersKeys, r), r, q)._1)
@@ -270,19 +270,23 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     describe("when it is set up from a ohs with an established barrier as latest ") {
       val ohsClassifiedAsCopy = ohsWithCopyFor(exampleServersKeys)
       val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsCopy, q, r, clientId.get)
-      val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, false, r).get
+      val (_, latObj, _) = classify(ohs = ohsClassifiedAsCopy, quorumThreshold = q, repairableThreshold = r)
+      val (latestLt, latestLtCo) = latObj.get
+
+      //previous: val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, false, r).get
 
       it("should return a copy as operation type") {
         opType should be(COPY)
       }
       it("should return the correct lt as the new lt") {
+        lt.time should be(latestTime(ohsClassifiedAsCopy).time + 1)
         lt.barrierFlag should be(false)
         lt.clientId should be(clientId)
         lt.operation should be(ltCo.operation)
         lt.ohs should be(Some(represent(ohsClassifiedAsCopy)))
       }
       it("should return the latest object version lt as the ltCo") {
-        ltCo should be(latestLt)
+        ltCo should be(latestLtCo)
       }
       it("should return the latest barrier version lt as the current lt") {
         ltCur should be({

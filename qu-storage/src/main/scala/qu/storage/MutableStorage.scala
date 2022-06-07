@@ -27,7 +27,7 @@ abstract class MutableStorage[U: TypeTag] {
 
 //can also this be the default of qu.storage.StorageWithMutable
 class NonThreadSafeMutableStorage[U:TypeTag] extends MutableStorage[U] {
-  override val storage: mutable.Map[universe.TypeTag[_], mutable.Map[ConcreteQuModel.MyLogicalTimestamp, (U, Option[Any])]] = MutableMap[TypeTag[_], MutableMap[LogicalTimestamp, (U, Option[Any])]]()
+  override val storage: mutable.Map[universe.TypeTag[_], mutable.Map[ConcreteQuModel.ConcreteLogicalTimestamp, (U, Option[Any])]] = MutableMap[TypeTag[_], MutableMap[LogicalTimestamp, (U, Option[Any])]]()
 }
 
 

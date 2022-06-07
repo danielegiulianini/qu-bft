@@ -1,46 +1,59 @@
 package qu.model
 
-import qu.model.ConcreteQuModel.{
-  Candidate, Key, OHS, ReplicaHistory, ServerId, authenticateRh, emptyCandidate, emptyLT,
-  α, ConcreteLogicalTimestamp => LT
-}
+import qu.model.Commands.{GetObj, Increment}
+import qu.model.ConcreteQuModel.{Candidate, Key, OHS, OHSRepresentation, OperationRepresentation, ReplicaHistory, ServerId, authenticateRh, emptyCandidate, emptyLT, emptyOhs, represent, α, ConcreteLogicalTimestamp => LT}
 
 import scala.collection.immutable.{Map, List => RH}
 import scala.language.postfixOps
 
-//todo can also be a object of utilities (instead of a trait to mix)
+
+//some utilities for constructing ohs, rhs and authenticators (can also be a object of utilities
+// (instead of a trait to mix)
 trait OHSFixture {
-  //some utilities for constructing ohs, rhs and authenticators
+  val aEmptyOhsRepresentation: Option[OperationRepresentation] = emptyOhsRepresentation(List())
 
-  def emptyOhsRepresentation(servers: List[ServerId]): Some[Key] = Some("ohsrepr") //represent(emptyOhs(servers)))
+  def emptyOhsRepresentation(servers: List[ServerId]): Some[OperationRepresentation] =
+    Some(represent(emptyOhs(servers.toSet))) //Some("ohsrepr")
 
-  val aOperationRepresentation: Some[Key] = Some("oprepr") //represent[Int, Int](Some(new GetObj[Int]())))
+  val aOperationRepresentation: Some[OperationRepresentation] =
+    Some(represent[Unit, Int](Some(Increment()))) //Some("oprepr")
+
+  def aCandidate(ltTime: Int, ltCoTime: Int): Candidate = (aLt(ltTime), aLt(ltCoTime))
+  def aCandidate(ltTime: Int, ltCoTime: Int, serversIds: Set[ServerId]): Candidate = (aLtWithServersIds(ltTime, serversIds = serversIds), aLtWithServersIds(ltCoTime, serversIds=serversIds))
+
+  def aLt(time: Int, barrierFlag: Boolean = false, clientId: Option[String] =
+  Some("client1"), opRepr: Option[OperationRepresentation] = aOperationRepresentation, ohsRepr: Option[OHSRepresentation] = aEmptyOhsRepresentation): LT =
+    LT(time, barrierFlag, clientId, opRepr, ohsRepr)
+
+  def aLtWithServersIds(time: Int, barrierFlag: Boolean = false, clientId: Option[String] =
+  Some("client1"), opRepr: Option[OperationRepresentation] = aOperationRepresentation, serversIds: Set[ServerId]): LT =
+    LT(time, barrierFlag, clientId, opRepr, emptyOhsRepresentation(serversIds.toList))
 
   def rhsWithBarrierFor(serverIds: List[ServerId]): Map[ServerId, ReplicaHistory] = {
     //order < r
     serverIds.
       zipWithIndex.map { case (sid, time) => sid -> RH(
       emptyCandidate,
-      (LT(time, false, Some("client1"), aOperationRepresentation, emptyOhsRepresentation(serverIds)),
+      (LT(time, barrierFlag = false, Some("client1"), aOperationRepresentation, emptyOhsRepresentation(serverIds)),
         emptyLT))
     }.toMap
   }
 
-  def unanimousRhsFor(serverIds: List[ServerId], barrierFlag: Boolean): Map[ServerId, ReplicaHistory] = {
+  def twoCandidatesUnanimousRhsFor(serverIds: List[ServerId], barrierFlag: Boolean): Map[ServerId, ReplicaHistory] = {
     //to be a method (or a copy) order must be >= q (if order == n (like here) then order >= q)
-    serverIds.map(sid => sid -> RH(
+    serverIds.map(_ -> RH(
       emptyCandidate,
       (LT(1, barrierFlag, Some("client1"), aOperationRepresentation, emptyOhsRepresentation(serverIds)),
         emptyLT))).toMap
   }
 
   def unanimousRhsFor(serverIds: List[ServerId], candidates: RH[Candidate]): Map[ServerId, ReplicaHistory] = {
-    serverIds.map(sid => sid -> candidates).toMap
+    serverIds.map(_ -> candidates).toMap
   }
 
   def rhsWithMethodFor(serverIds: List[ServerId]): Map[ServerId, ReplicaHistory] = {
     //to be a method order must be >= q (if order == n then order >= q)
-    unanimousRhsFor(serverIds, false)
+    twoCandidatesUnanimousRhsFor(serverIds, barrierFlag = false)
   }
 
   def rhsWithInlineFor(serverIds: List[ServerId], barrierFlag: Boolean, repairableThreshold: Int): Map[ServerId, ReplicaHistory] = {
@@ -67,10 +80,10 @@ trait OHSFixture {
   }
 
   def rhsWithLatestTime(serverIds: List[ServerId]): Map[ServerId, ReplicaHistory] =
-    unanimousRhsFor(serverIds, true)
+    twoCandidatesUnanimousRhsFor(serverIds, barrierFlag = true)
 
   def rhsWithCopyFor(serverIds: List[ServerId]): Map[ServerId, ReplicaHistory] =
-    unanimousRhsFor(serverIds, true)
+    twoCandidatesUnanimousRhsFor(serverIds, barrierFlag = true)
 
   def generateOhsFromRHsAndKeys(rhs: Map[ServerId, ReplicaHistory], keys: Map[ServerId, Map[ServerId, Key]]): OHS = {
     keys.map { case (serverId, serverKeys) => serverId ->
@@ -83,12 +96,12 @@ trait OHSFixture {
 
   def ohsWithInlineMethodFor(serverKeys: Map[ServerId, Map[ServerId, Key]], repairableThreshold: Int): OHS =
     generateOhsFromRHsAndKeys(rhsWithInlineFor(serverKeys.keySet.toList,
-      false,
+      barrierFlag = false,
       repairableThreshold), serverKeys)
 
   def ohsWithInlineBarrierFor(serverKeys: Map[ServerId, Map[ServerId, Key]], repairableThreshold: Int): OHS =
     generateOhsFromRHsAndKeys(rhsWithInlineFor(serverKeys.keySet.toList,
-      true,
+      barrierFlag = true,
       repairableThreshold), serverKeys)
 
   def ohsWithBarrierFor(serverKeys: Map[ServerId, Map[ServerId, Key]]): OHS =
@@ -97,12 +110,14 @@ trait OHSFixture {
   def ohsWithCopyFor(serverKeys: Map[ServerId, Map[ServerId, Key]]): OHS =
     generateOhsFromRHsAndKeys(rhsWithCopyFor(serverKeys.keySet.toList), serverKeys)
 
-  def ohsWithLatestTime(serverKeys: Map[ServerId, Map[ServerId, Key]]): OHS =
-    generateOhsFromRHsAndKeys(rhsWithCopyFor(serverKeys.keySet.toList), serverKeys)
+  /*def ohsWithLatestTime(serverKeys: Map[ServerId, Map[ServerId, Key]]): OHS =
+    generateOhsFromRHsAndKeys(rhsWithCopyFor(serverKeys.keySet.toList), serverKeys)*/
 
   def ohsWithInvalidAuthenticatorFor(ohs: OHS, serverId: ServerId): OHS = {
     ohs.map { case (sid, (rh, a)) => (sid, (rh, a.map { case (serverId2, hmac) =>
-      if (serverId2 == serverId) (serverId2, "corrupted") else (serverId2, hmac )})) }
+      if (serverId2 == serverId) (serverId2, "corrupted") else (serverId2, hmac)
+    }))
+    }
   }
 }
 
@@ -113,22 +128,3 @@ trait OHSFixture {
 //  override type AuthenticatedReplicaHistory = (ReplicaHistory, α)
 //  override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
-
-/*
-  def invalidateAuthenticatorForServer(serverKeys: Map[ServerId, Map[ServerId, Key]],
-                                       serverId: ServerId,
-                                       reparairbleThreshlold: Int): α = {
-    val (_, originalAuthenticator) = ohsWithInlineMethodFor(serverKeys, reparairbleThreshlold)
-    originalAuthenticator.map {
-      case (id, _) if id == serverId => id -> "corrupted"
-    }
-
-    keys.map { case (serverId, serverKeys) => serverId ->
-      (rhs(serverId), authenticateRh(rhs(serverId), serverKeys))
-    }
-  }
-
-  def ohsWithInvalidAuthenticatorFor2(ohs: OHS, serverId: ServerId): OHS = {
-    //lascio quella che c'è altrimenti
-    ohs.map { case (sid, (rh, _)) if sid == serverId => (sid, (rh, invalidateAuthenticatorForServer(sid))) }
-  }*/

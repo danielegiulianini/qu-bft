@@ -1,14 +1,13 @@
 package qu
 
-import auth.Constants
+import auth.{Constants, Token}
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc._
 import qu.GrpcClientStub.{methodName, serviceName}
 import scalapb.grpc.ClientCalls
 
+import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
-
-//import that declares specific dependency
 
 //a stub reusable between client and server sides
 abstract class GrpcClientStub[Transferable[_]](val chan: ManagedChannel)
@@ -16,18 +15,22 @@ abstract class GrpcClientStub[Transferable[_]](val chan: ManagedChannel)
 
   protected val callOptions: CallOptions = CallOptions.DEFAULT
 
-  def send2[InputT: Transferable, OutputT: Transferable](toBeSent: InputT):
+  def send[InputT: Transferable, OutputT: Transferable](toBeSent: InputT):
   Future[OutputT] = {
+
     //todo must add timeout
     val md = generateMethodDescriptor5[InputT, OutputT](methodName, serviceName)
     ClientCalls.asyncUnaryCall(chan, md, callOptions, toBeSent)
   }
 
-  override def shutdown(): Unit = chan.shutdown()
+  override def shutdown(): Unit = {
+    chan.shutdown()
+    chan.awaitTermination(1000, TimeUnit.SECONDS)
+  }
 }
 
 
-abstract class JwtGrpcClientStub[Transferable[_]](override val chan: ManagedChannel, val token: String)
+abstract class JwtGrpcClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)
   extends GrpcClientStub[Transferable](chan) {
   override val callOptions = CallOptions.DEFAULT.withCallCredentials(new AuthenticationCallCredentials(token))
 }
@@ -35,16 +38,16 @@ abstract class JwtGrpcClientStub[Transferable[_]](override val chan: ManagedChan
 import java.util.concurrent.Executor
 
 
-//class qu.AuthenticationCallCredentials(var token: String) extends CallCredentials {
-
 //this is used client side only?
-class AuthenticationCallCredentials(var value: String) extends CallCredentials {
-  override def applyRequestMetadata(requestInfo: CallCredentials.RequestInfo, executor: Executor, metadataApplier: CallCredentials.MetadataApplier): Unit = {
+class AuthenticationCallCredentials(var token: Token) extends CallCredentials {
+  override def applyRequestMetadata(requestInfo: CallCredentials.RequestInfo,
+                                    executor: Executor,
+                                    metadataApplier: CallCredentials.MetadataApplier): Unit = {
     executor.execute(() => {
-      def foo() = {
+      def fillHeadersWithToken() = {
         try {
           val headers = new Metadata
-          headers.put(Constants.AUTHORIZATION_METADATA_KEY, String.format("%s %s", Constants.BEARER_TYPE, value))
+          headers.put(Constants.AUTHORIZATION_METADATA_KEY, String.format("%s %s", Constants.BEARER_TYPE, token.username))
           metadataApplier.apply(headers)
         } catch {
           case e: Throwable =>
@@ -52,42 +55,27 @@ class AuthenticationCallCredentials(var value: String) extends CallCredentials {
         }
       }
 
-      foo()
+      fillHeadersWithToken()
     })
   }
 
-  override def thisUsesUnstableApi(): Unit = {
-    // noop
-  }
+  override def thisUsesUnstableApi(): Unit = {}
 }
 
 
 object GrpcClientStub {
-
-
-  //decide where to inject (are grpc-specific constants)
-  /*val methodName = "request"
-  val serviceName = "io.grpc.KeyValueService"*/
 
   val methodName = QuServiceDescriptors.OPERATION_REQUEST_METHOD_NAME
   val serviceName = QuServiceDescriptors.SERVICE_NAME
 
   class UnauthenticatedJacksonClientStub(channel: ManagedChannel)
     extends GrpcClientStub[JavaTypeable](channel) with JacksonMethodDescriptorFactory
+      with CachingMethodDescriptorFactory[JavaTypeable]
 
-
-  class JwtJacksonClientStub(channel: ManagedChannel, token: String)
+  class JwtJacksonClientStub(channel: ManagedChannel, token: Token)
     extends JwtGrpcClientStub[JavaTypeable](channel, token) with JacksonMethodDescriptorFactory
+      with CachingMethodDescriptorFactory[JavaTypeable]
 
-  //todo server specific, must go elsewhere
-  /*def JacksonClientStubFactory: RecipientInfo => UnauthenticatedJacksonClientStub = serverInfo => new UnauthenticatedJacksonClientStub(
-    ManagedChannelBuilder.forAddress(serverInfo.ip, serverInfo.port).build)*/
-
-  //esempio di metodo di conversione degli impliciti (send2 li richiede, prova no)
-  /*def prova[T, U]() = {
-    val a = new UnauthenticatedJacksonClientStub(null)
-    a.send2[Request[T, U], Response[Option[T]]](new Request[T, U](null, null))
-  }*/
 }
 
 

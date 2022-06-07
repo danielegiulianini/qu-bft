@@ -7,7 +7,7 @@ import qu.auth.AuthGrpc.AuthStub
 import qu.auth._
 
 import java.util.concurrent.TimeUnit
-import java.util.logging.Logger
+import java.util.logging.{Level, Logger}
 import scala.concurrent.Future
 
 object AuthClient {
@@ -53,19 +53,12 @@ class AuthClient private(
   import scala.concurrent.ExecutionContext.Implicits.global //todo temporneous
 
   def register(name: String, password: String): Future[RegisterResponse] = {
-    /*blocking:
-    try {
-      val response = futureStub.register(request)
-      //logger.info("Greeting: " + response.)
-    }
-    catch {
-      case e: StatusRuntimeException =>
-        logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus)
-    }*/
+    //async exception mapping
     logger.info("Will try to greet " + name + " ...")
     val request = User(username = name, password = password)
     mapThrowable(futureStub.register(request), { case error: StatusRuntimeException =>
       //probabile che qui non dica nulla ... al client... (infatti è così)... quindi posso già wrappare qualche exception...
+      logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
       new ServiceException(error.getCause)
     })
   }
@@ -76,6 +69,7 @@ class AuthClient private(
     mapThrowable(futureStub.authorize(Credentials(username, password)),
       { case error: StatusRuntimeException =>
         //probabile che qui non dica nulla ... al client...
+        logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
         new ServiceException(error.getCause)
       })
   }

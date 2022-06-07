@@ -1,13 +1,22 @@
 package qu.model
 
+//inheritance and command pattern...
 trait Operations {
   self: AbstractAbstractQuModel =>
 
-  override type Operation[ReturnValueT, ObjectT] = ObjectT => (ObjectT, ReturnValueT)
+  //good, but non working:
+  // override type Operation[ReturnValueT, ObjectT] = ObjectT => (ObjectT, ReturnValueT)
+  //trait MyOperation[ReturnValueT, ObjectT] extends (ObjectT => (ObjectT, ReturnValueT)) {
+  trait MyOperation[ReturnValueT, ObjectT] {
+    def compute(obj: ObjectT): (ObjectT, ReturnValueT)
+  }
+
+
+  override type Operation[ReturnValueT, ObjectT] = MyOperation[ReturnValueT, ObjectT]
 
   trait AbstractOperation[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT] {
     //template method pattern
-    override def apply(obj: ObjectT): (ObjectT, ReturnValueT) = (updateObject(obj), whatToReturn(obj))
+    override def compute(obj: ObjectT): (ObjectT, ReturnValueT) = (updateObject(obj), whatToReturn(obj))
 
     def updateObject(obj: ObjectT): ObjectT
 
@@ -35,7 +44,6 @@ trait Operations {
     final override def whatToReturn(obj: ObjectT): Unit = {}
   }
 
-  class GetObj[ObjectT]() extends QueryReturningObject[ObjectT]
 
   //todo here on some perplexities...
   trait OperationReturningObjectWithoutUpdate[ObjectT] extends AbstractOperation[ObjectT, ObjectT] {

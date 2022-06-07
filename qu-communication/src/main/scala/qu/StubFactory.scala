@@ -4,15 +4,26 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.{Grpc, InsecureChannelCredentials, TlsChannelCredentials}
 import qu.GrpcClientStub.{JwtJacksonClientStub, UnauthenticatedJacksonClientStub}
+import qu.auth.Token
 
+trait AbstractRecipientInfo {
+  def ip: String
 
-case class RecipientInfo(ip:String, port:Int)
+  def port: Int
+}
+
+case class RecipientInfo(ip: String, port: Int) extends AbstractRecipientInfo
+
+object RecipientInfo {
+  //could be a method of RecipientInfo
+  def id(serverInfo: AbstractRecipientInfo): String = serverInfo.ip + ":" + serverInfo.port
+}
 
 //equivalent of multiple applys
 object StubFactories {
   //here key is ignored
 
-  type StubFactory[Transportable[_]] = (String, Int) => GrpcClientStub[Transportable]  //or def stubFactory[Transportable[_]](ip:String, port:Int):GrpcClientStub[Transportable] = ???
+  type StubFactory[Transportable[_]] = (String, Int) => GrpcClientStub[Transportable] //or def stubFactory[Transportable[_]](ip:String, port:Int):GrpcClientStub[Transportable] = ???
 
   val inNamedProcessJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port) => {
     //could also use for address/for port
@@ -35,8 +46,7 @@ object StubFactories {
     new UnauthenticatedJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port)
       .build)
 
-  type SenderToken = String
-  type AuthenticatedStubFactory[Transportable[_]] = (SenderToken, String, Int) => JwtGrpcClientStub[Transportable]
+  type AuthenticatedStubFactory[Transportable[_]] = (Token, String, Int) => JwtGrpcClientStub[Transportable]
 
   val inProcessJacksonJwtStubFactory: AuthenticatedStubFactory[JavaTypeable] = (token, ip, port) =>
     new JwtJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build, token)
@@ -63,11 +73,6 @@ object StubFactories {
     Grpc.newChannelBuilder(serverInfo.ip, TlsChannelCredentials.create())
 }
 */
-
-
-
-
-
 
 
 /*object Shared {

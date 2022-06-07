@@ -5,7 +5,7 @@ import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.scalatest.flatspec.FixtureAnyFlatSpecLike
 import org.scalatest._
 import qu.StubFactories.{inNamedProcessJacksonStubFactory, inProcessJacksonJwtStubFactory}
-import qu.auth.Constants
+import qu.auth.{Constants, Token}
 
 
 trait AuthStubFixture extends BeforeAndAfterAll {
@@ -30,8 +30,8 @@ trait AuthStubFixture extends BeforeAndAfterAll {
   protected val serverInfo: RecipientInfo
   protected val clientId: String
 
-  private def getJwt: String = {
-    Jwts.builder.setSubject(clientId).signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact
+  private def getJwt: Token = {
+    Token(Jwts.builder.setSubject(clientId).signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact)
   }
 }
 

@@ -15,10 +15,11 @@ class ImmutableStorageSpec extends AnyFunSpec {
       }
     }
 
-    describe("An immutable storage"){
+    describe("An immutable storage") {
       describe("when ") {
 
       }
+    }
   }
 }
 

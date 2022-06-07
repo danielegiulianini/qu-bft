@@ -46,8 +46,11 @@ trait ServersFixture {
   val MalevolentServersCount = 0
 
   val thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount)
+
+  //ohs
   val aOhsWithMethod: OHS = ohsWithMethodFor(keysByServer)
   val aOhsWithInlineMethod: OHS = ohsWithInlineMethodFor(keysByServer, thresholds.r)
   val aOhsWithInlineBarrier: OHS = ohsWithInlineBarrierFor(keysByServer, thresholds.r)
   val aOhsWithBarrier: OHS = ohsWithBarrierFor(keysByServer)
+  val aOhsWithCopy: OHS = ohsWithCopyFor(serverKeys = keysByServer)
 }

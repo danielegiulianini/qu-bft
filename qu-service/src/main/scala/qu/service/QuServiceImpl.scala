@@ -189,12 +189,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
           || opType == ConcreteOperationTypes.INLINE_METHOD
           || opType == ConcreteOperationTypes.COPY) {
           logger.log(Level.INFO, "Storing updated (object, answer): (" + objToWorkOn + ", " + answerToReturn + ") with lt " + lt.time, 2)
-          storage = storage.store[AnswerT](lt, (objToWorkOn, answerToReturn)) //answer.asInstanceOf[AnswerT])
-
-          logger.log(Level.INFO, "AAAAAAAAAAAAAAAA fetching just stored object version ", 2)
-
-          val (_, answer) = storage.retrieve[AnswerT](lt)
-            .getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
+          storage = storage.store[AnswerT](lt, (objToWorkOn, answerToReturn))
 
           //todo: replica history pruning
         }

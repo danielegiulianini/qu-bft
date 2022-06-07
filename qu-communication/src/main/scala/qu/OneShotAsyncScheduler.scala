@@ -10,7 +10,7 @@ import scala.concurrent.{Future, Promise}
 class OneShotAsyncScheduler(poolSize: Int) {
   private implicit val scheduler: SchedulerService = Scheduler.fixedPool("schedulerService", poolSize)
 
-  def scheduleOnceAsPromise(duration: FiniteDuration): Future[Void] = {
+  def scheduleOnceAsPromise(duration: FiniteDuration): Future[Unit] = {
     val promise = Promise()
     scheduler.scheduleOnce(duration)(())
     promise.future

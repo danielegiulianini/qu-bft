@@ -59,63 +59,66 @@ object CachingServiceServerDefinitionBuilder {
 }
 */
 //QuServiceImplBase without builder... (each method could or not return the QuServiceImplBase itself)
-abstract class AbstractQuService[Transportable[_], U](
-                                                       //dependencies chosen by programmer
-                                                       private val methodDescriptorFactory: MethodDescriptorFactory[Transportable],
-                                                       private val policyFactory: ServerQuorumPolicyFactory[Transportable, U],
-                                                       //dependencies chosen by user (could go as setter)
-                                                       protected val thresholds: QuorumSystemThresholds,
-                                                       protected val ip: String,
-                                                       protected val port: Int,
-                                                       protected val privateKey: String,
-                                                       protected val obj: U)
-  extends BindableService with QuService[Transportable, U] {
+abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chosen by programmer
+                                                             private val methodDescriptorFactory: MethodDescriptorFactory[Transportable],
+                                                             private val policyFactory: ServerQuorumPolicyFactory[Transportable, ObjectT],
+                                                             //dependencies chosen by user (could go as setter)
+                                                             protected val thresholds: QuorumSystemThresholds,
+                                                             protected val ip: String,
+                                                             protected val port: Int,
+                                                             protected val privateKey: String,
+                                                             protected val obj: ObjectT)
+  extends BindableService with QuService[Transportable, ObjectT] {
   private val ssd = CachingServiceServerDefinitionBuilder2(SERVICE_NAME)
 
-  protected var servers = Set[RecipientInfo]()
+  protected var servers: Set[RecipientInfo] = Set[RecipientInfo]()
   protected var keysSharedWithMe: Map[ServerId, Key] = Map[ServerId, String]() //this contains mykey too (needed)
-  protected var quorumPolicy: ServerQuorumPolicy[Transportable, U] = policyFactory(servers, thresholds)
+  protected var quorumPolicy: ServerQuorumPolicy[Transportable, ObjectT] = policyFactory(servers, thresholds)
 
   insertKeyForServer(id(RecipientInfo(ip, port)), privateKey)
 
   //this precluded me the possibility of using scala name constr as builder
   def addOperationOutput[OperationOutputT]()(implicit
-                                             transportableRequest: Transportable[Request[OperationOutputT, U]],
+                                             transportableRequest: Transportable[Request[OperationOutputT, ObjectT]],
                                              transportableResponse: Transportable[Response[Option[OperationOutputT]]],
                                              transportableLogicalTimestamp: Transportable[LogicalTimestamp],
-                                             transportableObjectSyncResponse: Transportable[ObjectSyncResponse[U]],
-                                             last: TypeTag[OperationOutputT]): AbstractQuService[Transportable, U] = {
+                                             transportableObjectSyncResponse: Transportable[ObjectSyncResponse[ObjectT]],
+                                             transportableObjectRequest: Transportable[Request[Object, ObjectT]],
+                                             transportableObjectResponse: Transportable[Response[Option[Object]]],
+                                             last: TypeTag[OperationOutputT]): AbstractQuService[Transportable, ObjectT] = {
     //could be a separate reusable utility to plug into ssd (by implicit conversion)
     def addMethod[X: Transportable, Y: Transportable](handler: ServerCalls.UnaryMethod[X, Y]): Unit =
       ssd.addMethod(
         methodDescriptorFactory.generateMethodDescriptor5[X, Y](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME),
         ServerCalls.asyncUnaryCall[X, Y](handler))
 
-    addMethod[Request[OperationOutputT, U], Response[Option[OperationOutputT]]]((request, obs) => sRequest(request, obs))
-    addMethod[LogicalTimestamp, ObjectSyncResponse[U]]((request, obs) => sObjectRequest(request, obs))
+
+    addMethod[Request[OperationOutputT, ObjectT], Response[Option[OperationOutputT]]]((request, obs) => sRequest(request, obs))
+    addMethod[LogicalTimestamp, ObjectSyncResponse[ObjectT]]((request, obs) => sObjectRequest(request, obs))
+    //adding mds needed for handling barrier and copy requests
+    addMethod[Request[Object, ObjectT], Response[Option[Object]]]((request, obs) => sRequest(request, obs))
+    //this is not needed?: addMethod[LogicalTimestamp, ObjectSyncResponse[Object]]((request, obs) => sObjectRequest(request, obs))
     this
   }
 
-  def addServer(ip: String, port: Int, keySharedWithMe: String): AbstractQuService[Transportable, U] = {
-    println("------------------aggiungo il server con ip " + ip + " e port: " + port)
-    servers = servers +RecipientInfo(ip, port)
+  def addServer(ip: String, port: Int, keySharedWithMe: String): AbstractQuService[Transportable, ObjectT] = {
+    servers = servers + RecipientInfo(ip, port)
     insertKeyForServer(id(ServerInfo(ip, port, keySharedWithMe)), keySharedWithMe)
     quorumPolicy = policyFactory(servers, thresholds)
     this
   }
 
-  def addServer(serverInfo: ServerInfo): AbstractQuService[Transportable, U] = {
+  def addServer(serverInfo: ServerInfo): AbstractQuService[Transportable, ObjectT] = {
     Objects.requireNonNull(serverInfo) //require(serverInfo != null)
     insertKeyForServer(id(serverInfo), serverInfo.keySharedWithMe)
     addServer(serverInfo.ip, serverInfo.port, serverInfo.keySharedWithMe)
   }
 
   private def insertKeyForServer(id: ServerId, keySharedWithMe: Key): Unit = {
-    println("------------------aggiungo il server con id " + id)
     keysSharedWithMe = keysSharedWithMe + (id -> keySharedWithMe)
   }
 
-  override def bindService(): ServerServiceDefinition = ssd.build
+  override def bindService(): ServerServiceDefinition = ssd.build()
 }
 
 

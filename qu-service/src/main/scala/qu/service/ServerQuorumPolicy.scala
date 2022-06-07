@@ -3,7 +3,7 @@ package qu.service
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.RecipientInfo.id
 import qu.StubFactories.unencryptedDistributedJacksonStubFactory
-import qu.{GrpcClientStub, RecipientInfo, ResponsesGatherer, Shutdownable}
+import qu.{GrpcClientStub, JwtGrpcClientStub, RecipientInfo, ResponsesGatherer, Shutdownable}
 import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
 
@@ -22,8 +22,7 @@ class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId,
                                                           private val thresholds: QuorumSystemThresholds,
                                                           private val retryingTime: FiniteDuration = 3.seconds)
   extends ResponsesGatherer[Transportable](servers, retryingTime)
-    with ServerQuorumPolicy[Transportable, ObjectT]
-    with Shutdownable {
+    with ServerQuorumPolicy[Transportable, ObjectT]{
 
   override def objectSync(lt: LogicalTimestamp)
                          (implicit
@@ -37,10 +36,16 @@ class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId,
   }
 }
 
+class JacksonSimpleBroadcastServerPolicy[ObjectT](private val thresholds: QuorumSystemThresholds,
+                                                  private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])
+  extends SimpleServerQuorumPolicy[JavaTypeable, ObjectT](servers, thresholds = thresholds) with Shutdownable
+
 
 object ServerQuorumPolicy {
+
   type ServerQuorumPolicyFactory[Transportable[_], U] =
-    (Set[RecipientInfo], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, U]
+    (Set[RecipientInfo], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, U] with Shutdownable
+
 
   def simpleDistributedJacksonServerQuorumFactory[U](): ServerQuorumPolicyFactory[JavaTypeable, U] =
     (serversSet, thresholds) => new SimpleServerQuorumPolicy[JavaTypeable, U](

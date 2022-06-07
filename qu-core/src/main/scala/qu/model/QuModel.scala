@@ -70,12 +70,12 @@ trait AbstractAbstractQuModel extends QuModel {
   type Key = String
 
   //most general
-  def fillAuthenticator(keys: Map[ServerId, String])(fun: Key => HMAC): α =
+ /* def fillAuthenticator(keys: Map[ServerId, String])(fun: Key => HMAC): α =
     keys.view.mapValues(fun(_)).toMap
 
   def fillAuthenticatorFor(keys: Map[ServerId, Key])(serverIdToUpdate: ServerId)(fun: Key => HMAC): α =
     fillAuthenticator(keys.view.filterKeys(_ == serverIdToUpdate).toMap)(fun) //fillAuthenticator(keys.filter(kv => kv._1  == serverIdToUpdate))(fun)
-
+*/
   def nullAuthenticator(): α //= Map[String, String]()
 
   val emptyAuthenticatedRh: AuthenticatedReplicaHistory = (emptyRh, nullAuthenticator()) //emptyRh -> nullAuthenticator
@@ -166,6 +166,8 @@ trait AbstractAbstractQuModel extends QuModel {
     (latestObjectVersion, latestBarrierVersion) match {
       //before the most restrictive (pattern matching implicitly breaks)
       case (Some((objectLt, objectLtCo)), _) =>{
+        println("l'order del cand nella ohs is: " + order((objectLt, objectLtCo), ohs) + ", q is : " + quorumThreshold)
+
         println("1o test: " + ( objectLt == ltLatest) + ", il latest time is: " + ltLatest  + "l'objectLt:" + objectLt)
         println("2o test: " +( order((objectLt, objectLtCo), ohs) >= repairableThreshold))
 
@@ -201,13 +203,15 @@ trait AbstractAbstractQuModel extends QuModel {
       ( //opType
         opType,
         //candidate
+        {println("(setup:)l'operartion che raprsenrto e inserisco nell'lt is: " + operation)
+          println("(setup:)l'hashcode della operation is: " + operation.hashCode().toString)
         (ConcreteLogicalTimestamp(
           time = latestTime(ohs).time + 1,
           barrierFlag = false,
           clientId = Some(clientId),
           operation = Some(represent[T, U](operation)),
           ohs = Some(represent(ohs))),
-          conditionedOnLogicalTimestamp),
+          conditionedOnLogicalTimestamp)},
         //ltCurrent
         conditionedOnLogicalTimestamp)
     } else if (opType == ConcreteOperationTypes.BARRIER) {

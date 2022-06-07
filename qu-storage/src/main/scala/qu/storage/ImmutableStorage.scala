@@ -17,13 +17,15 @@ class ImmutableStorage[U: TypeTag] private(private var storage:
   //qhy store could have option[response]?? for the first time ... the initial object!
   override def store[T: TypeTag](logicalTimestamp: LogicalTimestamp,
                                  objectAndAnswer: (U, Option[T])): ImmutableStorage[U] = {
+    println("from storage, storing with lt: " + logicalTimestamp)
+
     //se c' quell'aentrata allora c'p la mappa quindi aggiungi alla mappa
     //se non c'è allora crea una nuova mappa con quella entrata (stesso discorso dellacached)
-    println("lo storage before update is :" + storage)
+    //println("lo storage before update is :" + storage)
     val InnerMap = storage.getOrElse(Objects.requireNonNull(implicitly[TypeTag[T]]), Map()) //Map[LogicalTimestamp, (_, Option[_])]()
     val toInsert = logicalTimestamp -> objectAndAnswer
     val updtInnerMap = InnerMap + toInsert
-    println("afterUpdate  storage is :" + storage + (implicitly[TypeTag[T]] -> updtInnerMap))
+    //println("afterUpdate  storage is :" + storage + (implicitly[TypeTag[T]] -> updtInnerMap))
     new ImmutableStorage(storage + (implicitly[TypeTag[T]] -> updtInnerMap))
   }
 
@@ -37,6 +39,8 @@ class ImmutableStorage[U: TypeTag] private(private var storage:
   }
 
   override def retrieve[T: TypeTag](logicalTimestamp: LogicalTimestamp): Option[(U, Option[T])] = {
+    println("from storage, retrieving with lt: " + logicalTimestamp)
+
     val tmp = storage.get(implicitly[TypeTag[T]])
 
     tmp.flatMap(_.get(logicalTimestamp)
@@ -63,6 +67,7 @@ object UseCase2 extends App {
   //Map(TypeTag[Int] -> Map(ConcreteLogicalTimestamp(0,false,None,None,None) -> (2022,None)))(TypeTag[Unit],Map(ConcreteLogicalTimestamp(1,false,Some(GreetingClient),Some(-1409788869),Some(700963116)) -> (2023,Some(()))))
   var storageNew = ImmutableStorage[Int]()
   storageNew = storageNew.store[String](myLt, (2, Some("io"))) //type param is fundamental (if don't passed the typetag is nothing and nothig (literaly) is returned
+
   val retrieved4 = storageNew.retrieve[String](myLt) //type param is fundamental (if don't passed the typetag is nothing and nothig (literaly) is returned
   println("retrieved is: " + retrieved4)
 
