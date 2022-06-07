@@ -140,18 +140,14 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
 
                 //potrei simulare uno scambio (anziché one shot scenario) e verificare che continua a fare object sync sinché chiedo oggetto che non ha...
                 val op = Some(new Increment)
-                // val (lt, _) = latestCandidate(aOhsWithMethod, false, thresholds.r).get
-                println("la ohs con method: " + aOhsWithMethod)
                 val (_, (_, ltCo), _) = setup(op,
                   aOhsWithMethod,
                   quorumThreshold = thresholds.q,
                   repairableThreshold = thresholds.r,
                   clientId)
-                //classify(aOhsWithMethod, quorumThreshold = thresholds.q, repairableThreshold = thresholds.r)
                 (mockedQuorumPolicy.objectSync(_: LogicalTimestamp)(_: JavaTypeable[LogicalTimestamp],
                   _: JavaTypeable[ObjectSyncResponse[Int]]))
-                  .expects(ltCo /*ltCo*/
-                    /* * */ , *, *).returning(Future.successful(InitialObject + 1)) //per sicurezza ritorno il valore giusto
+                  .expects(ltCo, *, *).returning(Future.successful(InitialObject + 1)) //per sicurezza ritorno il valore giusto
 
                 for {
                   response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
@@ -168,23 +164,20 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               lazy val responseForUpdate = for {
                 response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
                   Request(operation = op,
-                    ohs = aOhsWithMethod))
+                    ohs = emptyOhs(serverIds)))
               } yield response
-              val (_, (lt, ltCo), _) = setup(op, aOhsWithMethod, thresholds.q, thresholds.r, clientId)
+              val (_, (lt, ltCo), _) = setup(op, emptyOhs(serverIds), thresholds.q, thresholds.r, clientId)
               val correctRh = serverRh.appended(lt -> ltCo)
 
               describe("and conditioned-on object is stored at service side") {
                 it("should not object sync") {
-                  (mockedQuorumPolicy.objectSync(_: LogicalTimestamp)(_: JavaTypeable[LogicalTimestamp],
-                    _: JavaTypeable[ObjectSyncResponse[Int]]))
-                    .expects(*, *, *).never()
+                  neverObjectSync()
                   succeed
                 }
               }
               it("should edit its replica history correctly") {
                 responseForUpdate.map(_.authenticatedRh._1 should be(correctRh))
                 //responseForUpdate.map(response => assert(response.authenticatedRh._1 == correctRh))
-
               }
               it("should update server authenticators correctly") {
                 println("at client side my keys are: " + keysByServer(id(quServer1)))
@@ -208,7 +201,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                     ohs = ohs))
               } yield response
               it("should not edit its replica history") {
-                responseForQuery.map(_.authenticatedRh._1 should be(emptyOhs(serverIds)(id(quServer1))._1))
+                responseForQuery.map(_.authenticatedRh._1 should be(emptyRh))
               }
               it("should succeed") {
                 responseForQuery.map(_.responseCode should be(SUCCESS))
