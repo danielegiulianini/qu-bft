@@ -2,7 +2,8 @@ package qu.service
 
 import io.grpc.Context
 import io.grpc.stub.StreamObserver
-import qu.MethodDescriptorFactory
+import qu.RecipientInfo.id
+import qu.{MethodDescriptorFactory, RecipientInfo}
 import qu.auth.Constants
 import qu.model.ConcreteQuModel.hmac
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
@@ -29,8 +30,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
                                                          override val port: Int,
                                                          override val privateKey: String,
                                                          override val obj: ObjectT,
-                                                         override val thresholds: QuorumSystemThresholds
-                                                       )
+                                                         override val thresholds: QuorumSystemThresholds)
   extends AbstractQuService[Transportable, ObjectT](methodDescriptorFactory, policyFactory, thresholds, ip, port, privateKey, obj) {
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
 
@@ -54,6 +54,8 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
   : Unit = {
     logger.log(Level.INFO, "request received from " + clientId.get, 2) //: " + clientId.get, 2)
     logger.log(Level.INFO, "request with ohs " + request.ohs, 2) //: " + clientId.get, 2)
+    //println("(sRequest:)la operation is: " +request.operation)
+    println("(sRequest:)l'hashcode di " + request.operation + " is: " + hashObject(request.operation)) //request.operation.hashCode().toString)
 
 
     def replyWith(response: Response[Option[AnswerT]]): Unit = {
@@ -62,33 +64,46 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
     }
 
     //todo not need to pass request if nested def
-    def executeOperation(request: Request[AnswerT, ObjectT], obj:ObjectT): (ObjectT, AnswerT) = {
-      //todo can actually happen that a malevolent client can make this exception happen and break the server? no, it's not breaking it!
-      request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state: if classify returns a (inline) method then operation should be defined (not none)")).compute(obj) //for {operation <- request.operation} operation.compute(obj)
+    def executeOperation(request: Request[AnswerT, ObjectT], obj: ObjectT): (ObjectT, AnswerT) = {
+      //todo can actually happen that a malevolent client can make this exception
+      // happen and break the server? no, it's not breaking it!
+      request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state: if " +
+        "classify returns a (inline) method operation should be defined (not none)")
+      ).compute(obj) //for {operation <- request.operation} operation.compute(obj)
     }
 
     val (replicaHistory, _) = authenticatedReplicaHistory
     var answerToReturn = Option.empty[AnswerT]
     var objToWorkOn = obj
 
-    logger.log(Level.INFO, "repairable Thresholds at service side is:" + thresholds.r, 2)
+    def cullRh(ohs: OHS): OHS = {
+      ohs. //todo map access like this (to authenticator) could raise exception
+        //if there's not the authenticator or if it is invalid the corresponding rh is culled
+        map { case (serverId, (rh, authenticator)) => {
+          println("ATTENTION: l'authenticator del server " + serverId + " is: \n" + authenticator)
+          println("l'authenticator contiene l'id? " + authenticator.contains(id(RecipientInfo(ip, port))))
+          if (authenticator.contains(id(RecipientInfo(ip, port))))
+            println ("l'hmac è corretto? " + (authenticator(id(RecipientInfo(ip, port))) == hmac(keysSharedWithMe(serverId), rh)))
 
 
-    //todo: to be removed (use the the one already prepared)
-    def getId(ip: String, port: Int) = ip + port
-
-    def cullRh(ohs: OHS): OHS = ohs. //todo map access like this (to authenticator) could raise exception
-      //if there's not the authenticator or if it is invalid the corresponding rh is culled
-      map { case (serverId, (rh, authenticator)) => if (!authenticator.contains(getId(ip, port)) || authenticator(getId(ip, port)) != hmac(keysSharedWithMe(serverId), rh))
-        (serverId, (emptyRh, authenticator)) else (serverId, (rh, authenticator)) //keep authentictor untouched (as in paper)
-      }
+            if (!authenticator.contains(id(RecipientInfo(ip, port))) ||
+              authenticator(id(RecipientInfo(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) {
+              println("CULLLLLEDDDD");
+              (serverId, (emptyRh, authenticator))
+            }
+            else (serverId, (rh, authenticator)) //keep authentictor untouched (as in paper)
+        }
+        }
+    }
 
     logger.log(Level.INFO, "culling rh...:", 2)
 
     //culling invalid Replica histories
     val updatedOhs = cullRh(request.ohs)
 
+    logger.log(Level.INFO, "SEEEEEEEEERVERRRRRRRRRRR la ohs updated is: " + updatedOhs, 2)
     val (opType, (lt, ltCo), ltCurrent) = setup(request.operation, updatedOhs, thresholds.q, thresholds.r, clientId.get())
+    logger.log(Level.INFO, "SEEEEEEEEERVERRRRRRRRRRR ltCo ritornato da setup is: " + ltCo, 2)
 
     //repeated request
     if (contains(replicaHistory, (lt, ltCo))) {
@@ -104,9 +119,9 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
       logger.log(Level.INFO, "the name of the oper class is " + request.operation.getOrElse(false).getClass, 2)
 
 
-   // optimistic query execution
+      // optimistic query execution
       if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) {
-        logger.log(Level.INFO, "Since query is required, optimistic query execution, retrieving obj with lt "+ lt, 2)
+        logger.log(Level.INFO, "Since query is required, optimistic query execution, retrieving obj with lt " + lt, 2)
         val obj = storage.retrieveObject(latestTime(replicaHistory))
           .getOrElse(throw new Error("inconsistent protocol state: if replica history has lt " +
             "older than ltcur store must contain ltcur too."))
@@ -133,20 +148,20 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
       || opType == ConcreteOperationTypes.COPY) {
       val objAndAnswer = storage.retrieve[AnswerT](lt) //retrieve[T, U](lt)
       if (objAndAnswer.isEmpty && ltCo > emptyLT) {
-        logger.log(Level.INFO, "object not available, object-syncing", 2)
+        logger.log(Level.INFO, "object not available, object-syncing for lt " + lt, 2)
         //todo here I require answer as Object since I overwrite it
-        quorumPolicy.objectSync(lt).onComplete({
-          case Success(obj) => updateDataStructuresAndRespondBasedOnRetrievedObject(obj) //here I know that a quorum is found...
+        quorumPolicy.objectSync(ltCo).onComplete({
+          case Success(obj) => onObjectRetrieved(obj) //here I know that a quorum is found...
           case _ => //what can actually happen here? (malformed json, bad url) those must be notified to server user
         })(ec)
       }
     }
 
 
-    updateDataStructuresAndRespondBasedOnRetrievedObject(objToWorkOn)
+    onObjectRetrieved(objToWorkOn)
 
 
-    def updateDataStructuresAndRespondBasedOnRetrievedObject(retrievedObj: ObjectT): Unit = {
+    def onObjectRetrieved(retrievedObj: ObjectT): Unit = {
       objToWorkOn = retrievedObj
       if (opType == ConcreteOperationTypes.METHOD || opType == ConcreteOperationTypes.INLINE_METHOD) {
         val (newObj, newAnswer) = executeOperation(request, objToWorkOn)
@@ -164,7 +179,6 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
         logger.log(Level.INFO, "    my eys at serv side: " + keysSharedWithMe, 2)
 
         logger.log(Level.INFO, "    rh bef update: " + replicaHistory, 2)
-
         val updatedReplicaHistory: ReplicaHistory = replicaHistory.appended(lt -> ltCo) //with rh as sortedset: replicaHistory + (lt -> ltCo)
         val updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe) //updateAuthenticatorFor(keysSharedWithMe)(ip)(updatedReplicaHistory)
         authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)

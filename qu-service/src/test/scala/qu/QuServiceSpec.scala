@@ -27,34 +27,34 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
 
   describe("A Service") {
 
-    /*describe("when contacted by another service requesting a object it doesn't store") {
-      val unStoredObjLt = ConcreteLogicalTimestamp(
+    describe("when contacted by another service requesting a object it doesn't store") {
+      /*val unStoredObjLt = ConcreteLogicalTimestamp(
         time = 1,
         barrierFlag = true, clientId = emptyLT.clientId, operation = emptyLT.operation, ohs = Some(represent(aOhsWithMethod))
       )
       lazy val storedObjResponse = authStub.send[LogicalTimestamp, ObjectSyncResponse[Int]](unStoredObjLt)
 
       it("should succeed") {
-        storedObjResponse.map (_.responseCode should be (SUCCESS))
+        storedObjResponse.map(_.responseCode should be(SUCCESS))
       }
 
       it("should respond with a empty Option") {
-        storedObjResponse.map (_.answer should be (Option.empty))
+        storedObjResponse.map(_.answer should be(Option.empty))
 
-      }
+      }*/
     }
     describe("when contacted by another service requesting a object it does store") {
-      val storeObjLt = emptyLT
+      /*val storeObjLt = emptyLT
 
       lazy val unStoredObjResponse = authStub.send[LogicalTimestamp, ObjectSyncResponse[Int]](storeObjLt)
       it("should succeed") {
-        unStoredObjResponse.map (_.responseCode should be (SUCCESS))
+        unStoredObjResponse.map(_.responseCode should be(SUCCESS))
       }
 
       it("should respond with it") {
-        unStoredObjResponse.map (_.answer should be (Some(InitialObject)))
-      }
-    }*/
+        unStoredObjResponse.map(_.answer should be(Some(InitialObject)))
+      }*/
+    }
     describe("when contacted by an unauthenticated user") {
 
       /*it("should fail") {
@@ -63,7 +63,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             Request(operation = Some(IncrementAsObj),
               ohs = emptyOhs(serverIds)))
         }
-      }
+      }*/
       describe("when OHS contains all valid authenticators") {
         //laziness needed for correct initialization dependency and for performance reason
         lazy val responseForUpdateWithOutdatedOhs = for {
@@ -74,7 +74,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             Request(operation = Some(IncrementAsObj), //sending an UPDATE operation
               ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
         } yield response
-        describe("and OHS is not current and the requested operation is an update") {
+        /*describe("and OHS is not current and the requested operation is an update") {
           it("should fail") {
             responseForUpdateWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
           }
@@ -93,8 +93,10 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                   ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
             } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
           }
-        }
-        /*
+        }*/
+
+
+        /* //next optimization
         describe("and OHS is not current and the requested operation is a query") {
           val responseForQueryWithOutdatedOhs = for {
             _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
@@ -128,22 +130,32 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             _: JavaTypeable[ObjectSyncResponse[Int]]))
             .expects(*, *, *).never()
 
+          val serverRh = emptyRh
+
           describe("and OHS is not classifiable as a a barrier") {
 
-
             describe("and object version is not stored at the contacted server side") {
+
               it("should object sync") {
 
                 //potrei simulare uno scambio (anziché one shot scenario) e verificare che continua a fare object sync sinché chiedo oggetto che non ha...
-
-                val (_, ltCo) = latestCandidate(aOhsWithMethod, false, thresholds.r).get
+                val op = Some(new Increment)
+                // val (lt, _) = latestCandidate(aOhsWithMethod, false, thresholds.r).get
+                println("la ohs con method: " + aOhsWithMethod)
+                val (_, (_, ltCo), _) = setup(op,
+                  aOhsWithMethod,
+                  quorumThreshold = thresholds.q,
+                  repairableThreshold = thresholds.r,
+                  clientId)
+                //classify(aOhsWithMethod, quorumThreshold = thresholds.q, repairableThreshold = thresholds.r)
                 (mockedQuorumPolicy.objectSync(_: LogicalTimestamp)(_: JavaTypeable[LogicalTimestamp],
                   _: JavaTypeable[ObjectSyncResponse[Int]]))
-                  .expects(/*ltCo*/ * /* * */ , *, *).returning(Future.successful(InitialObject + 1)) //per sicurezza ritorno il valore giusto
+                  .expects(ltCo /*ltCo*/
+                    /* * */ , *, *).returning(Future.successful(InitialObject + 1)) //per sicurezza ritorno il valore giusto
 
                 for {
                   response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-                    Request(operation = Some(IncrementAsObj),
+                    Request(operation = op,
                       ohs = aOhsWithMethod)) //... sending ohs with obj versions that servers doesn't have to trigger sync
                 } yield response.responseCode should be(SUCCESS)
               }
@@ -152,15 +164,14 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
           describe("and OHS is classifiable as a method") {
 
             describe("and operation class is update") {
-              val ohs = emptyOhs(serverIds)
               val op = Some(new Increment)
               lazy val responseForUpdate = for {
                 response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
                   Request(operation = op,
-                    ohs = ohs))
+                    ohs = aOhsWithMethod))
               } yield response
-              val (_, (lt, ltCo), _) = setup(op, ohs, thresholds.q, thresholds.r, clientId)
-              val correctRh = ohs(id(quServer1))._1.appended(lt -> ltCo)
+              val (_, (lt, ltCo), _) = setup(op, aOhsWithMethod, thresholds.q, thresholds.r, clientId)
+              val correctRh = serverRh.appended(lt -> ltCo)
 
               describe("and conditioned-on object is stored at service side") {
                 it("should not object sync") {
@@ -206,8 +217,10 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                 responseForQuery.map(_.answer should be(Some(InitialObject)))
               }
               describe("and conditioned-on object is stored at service side") {
-                neverObjectSync()
-                succeed
+                it("should not object sync") {
+                  neverObjectSync()
+                  succeed
+                }
               }
             }
           }
@@ -215,21 +228,17 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             //copy the ones of method (query vs update)
           }
           describe("and OHS is classifiable as a copy") {
-            val ohs = emptyOhs(serverIds)
             val op = Option.empty[Operation[Object, Int]]
+
             lazy val responseForCopy = for {
               response <- authStub.send[Request[Object, Int], Response[Option[Object]]](
-                Request(operation = op,
-                  ohs = ohs))
+                Request(operation = op, ohs = aOhsWithCopy))
             } yield response
-            val (_, (lt, ltCo), _) = setup(op, ohs, thresholds.q, thresholds.r, clientId)
-            val correctRh = ohs(id(quServer1))._1.appended(lt -> ltCo)
-            describe("and conditioned-on object is stored at service side") {
-              neverObjectSync()
-              succeed
-            }
+            val (_, (lt, ltCo), _) = setup(op, aOhsWithCopy, thresholds.q, thresholds.r, clientId)
+
             //update rh correctly
             it("should copy latest (lt,ltCo) forward") {
+              val correctRh = serverRh.appended(lt -> ltCo)
               responseForCopy.map(_.authenticatedRh._1 should be(correctRh))
             }
             it("should return success") {
@@ -237,19 +246,24 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                 response <- responseForCopy
               } yield response.responseCode should be(SUCCESS)
             }
+            describe("and conditioned-on object is stored at service side") {
+              it("should not object sync") {
+                neverObjectSync()
+                succeed
+              }
+            }
           }
           describe("and OHS is classifiable as a inline barrier") {
-            val ohs = emptyOhs(serverIds)
             val op = Option.empty[Operation[Object, Int]]
             lazy val responseForInlineBarrier = for {
               response <- authStub.send[Request[Object, Int], Response[Option[Object]]](
                 Request(operation = op,
-                  ohs = ohs))
+                  ohs = aOhsWithInlineBarrier))
             } yield response
-            val (_, (lt, ltCo), _) = setup(op, ohs, thresholds.q, thresholds.r, clientId)
-            val correctRh = ohs(id(quServer1))._1.appended(lt -> ltCo)
+            val (_, (lt, ltCo), _) = setup(op, aOhsWithInlineBarrier, thresholds.q, thresholds.r, clientId)
 
             it("should copy latest (lt,ltCo) forward") {
+              val correctRh = serverRh.appended(lt -> ltCo)
               responseForInlineBarrier.map(_.authenticatedRh._1 should be(correctRh))
             }
             //it should not ever trigger object sync
@@ -262,15 +276,14 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             }
           }
           describe("and OHS is classifiable as a barrier") {
-            val ohs = emptyOhs(serverIds)
             val op = Option.empty[Operation[Object, Int]]
             lazy val responseForBarrier = for {
               response <- authStub.send[Request[Object, Int], Response[Option[Object]]](
                 Request(operation = op,
-                  ohs = ohs))
+                  ohs = aOhsWithBarrier))
             } yield response
-            val (_, (lt, ltCo), _) = setup(op, ohs, thresholds.q, thresholds.r, clientId)
-            val correctRh = ohs(id(quServer1))._1.appended(lt -> ltCo)
+            val (_, (lt, ltCo), _) = setup(op, aOhsWithBarrier, thresholds.q, thresholds.r, clientId)
+            val correctRh = serverRh.appended(lt -> ltCo)
             it("should never object sync") {
               neverObjectSync()
               succeed
@@ -283,14 +296,14 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             }
           }
         }
-      }*/
+      }
 
       describe("when OHS contains invalid authenticator referred to its replica history") {
         it("should cull it") {
           for {
             _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
               Request(operation = Some(IncrementAsObj), //updating server rh (since with emptyLt I cannot detect...)
-                ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
+                ohs = emptyOhs(serverIds)))
             response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
               Request(operation = Some(new GetObj[Int]),
                 ohs = ohsWithInvalidAuthenticatorFor(aOhsWithMethod, id(quServer1))))
