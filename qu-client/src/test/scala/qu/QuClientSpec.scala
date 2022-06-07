@@ -19,7 +19,6 @@ import scala.language.postfixOps
 
 class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario with OHSFixture with ScalaFutures { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
 
-  //c'è la questione delle fasi'
   //devo tirar su tanti server... no basta una quorum policy
   //devo avere un altra stub per simulare contentnion
 
@@ -32,7 +31,7 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
 
 
 
-  //todo should go in fixture (to be shutdown)
+  //todo should go in fixture (to be shutdown between tetsts (as it is stateful))
   //stubbed dependencies
   val mockedQuorumPolicy = mock[JacksonSimpleBroadcastClientPolicy[Int]]
   val mockedBackOffPolicy = mock[BackOffPolicy]
@@ -68,7 +67,6 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
     }
     describe("when requesting an update operation") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should keep asking the quorum of servers and backing off until order of the received ohs is >=q (repair)") {
-        println("la ohs with inline method che pare essere method is: \n " + ohsWithInlineMethodFor(serversKeys, thresholds.r))
 
         val expectedResponse = ()
         val ohsWithMethod = ohsWithMethodFor(serversKeys)
@@ -284,5 +282,5 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
 
 
   //in fixture...
-  client.shutdown()
+  //client.shutdown()
 }
