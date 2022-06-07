@@ -12,7 +12,6 @@ import qu.model.Commands.{GetObj, Increment, IncrementAsObj}
 import qu.model.ConcreteQuModel._
 import qu.model.{OHSFixture, QuorumSystemThresholds, StatusCode}
 import qu.model.StatusCode.{FAIL, SUCCESS}
-import qu.service.{AbstractQuService, JwtAuthorizationServerInterceptor, QuServiceImpl, ServerQuorumPolicy}
 
 import scala.concurrent.Future
 
@@ -28,7 +27,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
   describe("A Service") {
 
     describe("when contacted by another service requesting a object it doesn't store") {
-      /*val unStoredObjLt = ConcreteLogicalTimestamp(
+      val unStoredObjLt = ConcreteLogicalTimestamp(
         time = 1,
         barrierFlag = true, clientId = emptyLT.clientId, operation = emptyLT.operation, ohs = Some(represent(aOhsWithMethod))
       )
@@ -41,10 +40,10 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
       it("should respond with a empty Option") {
         storedObjResponse.map(_.answer should be(Option.empty))
 
-      }*/
+      }
     }
     describe("when contacted by another service requesting a object it does store") {
-      /*val storeObjLt = emptyLT
+      val storeObjLt = emptyLT
 
       lazy val unStoredObjResponse = authStub.send[LogicalTimestamp, ObjectSyncResponse[Int]](storeObjLt)
       it("should succeed") {
@@ -53,17 +52,17 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
 
       it("should respond with it") {
         unStoredObjResponse.map(_.answer should be(Some(InitialObject)))
-      }*/
+      }
     }
     describe("when contacted by an unauthenticated user") {
 
-      /*it("should fail") {
+      it("should fail") {
         recoverToSucceededIf[StatusRuntimeException] {
           unAuthStub.send[Request[Unit, Int], Response[Option[Unit]]](
             Request(operation = Some(IncrementAsObj),
               ohs = emptyOhs(serverIds)))
         }
-      }*/
+      }
       describe("when OHS contains all valid authenticators") {
         //laziness needed for correct initialization dependency and for performance reason
         lazy val responseForUpdateWithOutdatedOhs = for {
@@ -74,7 +73,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             Request(operation = Some(IncrementAsObj), //sending an UPDATE operation
               ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
         } yield response
-        /*describe("and OHS is not current and the requested operation is an update") {
+        describe("and OHS is not current and the requested operation is an update") {
           it("should fail") {
             responseForUpdateWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
           }
@@ -93,7 +92,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                   ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
             } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
           }
-        }*/
+        }
 
 
         /* //next optimization
@@ -147,7 +146,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                   clientId)
                 (mockedQuorumPolicy.objectSync(_: LogicalTimestamp)(_: JavaTypeable[LogicalTimestamp],
                   _: JavaTypeable[ObjectSyncResponse[Int]]))
-                  .expects(ltCo, *, *).returning(Future.successful(InitialObject + 1)) //per sicurezza ritorno il valore giusto
+                  .expects(ltCo, *, *).returning(Future.successful(InitialObject + 1)) //returing right value for service safety
 
                 for {
                   response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
@@ -177,7 +176,6 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               }
               it("should edit its replica history correctly") {
                 responseForUpdate.map(_.authenticatedRh._1 should be(correctRh))
-                //responseForUpdate.map(response => assert(response.authenticatedRh._1 == correctRh))
               }
               it("should update server authenticators correctly") {
                 println("at client side my keys are: " + keysByServer(id(quServer1)))
@@ -218,7 +216,112 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             }
           }
           describe("and OHS is classifiable as a inline method") {
-            //copy the ones of method (query vs update)
+            describe("and operation class is update and conditioned-on object is stored at service side") {
+              val op = Some(new Increment)
+              lazy val responseForUpdate = for {
+                serverRhAfterFirstUpdate <- for {
+                  responseToFirstUpdate <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+                    Request(operation = op,
+                      ohs = emptyOhs(serverIds)))
+                } yield responseToFirstUpdate.authenticatedRh._1
+                responseForSecondUpdate <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+                  Request(operation = op,
+                    ohs = aOhsWithInlineMethod)) //generateOhsFromRHsAndKeys(, keysByServer)))
+              } yield (serverRhAfterFirstUpdate, responseForSecondUpdate)
+
+              it("should not object sync") {
+                neverObjectSync()
+                succeed
+              }
+              it("should edit its replica history correctly") {
+                for {
+                  (r1, r2) <- responseForUpdate
+                } yield {
+                  val (_, (lt, ltCo), _) = setup(op, aOhsWithInlineMethod, thresholds.q, thresholds.r, clientId)
+                  r2.authenticatedRh._1 should be(r1.appended(lt -> ltCo))
+                }
+              }
+              it("should update server authenticators correctly") {
+                for {
+                  (_, r2) <- responseForUpdate
+                } yield {
+                  val updatedAuthenticator = authenticateRh(r2.authenticatedRh._1, keysByServer(id(quServer1)))
+                  r2.authenticatedRh._2 should be(updatedAuthenticator)
+                }
+              }
+              //should return correct answer
+              it("should return success") {
+                for {
+                  (_, r2) <- responseForUpdate
+                } yield {
+                  r2.responseCode should be(SUCCESS)
+                }
+              }
+            }
+            describe("and operation class is query and conditioned-on object is stored at service side") {
+
+              lazy val responseForInlineQuery = for {
+                serverRhAfterFirstUpdate <- for {
+                  responseToFirstUpdate <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+                    Request(operation = Some(new Increment),
+                      ohs = emptyOhs(serverIds)))
+                } yield responseToFirstUpdate.authenticatedRh._1
+                responseForQuery <- authStub.send[Request[Int, Int], Response[Option[Int]]](
+                  Request(operation = Some(GetObj()),
+                    ohs = aOhsWithInlineMethod)) //generateOhsFromRHsAndKeys(, keysByServer)))
+              } yield (serverRhAfterFirstUpdate, responseForQuery)
+
+              it("should not object sync") {
+                neverObjectSync()
+                succeed
+              }
+              it("should not edit its replica history") {
+                for {
+                  (r1, r2) <- responseForInlineQuery
+                } yield {
+                  r2.authenticatedRh._1 should be(r1)
+                }
+              }
+
+              it("should return the correct answer") {
+                for {
+                  (_, r2) <- responseForInlineQuery
+                } yield {
+                  r2.answer should be(Some(InitialObject + 1))
+                }
+              }
+
+              it("should return success") {
+                for {
+                  (_, r2) <- responseForInlineQuery
+                } yield {
+                  r2.responseCode should be(SUCCESS)
+                }
+              }
+            }
+            /*val ohs = emptyOhs(serverIds)
+            val op = Some(new GetObj[Int])
+
+            lazy val responseForQuery = for {
+              response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
+                Request(operation = op,
+                  ohs = ohs))
+            } yield response
+            it("should not edit its replica history") {
+              responseForQuery.map(_.authenticatedRh._1 should be(emptyRh))
+            }
+            it("should succeed") {
+              responseForQuery.map(_.responseCode should be(SUCCESS))
+            }
+            it("should return correct answer") {
+              responseForQuery.map(_.answer should be(Some(InitialObject)))
+            }
+            describe("and conditioned-on object is stored at service side") {
+              it("should not object sync") {
+                neverObjectSync()
+                succeed
+              }
+            }*/
           }
           describe("and OHS is classifiable as a copy") {
             val op = Option.empty[Operation[Object, Int]]

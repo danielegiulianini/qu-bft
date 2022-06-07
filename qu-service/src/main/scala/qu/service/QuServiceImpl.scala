@@ -53,9 +53,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
                                                                                                        logicalTimestampTransportable: Transportable[LogicalTimestamp])
   : Unit = {
     logger.log(Level.INFO, "request received from " + clientId.get, 2) //: " + clientId.get, 2)
-    logger.log(Level.INFO, "request with ohs " + request.ohs, 2) //: " + clientId.get, 2)
-    //println("(sRequest:)la operation is: " +request.operation)
-    println("(sRequest:)l'hashcode di " + request.operation + " is: " + hashObject(request.operation)) //request.operation.hashCode().toString)
+    logger.log(Level.INFO, "la operation is: " +request.operation, 2) //: " + clientId.get, 2)
 
 
     def replyWith(response: Response[Option[AnswerT]]): Unit = {
@@ -79,20 +77,19 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
     def cullRh(ohs: OHS): OHS = {
       ohs. //todo map access like this (to authenticator) could raise exception
         //if there's not the authenticator or if it is invalid the corresponding rh is culled
-        map { case (serverId, (rh, authenticator)) => {
+        map { case (serverId, (rh, authenticator)) =>
           println("ATTENTION: l'authenticator del server " + serverId + " is: \n" + authenticator)
           println("l'authenticator contiene l'id? " + authenticator.contains(id(RecipientInfo(ip, port))))
           if (authenticator.contains(id(RecipientInfo(ip, port))))
             println ("l'hmac è corretto? " + (authenticator(id(RecipientInfo(ip, port))) == hmac(keysSharedWithMe(serverId), rh)))
 
 
-            if (!authenticator.contains(id(RecipientInfo(ip, port))) ||
-              authenticator(id(RecipientInfo(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) {
-              println("CULLLLLEDDDD");
-              (serverId, (emptyRh, authenticator))
-            }
-            else (serverId, (rh, authenticator)) //keep authentictor untouched (as in paper)
-        }
+          if (!authenticator.contains(id(RecipientInfo(ip, port))) ||
+            authenticator(id(RecipientInfo(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) {
+            println("CULLLLLEDDDD")
+            (serverId, (emptyRh, authenticator))
+          }
+          else (serverId, (rh, authenticator)) //keep authentictor untouched (as in paper)
         }
     }
 
@@ -157,9 +154,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
       }
     }
 
-
     onObjectRetrieved(objToWorkOn)
-
 
     def onObjectRetrieved(retrievedObj: ObjectT): Unit = {
       objToWorkOn = retrievedObj
@@ -176,8 +171,6 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
       this.synchronized {
         logger.log(Level.INFO, "updating ohs and authenticator...", 2)
-        logger.log(Level.INFO, "    my eys at serv side: " + keysSharedWithMe, 2)
-
         logger.log(Level.INFO, "    rh bef update: " + replicaHistory, 2)
         val updatedReplicaHistory: ReplicaHistory = replicaHistory.appended(lt -> ltCo) //with rh as sortedset: replicaHistory + (lt -> ltCo)
         val updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe) //updateAuthenticatorFor(keysSharedWithMe)(ip)(updatedReplicaHistory)
