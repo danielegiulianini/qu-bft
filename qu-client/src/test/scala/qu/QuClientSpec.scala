@@ -141,7 +141,7 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
             thresholds.r /* less than q !!*/,
             ohsWithMethodFor(serversKeys))))
         (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).never()
-        
+
         whenReady(client.submit[Int](queryOp)) {
           _ should be(expectedResponse)
         }
