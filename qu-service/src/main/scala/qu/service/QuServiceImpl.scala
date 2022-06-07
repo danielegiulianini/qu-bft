@@ -53,7 +53,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
                                                                                                        logicalTimestampTransportable: Transportable[LogicalTimestamp])
   : Unit = {
     logger.log(Level.INFO, "request received from " + clientId.get, 2) //: " + clientId.get, 2)
-    logger.log(Level.INFO, "la operation is: " +request.operation, 2) //: " + clientId.get, 2)
+    logger.log(Level.INFO, "la operation is: " + request.operation, 2) //: " + clientId.get, 2)
 
 
     def replyWith(response: Response[Option[AnswerT]]): Unit = {
@@ -81,7 +81,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
           println("ATTENTION: l'authenticator del server " + serverId + " is: \n" + authenticator)
           println("l'authenticator contiene l'id? " + authenticator.contains(id(RecipientInfo(ip, port))))
           if (authenticator.contains(id(RecipientInfo(ip, port))))
-            println ("l'hmac è corretto? " + (authenticator(id(RecipientInfo(ip, port))) == hmac(keysSharedWithMe(serverId), rh)))
+            println("l'hmac è corretto? " + (authenticator(id(RecipientInfo(ip, port))) == hmac(keysSharedWithMe(serverId), rh)))
 
 
           if (!authenticator.contains(id(RecipientInfo(ip, port))) ||
@@ -143,14 +143,17 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
     if (opType == ConcreteOperationTypes.METHOD
       || opType == ConcreteOperationTypes.INLINE_METHOD
       || opType == ConcreteOperationTypes.COPY) {
-      val objAndAnswer = storage.retrieve[AnswerT](lt) //retrieve[T, U](lt)
-      if (objAndAnswer.isEmpty && ltCo > emptyLT) {
-        logger.log(Level.INFO, "object not available, object-syncing for lt " + lt, 2)
-        //todo here I require answer as Object since I overwrite it
+      val retrievedObj = storage.retrieveObject(ltCo) //[AnswerT](ltCo) //retrieve[T, U](lt)
+
+      if (retrievedObj.isEmpty && ltCo > emptyLT) {
+        logger.log(Level.INFO, "object version NOT available, object-syncing for lt " + ltCo, 2)
         quorumPolicy.objectSync(ltCo).onComplete({
           case Success(obj) => onObjectRetrieved(obj) //here I know that a quorum is found...
           case _ => //what can actually happen here? (malformed json, bad url) those must be notified to server user
         })(ec)
+      } else {
+        objToWorkOn = retrievedObj.getOrElse(throw new Exception("just checked if it was not none!"))
+        logger.log(Level.INFO, "object with lt " + ltCo + "(" + obj + ") available here", 2)
       }
     }
 
@@ -187,6 +190,12 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
           || opType == ConcreteOperationTypes.COPY) {
           logger.log(Level.INFO, "Storing updated (object, answer): (" + objToWorkOn + ", " + answerToReturn + ") with lt " + lt.time, 2)
           storage = storage.store[AnswerT](lt, (objToWorkOn, answerToReturn)) //answer.asInstanceOf[AnswerT])
+
+          logger.log(Level.INFO, "AAAAAAAAAAAAAAAA fetching just stored object version ", 2)
+
+          val (_, answer) = storage.retrieve[AnswerT](lt)
+            .getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
+
           //todo: replica history pruning
         }
         logger.log(Level.INFO, "sending SUCCESS", 2)

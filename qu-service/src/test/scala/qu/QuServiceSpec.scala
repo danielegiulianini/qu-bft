@@ -259,7 +259,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               }
             }
             describe("and operation class is query and conditioned-on object is stored at service side") {
-
+              println("la ohs inline is: " + aOhsWithInlineMethod)
               lazy val responseForInlineQuery = for {
                 serverRhAfterFirstUpdate <- for {
                   responseToFirstUpdate <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
@@ -268,7 +268,14 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                 } yield responseToFirstUpdate.authenticatedRh._1
                 responseForQuery <- authStub.send[Request[Int, Int], Response[Option[Int]]](
                   Request(operation = Some(GetObj()),
-                    ohs = aOhsWithInlineMethod)) //generateOhsFromRHsAndKeys(, keysByServer)))
+                    ohs = generateOhsFromRHsAndKeys(Map(
+                      id(quServer1) -> List(aCandidate(emptyLT.time + 3, emptyLT.time + 1, serverIds), aCandidate(emptyLT.time + 1, emptyLT.time, serverIds), emptyCandidate),
+                      id(quServer2) -> List(aCandidate(emptyLT.time + 3, emptyLT.time + 1, serverIds), aCandidate(emptyLT.time + 1, emptyLT.time, serverIds), emptyCandidate),
+                      id(quServer3) -> List(aCandidate(emptyLT.time + 1, emptyLT.time, serverIds), emptyCandidate),
+                      id(quServer4) -> List(aCandidate(emptyLT.time + 2, emptyLT.time, serverIds), emptyCandidate),
+                    ), keysByServer))
+                    //ohs = aOhsWithInlineMethod)
+                  )
               } yield (serverRhAfterFirstUpdate, responseForQuery)
 
               it("should not object sync") {
@@ -332,7 +339,6 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             } yield response
             val (_, (lt, ltCo), _) = setup(op, aOhsWithCopy, thresholds.q, thresholds.r, clientId)
 
-            //update rh correctly
             it("should copy latest (lt,ltCo) forward") {
               val correctRh = serverRh.appended(lt -> ltCo)
               responseForCopy.map(_.authenticatedRh._1 should be(correctRh))
@@ -362,7 +368,6 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               val correctRh = serverRh.appended(lt -> ltCo)
               responseForInlineBarrier.map(_.authenticatedRh._1 should be(correctRh))
             }
-            //it should not ever trigger object sync
             it("should never object sync") {
               neverObjectSync()
               succeed
