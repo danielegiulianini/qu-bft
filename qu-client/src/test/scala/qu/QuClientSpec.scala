@@ -19,7 +19,6 @@ import scala.language.postfixOps
 
 class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario with OHSFixture with ScalaFutures { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
 
-  //c'è la questione delle fasi'
   //devo tirar su tanti server... no basta una quorum policy
   //devo avere un altra stub per simulare contentnion
 
@@ -31,8 +30,7 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
   //non devo attribuire al client errori del server ...
 
 
-
-  //todo should go in fixture (to be shutdown)
+  //todo should go in fixture (to be shutdown between tetsts (as it is stateful))
   //stubbed dependencies
   val mockedQuorumPolicy = mock[JacksonSimpleBroadcastClientPolicy[Int]]
   val mockedBackOffPolicy = mock[BackOffPolicy]
@@ -68,7 +66,6 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
     }
     describe("when requesting an update operation") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should keep asking the quorum of servers and backing off until order of the received ohs is >=q (repair)") {
-        println("la ohs with inline method che pare essere method is: \n " + ohsWithInlineMethodFor(serversKeys, thresholds.r))
 
         val expectedResponse = ()
         val ohsWithMethod = ohsWithMethodFor(serversKeys)
@@ -114,11 +111,12 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
 
       }
     }
-    describe("when requesting a query operation and receiving a response with order >= q and an ohs with method") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
-      val queryQuorum: MockFunction4[Option[Operation[Int, Int]], OHS, JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[(Option[Int], Int, OHS)]] = mockedQuorumPolicy.quorum[Int](_: Option[Operation[Int, Int]], _: OHS)(_: JavaTypeable[Request[Int, Int]],
-        _: JavaTypeable[Response[Option[Int]]])
-      val queryOp = new GetObj[Int]      //todo o uso l'bject anche qui oppure deposito in una var e uso sempre quello (essendo generico non puoi creare un object!)
+    //QUERY
+    val queryQuorum: MockFunction4[Option[Operation[Int, Int]], OHS, JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[(Option[Int], Int, OHS)]] = mockedQuorumPolicy.quorum[Int](_: Option[Operation[Int, Int]], _: OHS)(_: JavaTypeable[Request[Int, Int]],
+      _: JavaTypeable[Response[Option[Int]]])
+    val queryOp = new GetObj[Int] //todo o uso l'bject anche qui oppure deposito in una var e uso sempre quello (essendo generico non puoi creare un object!)
 
+    describe("when requesting a query operation and receiving a response with order >= q and an ohs with method") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
 
       it("should return the correct answer in a single round of communication") {
         val expectedResponse = initialValue + 1
@@ -132,6 +130,25 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
         }
       }
     }
+    describe("when requesting an query operation a response with order < q but classified as a " +
+      "method (query executed optimistically)") {
+
+      it(" should return the correct answer in a single round of communication") {
+        val expectedResponse = initialValue + 1
+
+        queryQuorum.expects(Some(queryOp), emptyOhs(serversIdsAsSet), *, *).noMoreThanOnce().returning(Future.successful(
+          (Some(expectedResponse),
+            thresholds.r /* less than q !!*/,
+            ohsWithMethodFor(serversKeys))))
+        (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).never()
+
+        whenReady(client.submit[Int](queryOp)) {
+          _ should be(expectedResponse)
+        }
+      }
+    }
+
+
     /*
     describe("when requesting an update operation 2") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
       it("should keep asking the quorum of servers and backing off until order of the received ohs is >=q (repair)") {
@@ -284,5 +301,5 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
 
 
   //in fixture...
-  client.shutdown()
+  //client.shutdown()
 }

@@ -3,9 +3,11 @@ package qu.client
 //import that declares specific dependency
 
 import qu.model.ConcreteQuModel._
+import qu.model.ConcreteQuModel.ConcreteOperationTypes._
 import qu.model.QuorumSystemThresholds
 import qu.{OneShotAsyncScheduler, Shutdownable}
 
+import java.util.logging.Logger
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -14,6 +16,7 @@ class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: C
                                                            private val serversIds: Set[String], //only servers ids are actually required in this class
                                                            private val thresholds: QuorumSystemThresholds)
   extends QuClient[ObjectT, Transportable] {
+  private val logger = Logger.getLogger(classOf[AuthenticatedQuClientImpl[ObjectT, Transportable]].getName)
 
   override def submit[T](op: Operation[T, ObjectT])(implicit
                                                     ec: ExecutionContext,
@@ -26,17 +29,35 @@ class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: C
       for {
         (answer, order, updatedOhs) <- policy.quorum(Some(op), ohs)
         //todo mapping grpc exceptions to custom
-        //todo optimistic query execution
         answer <- if (order < thresholds.q) for {
-          repairedOhs <- repair(updatedOhs) //todo this updates ohs must here it's ignored!
-          newAnswer <- submitWithOhs(repairedOhs)
-        } yield newAnswer else Future(answer.getOrElse(
-          throw new RuntimeException("illegal protocol State exception..."))
-        )
+          (opType, _, _) <- classifyAsync(updatedOhs)
+          optimisticAnswer <- if (opType == METHOD) Future(
+            answer.getOrElse(
+              throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None answer")))
+          else for {
+            repairedOhs <- repair(updatedOhs)
+            newAnswer <- submitWithOhs(repairedOhs)
+          } yield newAnswer
+        } yield optimisticAnswer else Future(answer.getOrElse(
+          throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None answer")))
       } yield answer
+      /*
+            for {
+              (answer, order, updatedOhs) <- policy.quorum(Some(op), ohs)
+              (opType, _, _) <- classifyAsync(ohs)
+              oanswer <- if (opType == METHOD) Future {
+                answer
+              } else for { a <- Future {
+                answer
+              }} yield a
+            } yield oanswer.get*/
     }
 
     submitWithOhs(emptyOhs(serversIds))
+  }
+
+  private def classifyAsync(ohs: OHS) = Future.successful {
+    classify(ohs, thresholds.r, thresholds.q)
   }
 
   private def repair(ohs: OHS)(implicit executionContext: ExecutionContext,
@@ -56,12 +77,8 @@ class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: C
     } yield ohs
 
 
-    def classifyAsync(ohs: OHS) = Future {
-      classify(ohs, thresholds.r, thresholds.q)
-    }
-
     def backOffAndRetryUntilMethod(operationType: ConcreteOperationTypes, ohs: OHS): Future[OHS] =
-      if (operationType != ConcreteOperationTypes.METHOD) backOffAndRetry() else Future {
+      if (operationType != METHOD) backOffAndRetry() else Future {
         ohs
       }
 

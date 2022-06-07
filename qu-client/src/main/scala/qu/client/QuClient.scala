@@ -3,6 +3,7 @@ package qu.client
 import ClientQuorumPolicy.simpleJacksonPolicyFactoryUnencrypted
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.Shutdownable
+import qu.auth.Token
 import qu.client.AuthenticatedClientBuilder.simpleJacksonQuClientBuilderInFunctionalStyle
 import qu.model.QuorumSystemThresholds
 
@@ -22,7 +23,7 @@ trait QuClient[ObjectT, Transferable[_]] extends Shutdownable {
 }
 
 object QuClient {
-  def defaultBuilder[U](token: String): AuthenticatedClientBuilder[U, JavaTypeable] =
+  def defaultBuilder[U](token: Token): AuthenticatedClientBuilder[U, JavaTypeable] =
     simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 }
 

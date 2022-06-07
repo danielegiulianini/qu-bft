@@ -23,11 +23,10 @@ class CachingServiceServerDefinitionBuilder2(private var serviceName: String) {
   private var mds = Set[String]()
 
   def addMethod[ReqT, RespT](`def`: MethodDescriptor[ReqT, RespT], handler: ServerCallHandler[ReqT, RespT]): CachingServiceServerDefinitionBuilder2 = {
-    // println("requestng...")
     if (!mds.contains(`def`.getFullMethodName)) {
       mds = mds + `def`.getFullMethodName
       builder.addMethod(`def`, handler)
-    } //else println("alteady contained")
+    }
     this
   }
 

@@ -22,12 +22,6 @@ trait ClientQuorumPolicy[ObjectT, Transportable[_]] extends Shutdownable {
                       transportableRequest: Transportable[Request[AnswerT, ObjectT]],
                       transportableResponse: Transportable[Response[Option[AnswerT]]]): Future[(Option[AnswerT], Int, OHS)]
 }
-/*
-trait ShutdownablePolicy[ObjectT, Transportable[_]] {
-  self: SimpleBroadcastClientPolicy[ObjectT, Transportable] =>
-  override def shutdown(): Unit = self.servers.foreach { case (_, stub) => stub.shutdown() }
-}*/
-
 
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
 class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
@@ -73,7 +67,7 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
 
 
 class JacksonSimpleBroadcastClientPolicy[ObjectT](private val thresholds: QuorumSystemThresholds,
-                                         private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])
+                                                  override protected val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])
   extends SimpleBroadcastClientPolicy[ObjectT, JavaTypeable](thresholds, servers)
 
 
