@@ -161,18 +161,18 @@ trait AbstractAbstractQuModel extends QuModel {
     val ltLatest = latestTime(ohs)
     (latestObjectVersion, latestBarrierVersion) match {
       //before the most restrictive (pattern matching implicitly breaks)
-      case (Some((objectLt, objectLtCo)), _) =>{
+      case (Some((objectLt, objectLtCo)), _) => {
         println("l'order del cand nella ohs is: " + order((objectLt, objectLtCo), ohs) + ", q is : " + quorumThreshold)
 
-        println("1o test: " + ( objectLt == ltLatest) + ", il latest time is: " + ltLatest  + "l'objectLt:" + objectLt)
-        println("2o test: " +( order((objectLt, objectLtCo), ohs) >= repairableThreshold))
+        println("1o test: " + (objectLt == ltLatest) + ", il latest time is: " + ltLatest + "l'objectLt:" + objectLt)
+        println("2o test: " + (order((objectLt, objectLtCo), ohs) >= repairableThreshold))
 
       }
     }
     val opType = (latestObjectVersion, latestBarrierVersion) match {
       //before the most restrictive (pattern matching implicitly breaks)
       case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= quorumThreshold => ConcreteOperationTypes.METHOD
-      case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= repairableThreshold =>  {
+      case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= repairableThreshold => {
         ConcreteOperationTypes.INLINE_METHOD
       }
       case (_, Some((barrierLt, barrierLtCo))) if barrierLt == ltLatest & order((barrierLt, barrierLtCo), ohs) >= quorumThreshold => ConcreteOperationTypes.COPY
@@ -183,8 +183,10 @@ trait AbstractAbstractQuModel extends QuModel {
   }
 
   def prune(rh: ReplicaHistory, ltCoOfMostRecentUpdate: LogicalTimestamp): ReplicaHistory =
-    rh.filter { case (lt, _) => lt >= ltCoOfMostRecentUpdate }
-    
+    rh.filter { case (lt, _) =>
+      lt >= ltCoOfMostRecentUpdate
+    }
+
   def represent[T, U](operation: Option[Operation[T, U]]): OperationRepresentation
 
   def represent(OHSRepresentation: OHS): OHSRepresentation
@@ -200,25 +202,31 @@ trait AbstractAbstractQuModel extends QuModel {
     val (conditionedOnLogicalTimestamp, _) = latestObjectVersionFilled
     if (opType == ConcreteOperationTypes.METHOD) {
       ( //opType
-        opType,
+        opType, {
+        println("(setup:)l'operartion che raprsenrto e inserisco nell'lt is: " + operation)
+        println("(setup:)l'hashcode della operation is: " + operation.hashCode().toString)
         //candidate
-        {println("(setup:)l'operartion che raprsenrto e inserisco nell'lt is: " + operation)
-          println("(setup:)l'hashcode della operation is: " + operation.hashCode().toString)
+
         (ConcreteLogicalTimestamp(
           time = latestTime(ohs).time + 1,
           barrierFlag = false,
           clientId = Some(clientId),
           operation = Some(represent[T, U](operation)),
           ohs = Some(represent(ohs))),
-          conditionedOnLogicalTimestamp)},
+          conditionedOnLogicalTimestamp)
+      }
+        ,
         //ltCurrent
-        conditionedOnLogicalTimestamp)
-    } else if (opType == ConcreteOperationTypes.BARRIER) {
+        conditionedOnLogicalTimestamp
+      )
+    }
+
+    else if (opType == ConcreteOperationTypes.BARRIER) {
       val lt = ConcreteLogicalTimestamp(
         time = latestTime(ohs).time + 1,
         barrierFlag = true,
         clientId = Some(clientId),
-        operation = Option.empty,//Some(represent(operation)),
+        operation = Option.empty, //Some(represent(operation)),
         ohs = Some(represent(ohs)))
       (opType,
         //candidate

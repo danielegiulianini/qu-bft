@@ -70,10 +70,10 @@ class QuServerBuilder[Transportable[_], ObjectT](private val serviceFactory: Ser
     serviceFactory(ServerInfo(ip, port,privateKey), obj, quorumSystemThresholds)
 
   def addOperation[T: TypeTag](implicit
-                               marshallableRequest: Transportable[Request[T, ObjectT]],
-                               marshallableResponse: Transportable[Response[Option[T]]],
-                               marshallableLogicalTimestamp: Transportable[LogicalTimestamp],
-                               marshallableObjectSyncResponse: Transportable[ObjectSyncResponse[ObjectT]],
+                               transportableRequest: Transportable[Request[T, ObjectT]],
+                               transportableResponse: Transportable[Response[Option[T]]],
+                               transportableLogicalTimestamp: Transportable[LogicalTimestamp],
+                               transportableObjectSyncResponse: Transportable[ObjectSyncResponse[ObjectT]],
                                transportableObjectRequest: Transportable[Request[Object, ObjectT]],
                                transportableObjectResponse: Transportable[Response[Option[Object]]]):
     QuServerBuilder[Transportable, ObjectT] = {

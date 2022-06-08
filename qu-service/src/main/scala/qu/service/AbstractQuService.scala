@@ -18,11 +18,11 @@ import scala.reflect.runtime.universe._
 import qu.model.ConcreteQuModel._
 
 
-class CachingServiceServerDefinitionBuilder2(private var serviceName: String) {
+class CachingServiceServerDefinitionBuilder(private var serviceName: String) {
   private val builder = ServerServiceDefinition.builder(serviceName)
   private var mds = Set[String]()
 
-  def addMethod[ReqT, RespT](`def`: MethodDescriptor[ReqT, RespT], handler: ServerCallHandler[ReqT, RespT]): CachingServiceServerDefinitionBuilder2 = {
+  def addMethod[ReqT, RespT](`def`: MethodDescriptor[ReqT, RespT], handler: ServerCallHandler[ReqT, RespT]): CachingServiceServerDefinitionBuilder = {
     if (!mds.contains(`def`.getFullMethodName)) {
       mds = mds + `def`.getFullMethodName
       builder.addMethod(`def`, handler)
@@ -33,30 +33,11 @@ class CachingServiceServerDefinitionBuilder2(private var serviceName: String) {
   def build(): ServerServiceDefinition = builder.build
 }
 
-object CachingServiceServerDefinitionBuilder2 {
-  def apply(serviceName: String) =
-    new CachingServiceServerDefinitionBuilder2(serviceName)
-}
-
-/*
-trait CachingServiceServerDefinitionBuilder {
-  self: ServerServiceDefinition.Builder =>
-  private var mds = Set[ServerMethodDefinition[_, _]]()
-
-  override def addMethod[ReqT, RespT](`def`: ServerMethodDefinition[ReqT, RespT]): ServerServiceDefinition.Builder = {
-    if (!mds.contains(`def`)) {
-      mds = mds + `def`
-      self.addMethod(`def`)
-    }
-    this
-  }
-}
-
 object CachingServiceServerDefinitionBuilder {
   def apply(serviceName: String) =
-    new ServerServiceDefinition.Builder(serviceName) with CachingServiceServerDefinitionBuilder
+    new CachingServiceServerDefinitionBuilder(serviceName)
 }
-*/
+
 //QuServiceImplBase without builder... (each method could or not return the QuServiceImplBase itself)
 abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chosen by programmer
                                                              private val methodDescriptorFactory: MethodDescriptorFactory[Transportable],
@@ -68,7 +49,7 @@ abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chos
                                                              protected val privateKey: String,
                                                              protected val obj: ObjectT)
   extends BindableService with QuService[Transportable, ObjectT] {
-  private val ssd = CachingServiceServerDefinitionBuilder2(SERVICE_NAME)
+  private val ssd = CachingServiceServerDefinitionBuilder(SERVICE_NAME)
 
   protected var servers: Set[RecipientInfo] = Set[RecipientInfo]()
   protected var keysSharedWithMe: Map[ServerId, Key] = Map[ServerId, String]() //this contains mykey too (needed)
