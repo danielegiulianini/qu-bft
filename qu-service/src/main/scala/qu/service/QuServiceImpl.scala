@@ -195,9 +195,10 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
           || opType == ConcreteOperationTypes.INLINE_METHOD) {
           logger.log(Level.INFO, "---------------------------ltCo che uso per fare pruning : " + ltCo, 2)
           logger.log(Level.INFO, "unpruned rh: " + updatedReplicaHistory, 2)
-          logger.log(Level.INFO, "  pruned rh:" + prune(replicaHistory, ltCo), 2)
 
           updatedReplicaHistory = prune(updatedReplicaHistory, ltCo)
+          logger.log(Level.INFO, "  pruned rh: " + updatedReplicaHistory, 2)
+
           updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe)
           authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
         }

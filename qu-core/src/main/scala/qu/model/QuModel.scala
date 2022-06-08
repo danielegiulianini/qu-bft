@@ -162,10 +162,10 @@ trait AbstractAbstractQuModel extends QuModel {
     (latestObjectVersion, latestBarrierVersion) match {
       //before the most restrictive (pattern matching implicitly breaks)
       case (Some((objectLt, objectLtCo)), _) => {
-        println("l'order del cand nella ohs is: " + order((objectLt, objectLtCo), ohs) + ", q is : " + quorumThreshold)
+        /*println("l'order del cand nella ohs is: " + order((objectLt, objectLtCo), ohs) + ", q is : " + quorumThreshold)
 
         println("1o test: " + (objectLt == ltLatest) + ", il latest time is: " + ltLatest + "l'objectLt:" + objectLt)
-        println("2o test: " + (order((objectLt, objectLtCo), ohs) >= repairableThreshold))
+        println("2o test: " + (order((objectLt, objectLtCo), ohs) >= repairableThreshold))*/
 
       }
     }
@@ -204,9 +204,7 @@ trait AbstractAbstractQuModel extends QuModel {
       ( //opType
         opType, {
         println("(setup:)l'operartion che raprsenrto e inserisco nell'lt is: " + operation)
-        println("(setup:)l'hashcode della operation is: " + operation.hashCode().toString)
         //candidate
-
         (ConcreteLogicalTimestamp(
           time = latestTime(ohs).time + 1,
           barrierFlag = false,

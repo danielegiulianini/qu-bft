@@ -9,7 +9,7 @@ import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should.Matchers
 import qu.RecipientInfo.id
 import qu.model.Commands.{GetObj, Increment, IncrementAsObj}
-import qu.model.ConcreteQuModel._
+import qu.model.ConcreteQuModel.{emptyOhs, setup, _}
 import qu.model.{OHSFixture, QuorumSystemThresholds, StatusCode}
 import qu.model.StatusCode.{FAIL, SUCCESS}
 
@@ -165,6 +165,28 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               val (_, (lt, ltCo), _) = setup(op, emptyOhs(serverIds), thresholds.q, thresholds.r, clientId)
               val correctRh = serverRh.appended(lt -> ltCo)
 
+              describe("and the server already received at least one previous update") {
+                it("should prune its replica history by removing candidates with lt timestamp previous to conditioned-on timestamp of the most recent update") {
+                  for {
+                    serverRhAfterFirstRequest <- for {
+                      firstResponse <- responseForUpdate
+                    } yield firstResponse.authenticatedRh._1
+                    secondResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+                      Request(operation = op,
+                        ohs = aOhsWithMethod))
+                    unprunedRhAfterSecondResponse <- for {
+                      (_, (lt, ltCo), _) <- Future.successful(setup(op, aOhsWithMethod, thresholds.q, thresholds.r, clientId))
+                    } yield serverRhAfterFirstRequest.appended(lt -> ltCo)
+                  }
+                  yield secondResponse.authenticatedRh._1 should be(prune(unprunedRhAfterSecondResponse,
+                    {
+                      val (_, (_, ltCo), _) = setup(op, aOhsWithMethod, thresholds.q, thresholds.r, clientId)
+                      ltCo
+                    }))
+                }
+              }
+
+
               describe("and conditioned-on object is stored at service side") {
                 it("should not object sync") {
                   neverObjectSync()
@@ -303,29 +325,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                 }
               }
             }
-            /*val ohs = emptyOhs(serverIds)
-            val op = Some(new GetObj[Int])
 
-            lazy val responseForQuery = for {
-              response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-                Request(operation = op,
-                  ohs = ohs))
-            } yield response
-            it("should not edit its replica history") {
-              responseForQuery.map(_.authenticatedRh._1 should be(emptyRh))
-            }
-            it("should succeed") {
-              responseForQuery.map(_.responseCode should be(SUCCESS))
-            }
-            it("should return correct answer") {
-              responseForQuery.map(_.answer should be(Some(InitialObject)))
-            }
-            describe("and conditioned-on object is stored at service side") {
-              it("should not object sync") {
-                neverObjectSync()
-                succeed
-              }
-            }*/
           }
           describe("and OHS is classifiable as a copy") {
             val op = Option.empty[Operation[Object, Int]]
