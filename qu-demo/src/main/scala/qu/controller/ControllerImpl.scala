@@ -1,5 +1,5 @@
 package qu.controller
 
-class ControllerImpl extends Controller {
+class ControllerImpl/* extends Controller*/ {
 
 }
