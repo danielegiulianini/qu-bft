@@ -88,9 +88,9 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     Arbitrary.arbitrary[Option[String]],
     Arbitrary.arbitrary[Option[String]])
 
-  def ltWithSameTimeOfAndBarrierGreaterThan(time: Int, barrierFlag: Boolean): Gen[ConcreteLogicalTimestamp] = ltGenerator(
+  def ltWithSameTimeOfAndTrueBarrierFlag(time: Int, barrierFlag: Boolean): Gen[ConcreteLogicalTimestamp] = ltGenerator(
     Gen.const(time),
-    Gen.const(barrierFlag),
+    Gen.const(true),
     Arbitrary.arbitrary[Option[String]],
     Arbitrary.arbitrary[Option[String]],
     Arbitrary.arbitrary[Option[String]])
@@ -140,7 +140,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical time and a greater barrier flag") {
         forAll(customizableArbitraryLt(barrierPred = _ == false)) { aLt =>
-          forAll(ltWithSameTimeOfAndBarrierGreaterThan(aLt.time, aLt.barrierFlag)) { lt =>
+          forAll(ltWithSameTimeOfAndTrueBarrierFlag(aLt.time, aLt.barrierFlag)) { lt =>
             lt should be > aLt
           }
         }
@@ -487,7 +487,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       "nor a repairable object candidate " +
       "nor a repairable barrier candidate are there") {
       it("should trigger a barrier") {
-        checkOpType(ohsWithInlineMethodGen, BARRIER)
+        checkOpType(ohsWithBarrierGen, BARRIER)
       }
       it("should return its latest object candidate as latest object candidate") {
         checkLatestObjCand(ohsWithInlineMethodGen)
