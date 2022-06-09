@@ -4,9 +4,9 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.8"
 
-Compile / PB.targets := Seq(
+/*Compile / PB.targets := Seq(
   scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
-)
+)*/
 
 
 lazy val root = (project in file("."))
@@ -19,11 +19,9 @@ lazy val root = (project in file("."))
 lazy val jwtDep = Seq("io.jsonwebtoken" % "jjwt-api" % "0.11.5",
   "io.jsonwebtoken" % "jjwt-impl" % "0.11.5",
   "io.jsonwebtoken" % "jjwt-jackson" % "0.11.5"
-  //"io.jsonwebtoken" % "jjwt" % "0.9.1", old version before splitting
 )
 
 coverageEnabled.in(ThisBuild ,Test, test) := true
-
 
 lazy val commonDependencies = Seq(
   "org.scalamock" %% "scalamock" % "5.2.0" % Test,
@@ -36,8 +34,8 @@ lazy val commonDependencies = Seq(
 
 lazy val auth = (project in file("auth"))
   .settings(
-    PB.targets in Compile := Seq(
-      scalapb.gen() -> (sourceManaged in Compile).value / "scalapb"
+    Compile / PB.targets := Seq( //PB.targets in Compile := Seq(
+      scalapb.gen() -> (Compile / sourceManaged).value / "scalapb" // scalapb.gen() -> (sourceManaged in Compile).value / "scalapb"
     ),
     libraryDependencies ++= commonDependencies ++ jwtDep ++ Seq("io.grpc" % "grpc-netty" % "1.45.0",
       "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion, // % "protobuf",
@@ -103,7 +101,7 @@ lazy val quService = (project in file("qu-service"))
   .dependsOn(quStorage)
 
 
-lazy val quStorage = (project in file("qu-Storage"))
+lazy val quStorage = (project in file("qu-storage"))
   .settings(
     libraryDependencies ++= commonDependencies ++ Seq("org.scala-lang" % "scala-reflect" % "2.13.8"
     )
