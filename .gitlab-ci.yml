@@ -20,3 +20,5 @@ stages:
 test:
   script:
     - sbt test
+  only:
+    - merge_requests
