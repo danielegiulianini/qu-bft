@@ -4,7 +4,7 @@ import qu.model.ConcreteQuModel.{ServerId, classify, setup}
 
 //import scala.language.postfixOps
 
-object SharedContainer {
+object SharedContainer2 {
   def generateKey(a: String, b: String): ServerId = "k" + a + b
 
   def keysForServer(serverId: ServerId, serversIds: Set[ServerId]): Map[ServerId, String] =
