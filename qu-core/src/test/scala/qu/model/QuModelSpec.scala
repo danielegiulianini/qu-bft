@@ -17,12 +17,12 @@ import org.scalatestplus.scalacheck.{Checkers, ScalaCheckPropertyChecks}
 import org.scalatestplus.scalacheck.Checkers.check
 import qu.model.Commands.{GetObj, IncrementAsObj}
 import qu.model.ModelGenerators._
-import qu.model.SharedContainer.keysForServer
+import qu.model.SharedContainer2.keysForServer
 
 import scala.language.postfixOps
 import scala.math.Ordered.orderingToOrdered
 
-class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers with OHSFixture {
+class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers with OHSFixture5 {
 
   //todo can be replaced with a nested generator
   // val aLt2 = ConcreteLogicalTimestamp(10, false, Some("client1"), Some("query"), Some("ohs")) //time: Int, barrierFlag: Boolean, clientId: Option[ClientId],operation: Option[OperationRepresentation],ohs: Option[OHSRepresentation])

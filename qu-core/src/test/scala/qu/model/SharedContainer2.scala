@@ -1,13 +1,11 @@
 package qu.model
 
-import qu.model.Commands.IncrementAsObj
 import qu.model.ConcreteQuModel.{ServerId, classify, setup}
-import qu.model.SharedContainer.keysForServer
 
-import scala.language.postfixOps
+//import scala.language.postfixOps
 
 object SharedContainer {
-  def generateKey(a: String, b: String) = "k" + a + b
+  def generateKey(a: String, b: String): ServerId = "k" + a + b
 
   def keysForServer(serverId: ServerId, serversIds: Set[ServerId]): Map[ServerId, String] =
     serversIds.map(otherServerId => otherServerId -> generateKey(serverId, otherServerId)).toMap //    serverId -> serversIds.map(otherServerId => serverId -> "k" + serverId + otherServerId).toMap
@@ -25,10 +23,11 @@ object SharedContainer {
   )
 */
 }
-
+/*
 object ProvaApp extends App with OHSFixture {
+
   //todo can be shared with quClientSpec in ascenario case class
-  val exampleServersIds = (1 to 4 toList).map("s" + _)
+  val exampleServersIds = (1 to 4).toList.map("s" + _)
   val exampleServersKeys: Map[ServerId, Map[ConcreteQuModel.ServerId, ServerId]] =
     exampleServersIds.map(id => id -> keysForServer(id, exampleServersIds.toSet)).toMap
   val r = 2
@@ -39,4 +38,4 @@ object ProvaApp extends App with OHSFixture {
 val operation = Some(IncrementAsObj)
   val clientId =Some( "ciao")
   setup(operation, ohsWithInlineMethodFor(exampleServersKeys, r), q, r, clientId.get)
-}
+}*/
