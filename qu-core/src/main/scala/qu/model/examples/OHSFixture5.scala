@@ -1,10 +1,9 @@
-package qu.model
+package qu.model.examples
 
-import qu.model.Commands.Increment
+import Commands.Increment
 import qu.model.ConcreteQuModel.{Candidate, Key, OHS, OHSRepresentation, OperationRepresentation, ReplicaHistory, ServerId, authenticateRh, emptyCandidate, emptyLT, emptyOhs, represent, ConcreteLogicalTimestamp => LT}
 
 import scala.collection.immutable.{List => RH}
-
 
 //some utilities for constructing ohs, rhs and authenticators (can also be a object of utilities
 // (instead of a trait to mix)

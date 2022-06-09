@@ -2,7 +2,8 @@ package qu
 
 import qu.RecipientInfo.id
 import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
-import qu.model.{OHSFixture5, QuorumSystemThresholds}
+import qu.model.QuorumSystemThresholds
+import qu.model.examples.OHSFixture5
 import qu.service.AbstractQuService.ServerInfo
 
 //"fixture-context objects" pattern from https://www.scalatest.org/user_guide/sharing_fixtures#fixtureContextObjects

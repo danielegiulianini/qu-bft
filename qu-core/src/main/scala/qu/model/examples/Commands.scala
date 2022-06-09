@@ -1,7 +1,8 @@
-package qu.model
+package qu.model.examples
 
-import ConcreteQuModel._
+import qu.model.ConcreteQuModel._
 
+//commands shared between test suites
 object Commands {
   case class Increment() extends UpdateReturningUnit[Int] {
     override def updateObject(obj: Int): Int = obj + 1
@@ -11,6 +12,6 @@ object Commands {
     override def updateObject(obj: Int): Int = obj + 1
   }
 
- case class GetObj[ObjectT]() extends QueryReturningObject[ObjectT]
+  case class GetObj[ObjectT]() extends QueryReturningObject[ObjectT]
 
 }

@@ -4,7 +4,7 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome, Suite, SuiteMixin, fixture}
 import qu.RecipientInfo.id
 import qu.model.ConcreteQuModel.{Key, OHS, ReplicaHistory, ServerId, emptyCandidate, emptyLT, α}
-import qu.model.OHSFixture5
+import qu.model.examples.OHSFixture5
 
 //todo could now go together with serverFixture
 trait ServerOhsFixture { self:OHSFixture5 with ServersFixture =>

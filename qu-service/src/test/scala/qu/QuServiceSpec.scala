@@ -8,10 +8,11 @@ import org.scalatest.FutureOutcome
 import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should.Matchers
 import qu.RecipientInfo.id
-import qu.model.Commands.{GetObj, Increment, IncrementAsObj}
+import qu.model.examples.Commands.{GetObj, Increment, IncrementAsObj}
 import qu.model.ConcreteQuModel._
-import qu.model.{OHSFixture5, QuorumSystemThresholds, StatusCode}
+import qu.model.{QuorumSystemThresholds, StatusCode}
 import qu.model.StatusCode.{FAIL, SUCCESS}
+import qu.model.examples.OHSFixture5
 
 import scala.concurrent.Future
 

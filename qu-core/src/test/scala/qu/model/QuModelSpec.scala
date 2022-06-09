@@ -15,9 +15,10 @@ import org.scalatest.Assertion
 import org.scalatest.prop.TableDrivenPropertyChecks.whenever
 import org.scalatestplus.scalacheck.{Checkers, ScalaCheckPropertyChecks}
 import org.scalatestplus.scalacheck.Checkers.check
-import qu.model.Commands.{GetObj, IncrementAsObj}
+import qu.model.examples.Commands.{GetObj, IncrementAsObj}
 import qu.model.ModelGenerators._
-import qu.model.SharedContainer2.keysForServer
+import qu.model.examples.OHSFixture5
+import qu.model.examples.SharedContainer2.keysForServer
 
 import scala.language.postfixOps
 import scala.math.Ordered.orderingToOrdered

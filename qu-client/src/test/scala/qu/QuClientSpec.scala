@@ -8,9 +8,9 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers.be
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import qu.client.{AuthenticatedQuClientImpl, BackOffPolicy, JacksonSimpleBroadcastClientPolicy, SimpleBroadcastClientPolicy}
-import qu.model.Commands.{GetObj, IncrementAsObj}
+import qu.model.examples.Commands.{GetObj, IncrementAsObj}
 import qu.model.ConcreteQuModel.{Key, OHS, Operation, Request, Response, ServerId, emptyOhs}
-import qu.model.utilities.OHSFixture5
+import qu.model.examples.OHSFixture5
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
 
 import java.util.concurrent.Executors
