@@ -10,9 +10,7 @@ import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 import qu.service.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.storage.ImmutableStorage
 
-import java.security.InvalidParameterException
 import java.util.logging.{Level, Logger}
-import scala.collection.SortedSet
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
 import scala.math.Ordered.orderingToOrdered
 import scala.reflect.runtime.universe._
@@ -32,6 +30,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
                                                          override val obj: ObjectT,
                                                          override val thresholds: QuorumSystemThresholds)
   extends AbstractQuService[Transportable, ObjectT](methodDescriptorFactory, policyFactory, thresholds, ip, port, privateKey, obj) {
+
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
 
   //must be protected from concurrent access
@@ -175,8 +174,8 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
       this.synchronized {
         logger.log(Level.INFO, "updating ohs and authenticator...", 2)
         logger.log(Level.INFO, "    rh bef update: " + replicaHistory, 2)
-        val updatedReplicaHistory: ReplicaHistory = replicaHistory.appended(lt -> ltCo) //with rh as sortedset: replicaHistory + (lt -> ltCo)
-        val updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe) //updateAuthenticatorFor(keysSharedWithMe)(ip)(updatedReplicaHistory)
+        var updatedReplicaHistory: ReplicaHistory = replicaHistory.appended(lt -> ltCo) //with rh as sortedset: replicaHistory + (lt -> ltCo)
+        var updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe) //updateAuthenticatorFor(keysSharedWithMe)(ip)(updatedReplicaHistory)
         authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
         logger.log(Level.INFO, "    updated rh: " + updatedReplicaHistory, 2)
         logger.log(Level.INFO, "    updated auth: " + updatedAuthenticator, 2)
@@ -190,8 +189,18 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
           || opType == ConcreteOperationTypes.COPY) {
           logger.log(Level.INFO, "Storing updated (object, answer): (" + objToWorkOn + ", " + answerToReturn + ") with lt " + lt.time, 2)
           storage = storage.store[AnswerT](lt, (objToWorkOn, answerToReturn))
+        }
 
-          //todo: replica history pruning
+        if (opType == ConcreteOperationTypes.METHOD
+          || opType == ConcreteOperationTypes.INLINE_METHOD) {
+          logger.log(Level.INFO, "---------------------------ltCo che uso per fare pruning : " + ltCo, 2)
+          logger.log(Level.INFO, "unpruned rh: " + updatedReplicaHistory, 2)
+
+          updatedReplicaHistory = prune(updatedReplicaHistory, ltCo)
+          logger.log(Level.INFO, "  pruned rh: " + updatedReplicaHistory, 2)
+
+          updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe)
+          authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
         }
         logger.log(Level.INFO, "sending SUCCESS", 2)
         replyWith(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))

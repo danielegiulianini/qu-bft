@@ -1,5 +1,5 @@
 #adapted from: https://stackoverflow.com/questions/31768018/run-sbt-tests-in-gitlab-ci
-image: "hseeberger/scala-sbt:8u312_1.6.2_2.13.8"
+image: "hseeberger/scala-sbt:11.0.13_1.6.2_2.13.8" #"hseeberger/scala-sbt:11.0.14.1_1.6.2_2.13.8" #hseeberger/scala-sbt:8u312_1.6.2_2.13.8"
 
 variables:
   SBT_VERSION: "1.6.2"

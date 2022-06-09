@@ -1,15 +1,14 @@
-package qu.model
+package qu.model.examples
 
-import qu.model.Commands.{GetObj, Increment}
-import qu.model.ConcreteQuModel.{Candidate, Key, OHS, OHSRepresentation, OperationRepresentation, ReplicaHistory, ServerId, authenticateRh, emptyCandidate, emptyLT, emptyOhs, represent, α, ConcreteLogicalTimestamp => LT}
+import Commands.Increment
+import qu.model.ConcreteQuModel.{Candidate, Key, OHS, OHSRepresentation, OperationRepresentation, ReplicaHistory, ServerId, authenticateRh, emptyCandidate, emptyLT, emptyOhs, represent, ConcreteLogicalTimestamp => LT}
 
-import scala.collection.immutable.{Map, List => RH}
-import scala.language.postfixOps
-
+import scala.collection.immutable.{List => RH}
 
 //some utilities for constructing ohs, rhs and authenticators (can also be a object of utilities
 // (instead of a trait to mix)
-trait OHSFixture {
+trait OHSFixture5 {
+
   val aEmptyOhsRepresentation: Option[OperationRepresentation] = emptyOhsRepresentation(List())
 
   def emptyOhsRepresentation(servers: List[ServerId]): Some[OperationRepresentation] =
@@ -19,7 +18,8 @@ trait OHSFixture {
     Some(represent[Unit, Int](Some(Increment()))) //Some("oprepr")
 
   def aCandidate(ltTime: Int, ltCoTime: Int): Candidate = (aLt(ltTime), aLt(ltCoTime))
-  def aCandidate(ltTime: Int, ltCoTime: Int, serversIds: Set[ServerId]): Candidate = (aLtWithServersIds(ltTime, serversIds = serversIds), aLtWithServersIds(ltCoTime, serversIds=serversIds))
+
+  def aCandidate(ltTime: Int, ltCoTime: Int, serversIds: Set[ServerId]): Candidate = (aLtWithServersIds(ltTime, serversIds = serversIds), aLtWithServersIds(ltCoTime, serversIds = serversIds))
 
   def aLt(time: Int, barrierFlag: Boolean = false, clientId: Option[String] =
   Some("client1"), opRepr: Option[OperationRepresentation] = aOperationRepresentation, ohsRepr: Option[OHSRepresentation] = aEmptyOhsRepresentation): LT =
@@ -120,11 +120,3 @@ trait OHSFixture {
     }
   }
 }
-
-
-
-//  override type ReplicaHistory = SortedSet[Candidate]
-//  override type α = Map[ServerId, HMAC]
-//  override type AuthenticatedReplicaHistory = (ReplicaHistory, α)
-//  override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
-

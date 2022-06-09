@@ -8,16 +8,16 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers.be
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import qu.client.{AuthenticatedQuClientImpl, BackOffPolicy, JacksonSimpleBroadcastClientPolicy, SimpleBroadcastClientPolicy}
-import qu.model.Commands.{GetObj, IncrementAsObj}
+import qu.model.examples.Commands.{GetObj, IncrementAsObj}
 import qu.model.ConcreteQuModel.{Key, OHS, Operation, Request, Response, ServerId, emptyOhs}
-import qu.model.SharedContainer.keysForServer
-import qu.model.{ConcreteQuModel, OHSFixture, QuorumSystemThresholds}
+import qu.model.examples.OHSFixture5
+import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
 
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario with OHSFixture with ScalaFutures { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
+class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario with OHSFixture5 with ScalaFutures { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
 
   //devo tirar su tanti server... no basta una quorum policy
   //devo avere un altra stub per simulare contentnion

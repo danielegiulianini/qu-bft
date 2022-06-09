@@ -15,114 +15,15 @@ import org.scalatest.Assertion
 import org.scalatest.prop.TableDrivenPropertyChecks.whenever
 import org.scalatestplus.scalacheck.{Checkers, ScalaCheckPropertyChecks}
 import org.scalatestplus.scalacheck.Checkers.check
-import qu.model.Commands.{GetObj, IncrementAsObj}
-import qu.model.SharedContainer.keysForServer
+import qu.model.examples.Commands.{GetObj, IncrementAsObj}
+import qu.model.ModelGenerators._
+import qu.model.examples.OHSFixture5
+import qu.model.examples.SharedContainer2.keysForServer
 
 import scala.language.postfixOps
 import scala.math.Ordered.orderingToOrdered
 
-class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers with OHSFixture {
-
-
-  //todo: could improve passing only timestamp by (instead of all the params)
-  def ltGenerator(timeGen: Gen[Int],
-                  barrierGen: Gen[Boolean],
-                  clientGen: Gen[Option[String]],
-                  opGen: Gen[Option[String]],
-                  ohsGen: Gen[Option[String]]) =
-    for {
-      time <- timeGen
-      barrierFlag <- barrierGen
-      clientId <- clientGen
-      operation <- opGen
-      ohs <- ohsGen
-    } yield ConcreteLogicalTimestamp(time, barrierFlag, clientId, operation, ohs)
-
-  def customizableArbitraryLt(timePred: Int => Boolean = truePred(),
-                              barrierPred: Boolean => Boolean = truePred(),
-                              clientPred: Option[String] => Boolean = truePred(),
-                              opReprPred: Option[String] => Boolean = truePred(),
-                              ohsReprPred: Option[String] => Boolean = truePred()) = {
-    ltGenerator(
-      Arbitrary.arbitrary[Int] suchThat (time => time >= 0 && timePred(time)),
-      Arbitrary.arbitrary[Boolean] suchThat (barrierPred(_)),
-      Arbitrary.arbitrary[Option[String]] suchThat (clientPred(_)),
-      Arbitrary.arbitrary[Option[String]] suchThat (opReprPred(_)),
-      Arbitrary.arbitrary[Option[String]] suchThat (ohsReprPred(_)))
-  }
-
-  def nonEmptyLt = arbitraryLt.suchThat(_ != emptyLT) //customizableArbitraryLt(timePred = _ != initi)
-
-  def nonEmptyCandidate: Gen[(ConcreteLogicalTimestamp, ConcreteLogicalTimestamp)] = for {
-    lt <- nonEmptyLt
-    ltCo <- nonEmptyLt
-  } yield (lt, ltCo)
-
-  def truePred[T](): T => Flag = (_: T) => true
-
-  def arbitraryLt: Gen[ConcreteLogicalTimestamp] = ltGenerator(
-    Gen.choose(0, 2000), //Arbitrary.arbitrary[Int] suchThat (_ >= 0),
-    Arbitrary.arbitrary[Boolean] suchThat truePred(),
-    Arbitrary.arbitrary[Option[String]] suchThat truePred(),
-    Arbitrary.arbitrary[Option[String]] suchThat truePred(),
-    Arbitrary.arbitrary[Option[String]] suchThat truePred())
-  /*ltGenerator(
-    Arbitrary.arbitrary[Int] suchThat (_ >= 0),
-    Arbitrary.arbitrary[Boolean],
-    Arbitrary.arbitrary[Option[String]],
-    Arbitrary.arbitrary[Option[String]],
-    Arbitrary.arbitrary[Option[String]])*/
-
-  val arbitraryLtInfo: Gen[(Int, Flag, Option[OperationRepresentation], Option[OperationRepresentation], Option[OperationRepresentation])] = for {
-    a <- Gen.choose(0, 2000) //Arbitrary.arbitrary[Int] suchThat (_ >= 0)
-    b <- Arbitrary.arbitrary[Boolean]
-    c <- Arbitrary.arbitrary[Option[String]]
-    d <- Arbitrary.arbitrary[Option[String]]
-    e <- Arbitrary.arbitrary[Option[String]]} yield (a, b, c, d, e)
-
-  def logicalTimestampWithGreaterTimeThan(time: Int): Gen[ConcreteLogicalTimestamp] = ltGenerator(
-    //Arbitrary.arbitrary[Int] suchThat (tme => tme >= 0 && tme > time),
-    Gen.choose(0.max(time), 2000),
-    Arbitrary.arbitrary[Boolean],
-    Arbitrary.arbitrary[Option[String]],
-    Arbitrary.arbitrary[Option[String]],
-    Arbitrary.arbitrary[Option[String]])
-
-  def ltWithSameTimeOfAndBarrierGreaterThan(time: Int, barrierFlag: Boolean): Gen[ConcreteLogicalTimestamp] = ltGenerator(
-    Gen.const(time),
-    Gen.const(barrierFlag),
-    Arbitrary.arbitrary[Option[String]],
-    Arbitrary.arbitrary[Option[String]],
-    Arbitrary.arbitrary[Option[String]])
-
-  for {
-    n <- Gen.chooseNum(5, 20)
-    chars <- Gen.listOfN(n, Gen.asciiPrintableChar)
-  } yield chars.mkString
-
-  def ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(time: Int, barrier: Boolean, clientId: Option[String])
-  = ltGenerator(
-    Gen.const(time),
-    Gen.const(barrier),
-    Arbitrary.arbitrary[Option[String]] suchThat (_ > clientId),
-    Arbitrary.arbitrary[Option[String]],
-    Arbitrary.arbitrary[Option[String]])
-
-  def ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(time: Int, barrier: Boolean, clientId: Option[String], operationRepresentation: Option[OperationRepresentation]) = ltGenerator(
-    Gen.const(time),
-    Gen.const(barrier),
-    Gen.const(clientId),
-    Arbitrary.arbitrary[Option[String]] suchThat (_ > operationRepresentation),
-    Arbitrary.arbitrary[Option[String]])
-
-  def ltWithSameTimeAndBarrierAndClientIdAndOpOfAndOhsGreaterThan(time: Int, barrier: Boolean, clientId: Option[String], operationRepresentation: Option[OperationRepresentation], ohsRepresentation: Option[OHSRepresentation]) =
-    ltGenerator(
-      Gen.const(time),
-      Gen.const(barrier),
-      Gen.const(clientId),
-      Gen.const(operationRepresentation),
-      Arbitrary.arbitrary[Option[String]] suchThat (_ > ohsRepresentation))
-
+class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers with OHSFixture5 {
 
   //todo can be replaced with a nested generator
   // val aLt2 = ConcreteLogicalTimestamp(10, false, Some("client1"), Some("query"), Some("ohs")) //time: Int, barrierFlag: Boolean, clientId: Option[ClientId],operation: Option[OperationRepresentation],ohs: Option[OHSRepresentation])
@@ -134,13 +35,14 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
           forAll(logicalTimestampWithGreaterTimeThan(aLt.time)) { lt =>
             println("tested couple, alt:" + aLt + ", lt:" + lt)
             assert(true) // aLt should be < lt //assert(aLt>aLt2)
+            lt should be > aLt
           }
         }
       }
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical time and a greater barrier flag") {
         forAll(customizableArbitraryLt(barrierPred = _ == false)) { aLt =>
-          forAll(ltWithSameTimeOfAndBarrierGreaterThan(aLt.time, aLt.barrierFlag)) { lt =>
+          forAll(ltWithSameTimeOfAndTrueBarrierFlag(aLt.time)) { lt =>
             lt should be > aLt
           }
         }
@@ -154,9 +56,24 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, same barrier flag but lexicographically greater clientId") {
         forAll(arbitraryLt) { aLt =>
           forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt =>
-            println("tested lt: " + lt)
-            lt should be < aLt //_ < aLt
+            println("testing " + aLt + " vs " + lt)
+            println("RET: " + (lt > aLt))
+            lt should be > aLt //_ < aLt
           }
+          /* check {
+             Prop.forAllNoShrink(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt => {
+               //lt should be > aLt //_ < aLt
+               println("testing " + aLt + " vs " + lt)
+               println("RET: " + (lt > aLt))
+
+               lt > aLt
+             }
+             }
+           }*/
+          /*forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt =>
+            println("tested lt: " + lt)
+            lt should be > aLt //_ < aLt
+          }*/
         }
         /*println("hello")
         forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId)) { lt =>
@@ -169,7 +86,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, barrier flag, clientId, but lexicographically greater OperationRepresentation") {
         forAll(arbitraryLt) { aLt =>
           forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation)) {
-            _ < aLt
+            _ > aLt
           }
         }
         /*forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId, aLt2.operation)) {
@@ -185,7 +102,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
             aLt.clientId,
             aLt.operation,
             aLt.ohs)) {
-            _ < aLt
+            _ > aLt
           }
         }
         //forAll(ltWithSameTimeAndBarrierAndClientIdAndOpOfAndOhsGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation, aLt.ohs)){ _ < aLt }
@@ -194,13 +111,24 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
 
       //test equals (ordering doesn't affect equals so must check equality too)
-      it("should be equal with a ConcreteLogicalTimestamp with same time, same barrierFlag, same clientId") {
-        forAll(arbitraryLtInfo) { case (a, b, c, d, e) =>
-          ConcreteLogicalTimestamp(a, b, c, d, e) == ConcreteLogicalTimestamp(a, b, c, d, e)
+      it("should be equal with a ConcreteLogicalTimestamp with same time, same barrierFlag, same clientId, same operation and same ohs") {
+        forAll(arbitraryLtInfo) { case (time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) =>
+          ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) == ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation)
         }
       }
 
-      it("should not be equal with a ConcreteLogicalTimestamp with same time, different barrierFlag") {
+
+      it("should not be equal to a ConcreteLogicalTimestamp with different time") {
+        forAll(arbitraryLtInfo) { case (time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) =>
+          ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) == ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation)
+        }
+      }
+
+      it("should not be equal to a ConcreteLogicalTimestamp with same time, different barrierFlag") {
+        //assert(initialWorld.currentIteration == 0)
+      }
+
+      it("should not be equal to a ConcreteLogicalTimestamp with same time, different clientId") {
         //assert(initialWorld.currentIteration == 0)
       }
     }
@@ -487,7 +415,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       "nor a repairable object candidate " +
       "nor a repairable barrier candidate are there") {
       it("should trigger a barrier") {
-        checkOpType(ohsWithInlineMethodGen, BARRIER)
+        checkOpType(ohsWithBarrierGen, BARRIER)
       }
       it("should return its latest object candidate as latest object candidate") {
         checkLatestObjCand(ohsWithInlineMethodGen)

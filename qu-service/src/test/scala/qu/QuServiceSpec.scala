@@ -8,17 +8,18 @@ import org.scalatest.FutureOutcome
 import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should.Matchers
 import qu.RecipientInfo.id
-import qu.model.Commands.{GetObj, Increment, IncrementAsObj}
+import qu.model.examples.Commands.{GetObj, Increment, IncrementAsObj}
 import qu.model.ConcreteQuModel._
-import qu.model.{OHSFixture, QuorumSystemThresholds, StatusCode}
+import qu.model.{QuorumSystemThresholds, StatusCode}
 import qu.model.StatusCode.{FAIL, SUCCESS}
+import qu.model.examples.OHSFixture5
 
 import scala.concurrent.Future
 
 
 //since Async(FunSpec) is used Async(MockFactory) must be used (see https://scalamock.org/user-guide/integration/)
 class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
-  with OHSFixture with ServersFixture with QuServerFixture with AuthStubFixture with UnAuthStubFixture {
+  with OHSFixture5 with ServersFixture with QuServerFixture with AuthStubFixture with UnAuthStubFixture {
 
   //for client stub fixture
   override protected val serverInfo: RecipientInfo = RecipientInfo(quServer1.ip, quServer1.port)
@@ -90,23 +91,21 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
                 Request(operation = Some(IncrementAsObj), //now sending an UPDATE op
                   ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
-            } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
+            } yield response.authenticatedRh should be(firstResponse.authenticatedRh)
           }
         }
 
-
-        /* //next optimization
         describe("and OHS is not current and the requested operation is a query") {
-          val responseForQueryWithOutdatedOhs = for {
+          lazy val responseForQueryWithOutdatedOhs = for {
             _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-              Request(operation = Some(new Increment()),
+              Request(operation = Some(Increment()),
                 ohs = emptyOhs(serverIds)))
             response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-              Request(operation = Some(new GetObj()), //sending a QUERY operation
+              Request(operation = Some(GetObj()), //sending a QUERY operation
                 ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
           } yield response
           it("should fail") {
-            responseForQueryWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
+            responseForQueryWithOutdatedOhs.map(_.responseCode should be(StatusCode.FAIL))
           }
           it("should return the updated answer (optimistic query execution)") {
             responseForQueryWithOutdatedOhs.map(response => assert(response.answer.contains(2023)))
@@ -114,16 +113,15 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
           it("should return its updated replica history (optimistic query execution)") {
             for {
               firstResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-                Request(operation = Some(new Increment()),
+                Request(operation = Some(Increment()),
                   ohs = emptyOhs(serverIds)))
               response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-                Request(operation = Some(new GetObj()),
+                Request(operation = Some(GetObj()),
                   ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
-            } yield assert(response.authenticatedRh == firstResponse.authenticatedRh)
+            } yield response.authenticatedRh should be(firstResponse.authenticatedRh)
           }
-        }*/
+        }
 
-        //testing all the branches of service impl
         describe("and OHS is current") {
           def neverObjectSync() = (mockedQuorumPolicy.objectSync(_: LogicalTimestamp)(_: JavaTypeable[LogicalTimestamp],
             _: JavaTypeable[ObjectSyncResponse[Int]]))
@@ -167,6 +165,28 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               } yield response
               val (_, (lt, ltCo), _) = setup(op, emptyOhs(serverIds), thresholds.q, thresholds.r, clientId)
               val correctRh = serverRh.appended(lt -> ltCo)
+
+              describe("and the server already received at least one previous update") {
+                it("should prune its replica history by removing candidates with lt timestamp previous to conditioned-on timestamp of the most recent update") {
+                  for {
+                    serverRhAfterFirstRequest <- for {
+                      firstResponse <- responseForUpdate
+                    } yield firstResponse.authenticatedRh._1
+                    secondResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+                      Request(operation = op,
+                        ohs = aOhsWithMethod))
+                    unprunedRhAfterSecondResponse <- for {
+                      (_, (lt, ltCo), _) <- Future.successful(setup(op, aOhsWithMethod, thresholds.q, thresholds.r, clientId))
+                    } yield serverRhAfterFirstRequest.appended(lt -> ltCo)
+                  }
+                  yield secondResponse.authenticatedRh._1 should be(prune(unprunedRhAfterSecondResponse,
+                    {
+                      val (_, (_, ltCo), _) = setup(op, aOhsWithMethod, thresholds.q, thresholds.r, clientId)
+                      ltCo
+                    }))
+                }
+              }
+
 
               describe("and conditioned-on object is stored at service side") {
                 it("should not object sync") {
@@ -274,8 +294,8 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                       id(quServer3) -> List(aCandidate(emptyLT.time + 1, emptyLT.time, serverIds), emptyCandidate),
                       id(quServer4) -> List(aCandidate(emptyLT.time + 2, emptyLT.time, serverIds), emptyCandidate),
                     ), keysByServer))
-                    //ohs = aOhsWithInlineMethod)
-                  )
+                  //ohs = aOhsWithInlineMethod)
+                )
               } yield (serverRhAfterFirstUpdate, responseForQuery)
 
               it("should not object sync") {
@@ -306,29 +326,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                 }
               }
             }
-            /*val ohs = emptyOhs(serverIds)
-            val op = Some(new GetObj[Int])
 
-            lazy val responseForQuery = for {
-              response <- authStub.send[Request[Int, Int], Response[Option[Int]]](
-                Request(operation = op,
-                  ohs = ohs))
-            } yield response
-            it("should not edit its replica history") {
-              responseForQuery.map(_.authenticatedRh._1 should be(emptyRh))
-            }
-            it("should succeed") {
-              responseForQuery.map(_.responseCode should be(SUCCESS))
-            }
-            it("should return correct answer") {
-              responseForQuery.map(_.answer should be(Some(InitialObject)))
-            }
-            describe("and conditioned-on object is stored at service side") {
-              it("should not object sync") {
-                neverObjectSync()
-                succeed
-              }
-            }*/
           }
           describe("and OHS is classifiable as a copy") {
             val op = Option.empty[Operation[Object, Int]]
