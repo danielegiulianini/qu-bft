@@ -1,3 +1,5 @@
+package qu.storage
+
 import org.scalatest.funspec.AnyFunSpec
 
 class ImmutableStorageSpec extends AnyFunSpec {

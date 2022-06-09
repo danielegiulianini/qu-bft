@@ -9,8 +9,8 @@ import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should.Matchers
 import qu.RecipientInfo.id
 import qu.model.Commands.{GetObj, Increment, IncrementAsObj}
-import qu.model.ConcreteQuModel.{emptyOhs, setup, _}
-import qu.model.{OHSFixture, QuorumSystemThresholds, StatusCode}
+import qu.model.ConcreteQuModel._
+import qu.model.{OHSFixture5, QuorumSystemThresholds, StatusCode}
 import qu.model.StatusCode.{FAIL, SUCCESS}
 
 import scala.concurrent.Future
@@ -18,7 +18,7 @@ import scala.concurrent.Future
 
 //since Async(FunSpec) is used Async(MockFactory) must be used (see https://scalamock.org/user-guide/integration/)
 class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
-  with OHSFixture with ServersFixture with QuServerFixture with AuthStubFixture with UnAuthStubFixture {
+  with OHSFixture5 with ServersFixture with QuServerFixture with AuthStubFixture with UnAuthStubFixture {
 
   //for client stub fixture
   override protected val serverInfo: RecipientInfo = RecipientInfo(quServer1.ip, quServer1.port)

@@ -2,7 +2,6 @@
 package qu.auth
 
 import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
-import qu.auth.{Credentials, Role, Token, User}
 
 class LocalAuthenticator {
   private val usersByUsername = Map[String, User]()
