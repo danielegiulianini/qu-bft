@@ -39,3 +39,8 @@ class MyAuthService extends AuthGrpc.Auth {
 
 
 }
+/*
+object AttemptsForHighLevelWrapper {
+  AuthGrpc.Auth.serviceCompanion.
+}
+*/
