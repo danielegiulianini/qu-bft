@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-trait ServerQuorumPolicy[Transportable[_], ObjectT] {
+trait ServerQuorumPolicy[Transportable[_], ObjectT] extends Shutdownable {
   def objectSync(lt: LogicalTimestamp)(implicit
                                        transportableRequest: Transportable[LogicalTimestamp],
                                        transportableResponse: Transportable[ObjectSyncResponse[ObjectT]]

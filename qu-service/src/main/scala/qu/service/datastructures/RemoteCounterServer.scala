@@ -11,5 +11,5 @@ object RemoteCounterServer {
     QuServerBuilder.jacksonSimpleServerBuilder[Int](
       ip, port, privateKey,
       thresholds,
-      initialValue).addOperationOutput()[Int].addOperationOutput()[Unit]
+      initialValue).addOperationOutput[Int]().addOperationOutput[Unit]()
 }

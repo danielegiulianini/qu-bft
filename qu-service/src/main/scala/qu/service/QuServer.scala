@@ -1,7 +1,7 @@
 package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.grpc.{ServerBuilder, ServerInterceptor}
+import io.grpc.{Server, ServerBuilder, ServerInterceptor}
 import qu.Shutdownable
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
@@ -25,7 +25,7 @@ object QuServer {
   // creation by builder, not factory: def apply()
 
   //could use builder factory instead of defaultBuilder
-  def builder[U: TypeTag](ip: String, port: Int, privateKey:String, thresholds: QuorumSystemThresholds, obj: U): Unit =
+  def builder[U: TypeTag](ip: String, port: Int, privateKey: String, thresholds: QuorumSystemThresholds, obj: U): QuServerBuilder[JavaTypeable, U] =
     jacksonSimpleServerBuilder[U](ip, port, privateKey, thresholds, obj)
 }
 
@@ -67,21 +67,22 @@ class QuServerBuilder[Transportable[_], ObjectT](private val serviceFactory: Ser
                                                  private val obj: ObjectT) {
 
   private val quService: AbstractQuService[Transportable, ObjectT] =
-    serviceFactory(ServerInfo(ip, port,privateKey), obj, quorumSystemThresholds)
+    serviceFactory(ServerInfo(ip, port, privateKey), obj, quorumSystemThresholds)
 
-  def addOperation[T: TypeTag](implicit
-                               transportableRequest: Transportable[Request[T, ObjectT]],
-                               transportableResponse: Transportable[Response[Option[T]]],
-                               transportableLogicalTimestamp: Transportable[LogicalTimestamp],
-                               transportableObjectSyncResponse: Transportable[ObjectSyncResponse[ObjectT]],
-                               transportableObjectRequest: Transportable[Request[Object, ObjectT]],
-                               transportableObjectResponse: Transportable[Response[Option[Object]]]):
-    QuServerBuilder[Transportable, ObjectT] = {
+  def addOperationOutput[T: TypeTag]()(implicit
+                                       transportableRequest: Transportable[Request[T, ObjectT]],
+                                       transportableResponse: Transportable[Response[Option[T]]],
+                                       transportableLogicalTimestamp: Transportable[LogicalTimestamp],
+                                       transportableObjectSyncResponse: Transportable[ObjectSyncResponse[ObjectT]],
+                                       transportableObjectRequest: Transportable[Request[Object, ObjectT]],
+                                       transportableObjectResponse: Transportable[Response[Option[Object]]]):
+  QuServerBuilder[Transportable, ObjectT] = {
     quService.addOperationOutput[T]()
     this
   }
 
   def addServer(ip: String, port: Int, keySharedWithMe: String): QuServerBuilder[Transportable, ObjectT] = {
+    println("server " + this.ip + this.port + ", adding server " + ip + port + ", with key:" + keySharedWithMe)
     quService.addServer(ip, port, keySharedWithMe)
     this
   }
@@ -96,7 +97,8 @@ class QuServerBuilder[Transportable[_], ObjectT](private val serviceFactory: Ser
 object QuServerBuilder {
   //hided builder implementations (injecting dependencies)
   def jacksonSimpleServerBuilder[ObjectT: TypeTag](ip: String,
-                                                   port: Int, privateKey: String,
+                                                   port: Int,
+                                                   privateKey: String,
                                                    thresholds: QuorumSystemThresholds,
                                                    obj: ObjectT) =
     new QuServerBuilder[JavaTypeable, ObjectT](
@@ -107,7 +109,6 @@ object QuServerBuilder {
       obj)
 
 }
-
 
 
 /*

@@ -7,10 +7,11 @@ import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.ServerInfo
 import qu.service.ServerQuorumPolicy.{ServerQuorumPolicyFactory, simpleDistributedJacksonServerQuorumFactory}
-import qu.{AbstractRecipientInfo, CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory, RecipientInfo}
+import qu.{AbstractRecipientInfo, CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory, RecipientInfo, Shutdownable}
 import qu.RecipientInfo._
 
 import java.util.Objects
+import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
 
 
@@ -48,7 +49,7 @@ abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chos
                                                              protected val port: Int,
                                                              protected val privateKey: String,
                                                              protected val obj: ObjectT)
-  extends BindableService with QuService[Transportable, ObjectT] {
+  extends BindableService with QuService[Transportable, ObjectT] with Shutdownable {
   private val ssd = CachingServiceServerDefinitionBuilder(SERVICE_NAME)
 
   protected var servers: Set[RecipientInfo] = Set[RecipientInfo]()
@@ -98,7 +99,10 @@ abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chos
     keysSharedWithMe = keysSharedWithMe + (id -> keySharedWithMe)
   }
 
+
   override def bindService(): ServerServiceDefinition = ssd.build()
+
+  override def shutdown()(implicit ec: ExecutionContext): Future[Unit] = quorumPolicy.shutdown
 }
 
 

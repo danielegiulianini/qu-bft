@@ -22,19 +22,6 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
 
   self: AsyncTestSuite with ServersFixture =>
 
-  /* service without mocking...
-  val serviceFactory = jacksonSimpleQuorumServiceFactory[Int]()
-
-  var service = serviceFactory(quServer1WithKey,
-    InitialObject,
-    thresholds)
-
-  service = service.addServer(quServer2WithKey)
-    .addServer(quServer3WithKey)
-    .addServer(quServer4WithKey)
-    .addOperationOutput[Int]()
-    .addOperationOutput[Unit]()*/
-
   val mockedQuorumPolicy = mock[JacksonSimpleBroadcastServerPolicy[Int]]
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
@@ -76,3 +63,17 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
     }
   }
 }
+
+
+/* service without mocking...
+val serviceFactory = jacksonSimpleQuorumServiceFactory[Int]()
+
+var service = serviceFactory(quServer1WithKey,
+  InitialObject,
+  thresholds)
+
+service = service.addServer(quServer2WithKey)
+  .addServer(quServer3WithKey)
+  .addServer(quServer4WithKey)
+  .addOperationOutput[Int]()
+  .addOperationOutput[Unit]()*/

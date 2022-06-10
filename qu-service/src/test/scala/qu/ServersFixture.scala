@@ -9,7 +9,7 @@ import qu.service.AbstractQuService.ServerInfo
 //"fixture-context objects" pattern from https://www.scalatest.org/user_guide/sharing_fixtures#fixtureContextObjects
 //(as don't need to clean up after.)
 trait ServersFixture {
-  
+
   self: OHSFixture5 =>
 
   val quServer1 = RecipientInfo(ip = "ciao2", port = 1)
@@ -37,15 +37,15 @@ trait ServersFixture {
 
   val serverIds = keysByServer.keys.toSet
 
-  val quServer1WithKey = ServerInfo(ip = quServer1.ip, port = quServer1.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer1)))
+  val quServer1WithKey = ServerInfo(ip = quServer1.ip,
+    port = quServer1.port,
+    keySharedWithMe = keysByServer(id(quServer1))(id(quServer1)))
   val quServer2WithKey = ServerInfo(ip = quServer2.ip, port = quServer2.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer2)))
   val quServer3WithKey = ServerInfo(ip = quServer3.ip, port = quServer3.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer3)))
   val quServer4WithKey = ServerInfo(ip = quServer4.ip, port = quServer4.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer4)))
 
-  val InitialObject = 2022
   val FaultyServersCount = 1
   val MalevolentServersCount = 0
-
   val thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount)
 
   //ohs
@@ -54,4 +54,8 @@ trait ServersFixture {
   val aOhsWithInlineBarrier: OHS = ohsWithInlineBarrierFor(keysByServer, thresholds.r)
   val aOhsWithBarrier: OHS = ohsWithBarrierFor(keysByServer)
   val aOhsWithCopy: OHS = ohsWithCopyFor(serverKeys = keysByServer)
+
+
+  val InitialObject = 2022
+
 }
