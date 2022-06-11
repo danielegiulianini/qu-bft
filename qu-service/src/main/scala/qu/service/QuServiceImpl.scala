@@ -28,7 +28,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
                                                          override val port: Int,
                                                          override val privateKey: String,
                                                          override val obj: ObjectT,
-                                                         override val thresholds: QuorumSystemThresholds)
+                                                         override val thresholds: QuorumSystemThresholds)(implicit executor: ExecutionContext)
   extends AbstractQuService[Transportable, ObjectT](methodDescriptorFactory, policyFactory, thresholds, ip, port, privateKey, obj) {
 
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)

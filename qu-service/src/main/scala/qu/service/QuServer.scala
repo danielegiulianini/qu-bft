@@ -2,7 +2,7 @@ package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{Server, ServerBuilder, ServerInterceptor}
-import qu.Shutdownable
+import qu.{Shutdownable, Startable}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.{ServerInfo, ServiceFactory, jacksonSimpleQuorumServiceFactory}
@@ -13,19 +13,14 @@ import scala.reflect.runtime.universe._
 
 
 //a facade that hides grpc internals
-trait QuServer /*todo to add: extends Shutdownable*/ {
-
-  def start(): Unit
-
-  def stop()(implicit executor: ExecutionContext): Future[Unit]
-}
+trait QuServer extends Startable with Shutdownable
 
 //companion object
 object QuServer {
   // creation by builder, not factory: def apply()
 
   //could use builder factory instead of defaultBuilder
-  def builder[U: TypeTag](ip: String, port: Int, privateKey: String, thresholds: QuorumSystemThresholds, obj: U): QuServerBuilder[JavaTypeable, U] =
+  def builder[U: TypeTag](ip: String, port: Int, privateKey: String, thresholds: QuorumSystemThresholds, obj: U)(implicit executor: ExecutionContext): QuServerBuilder[JavaTypeable, U] =
     jacksonSimpleServerBuilder[U](ip, port, privateKey, thresholds, obj)
 }
 
@@ -36,7 +31,7 @@ object QuServer {
 // - tls support
 class QuServerImpl[Transportable[_], U](authorizationInterceptor: ServerInterceptor,
                                         quService: AbstractQuService[Transportable, U],
-                                        port: Int) extends QuServer {
+                                        port: Int)(implicit executor: ExecutionContext) extends QuServer {
 
   //here can plug creds with tls
   private val grpcServer = ServerBuilder
@@ -47,12 +42,18 @@ class QuServerImpl[Transportable[_], U](authorizationInterceptor: ServerIntercep
 
   override def start(): Unit = grpcServer.start
 
-  override def stop()(implicit executor: ExecutionContext): Future[Unit] = Future {
-    grpcServer.shutdown
+  override def shutdown(): Future[Unit] = Future {
+    //grpcServer.shutdown
     //val promise = Promise()
-    grpcServer.awaitTermination()
+    //grpcServer.awaitTermination()
     //promise.future
+    Future {
+      grpcServer.shutdown
+      grpcServer.awaitTermination()
+    }
   }
+
+  override def isShutdown: Flag = grpcServer.isShutdown
 }
 
 //alternative to apply in companion object
@@ -64,7 +65,7 @@ class QuServerBuilder[Transportable[_], ObjectT](private val serviceFactory: Ser
                                                  private val privateKey: String,
                                                  //private val
                                                  private val quorumSystemThresholds: QuorumSystemThresholds,
-                                                 private val obj: ObjectT) {
+                                                 private val obj: ObjectT)(implicit executor: ExecutionContext) {
 
   private val quService: AbstractQuService[Transportable, ObjectT] =
     serviceFactory(ServerInfo(ip, port, privateKey), obj, quorumSystemThresholds)
@@ -100,7 +101,7 @@ object QuServerBuilder {
                                                    port: Int,
                                                    privateKey: String,
                                                    thresholds: QuorumSystemThresholds,
-                                                   obj: ObjectT) =
+                                                   obj: ObjectT)(implicit ec: ExecutionContext) =
     new QuServerBuilder[JavaTypeable, ObjectT](
       jacksonSimpleQuorumServiceFactory(),
       new JwtAuthorizationServerInterceptor(),

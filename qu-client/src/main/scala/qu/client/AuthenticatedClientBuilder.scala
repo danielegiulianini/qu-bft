@@ -7,6 +7,8 @@ import qu.{RecipientInfo, Shutdownable}
 import qu.client.ClientQuorumPolicy.{ClientPolicyFactory, simpleJacksonPolicyFactoryUnencrypted}
 import qu.model.QuorumSystemThresholds
 
+import scala.concurrent.ExecutionContext
+
 
 case class AuthenticatedClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
                                                                   private val policyFactory: ClientPolicyFactory[Transportable, ObjectT],
@@ -36,7 +38,7 @@ case class AuthenticatedClientBuilder[ObjectT, Transportable[_]]( //programmer d
 object AuthenticatedClientBuilder {
 
   //choosing an implementation as the default
-  def builder[U](token: Token): AuthenticatedClientBuilder[U, JavaTypeable] =
+  def builder[U](token: Token)(implicit ec:ExecutionContext): AuthenticatedClientBuilder[U, JavaTypeable] =
     simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 
   private def empty[U, Transferable[_]](policyFactory: ClientPolicyFactory[Transferable, U],
@@ -48,7 +50,7 @@ object AuthenticatedClientBuilder {
       Option.empty)
 
   //builder implementations
-  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: Token):
+  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: Token)(implicit ec:ExecutionContext):
   AuthenticatedClientBuilder[U, JavaTypeable] =
     AuthenticatedClientBuilder.empty[U, JavaTypeable](
       simpleJacksonPolicyFactoryUnencrypted(token),

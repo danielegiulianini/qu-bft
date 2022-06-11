@@ -7,9 +7,8 @@ import qu.StubFactories.distributedJacksonJwtStubFactory
 import qu.auth.Token
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 //import that declares specific dependency
 import qu.model.ConcreteQuModel._
@@ -26,7 +25,7 @@ trait ClientQuorumPolicy[ObjectT, Transportable[_]] extends Shutdownable {
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
 class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
                                                              protected val servers: Map[ServerId, JwtGrpcClientStub[Transportable]],
-                                                             private val retryingTime: FiniteDuration = 3.seconds)
+                                                             private val retryingTime: FiniteDuration = 3.seconds)(implicit ec:ExecutionContext)
   extends ResponsesGatherer[Transportable](servers, retryingTime) with ClientQuorumPolicy[ObjectT, Transportable] {
 
 
@@ -67,7 +66,7 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
 
 
 class JacksonSimpleBroadcastClientPolicy[ObjectT](private val thresholds: QuorumSystemThresholds,
-                                                  override protected val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])
+                                                  override protected val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])(implicit ec:ExecutionContext)
   extends SimpleBroadcastClientPolicy[ObjectT, JavaTypeable](thresholds, servers)
 
 
@@ -78,9 +77,9 @@ object ClientQuorumPolicy {
     (Set[RecipientInfo], QuorumSystemThresholds) => ClientQuorumPolicy[ObjectT, Transportable] with Shutdownable
 
   //without tls
-  def simpleJacksonPolicyFactoryUnencrypted[ObjectT](jwtToken: Token): ClientPolicyFactory[JavaTypeable, ObjectT] =
+  def simpleJacksonPolicyFactoryUnencrypted[ObjectT](jwtToken: Token)(implicit executionContext: ExecutionContext): ClientPolicyFactory[JavaTypeable, ObjectT] =
     (servers, thresholds) => new SimpleBroadcastClientPolicy(thresholds,
-      servers.map { recipientInfo => id(recipientInfo) -> distributedJacksonJwtStubFactory(jwtToken, recipientInfo.ip, recipientInfo.port) }.toMap)
+      servers.map { recipientInfo => id(recipientInfo) -> distributedJacksonJwtStubFactory(jwtToken, recipientInfo.ip, recipientInfo.port, executionContext) }.toMap)
 
   //with tls
   def simpleJacksonPolicyFactoryWithTls[U](jwtToken: String): ClientPolicyFactory[JavaTypeable, U] = ???

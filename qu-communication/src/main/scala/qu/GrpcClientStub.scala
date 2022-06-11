@@ -7,10 +7,10 @@ import qu.GrpcClientStub.{methodName, serviceName}
 import scalapb.grpc.ClientCalls
 
 import java.util.concurrent.TimeUnit
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 //a stub reusable between client and server sides
-abstract class GrpcClientStub[Transferable[_]](val chan: ManagedChannel)
+abstract class GrpcClientStub[Transferable[_]](val chan: ManagedChannel)(implicit executor: ExecutionContext)
   extends MethodDescriptorFactory[Transferable] with MarshallerFactory[Transferable] with Shutdownable {
 
   protected val callOptions: CallOptions = CallOptions.DEFAULT
@@ -23,14 +23,16 @@ abstract class GrpcClientStub[Transferable[_]](val chan: ManagedChannel)
     ClientCalls.asyncUnaryCall(chan, md, callOptions, toBeSent)
   }
 
-  override def shutdown(): Unit = {
+  override def shutdown(): Future[Unit] = Future {
     chan.shutdown()
     chan.awaitTermination(1000, TimeUnit.SECONDS)
   }
+
+  override def isShutdown: Boolean = chan.isShutdown
 }
 
 
-abstract class JwtGrpcClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)
+abstract class JwtGrpcClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)(implicit executor: ExecutionContext)
   extends GrpcClientStub[Transferable](chan) {
   override val callOptions = CallOptions.DEFAULT.withCallCredentials(new AuthenticationCallCredentials(token))
 }
@@ -68,11 +70,11 @@ object GrpcClientStub {
   val methodName = QuServiceDescriptors.OPERATION_REQUEST_METHOD_NAME
   val serviceName = QuServiceDescriptors.SERVICE_NAME
 
-  class UnauthenticatedJacksonClientStub(channel: ManagedChannel)
+  class UnauthenticatedJacksonClientStub(channel: ManagedChannel)(implicit executor: ExecutionContext)
     extends GrpcClientStub[JavaTypeable](channel) with JacksonMethodDescriptorFactory
       with CachingMethodDescriptorFactory[JavaTypeable]
 
-  class JwtJacksonClientStub(channel: ManagedChannel, token: Token)
+  class JwtJacksonClientStub(channel: ManagedChannel, token: Token)(implicit executor: ExecutionContext)
     extends JwtGrpcClientStub[JavaTypeable](channel, token) with JacksonMethodDescriptorFactory
       with CachingMethodDescriptorFactory[JavaTypeable]
 

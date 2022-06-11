@@ -95,6 +95,8 @@ class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: C
     } yield ohs
   }
 
-  override def shutdown(): Unit = policy.shutdown()
+  override def shutdown(): Future[Unit] = policy.shutdown()
+
+  override def isShutdown: Flag = policy.isShutdown
 }
 

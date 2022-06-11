@@ -4,12 +4,17 @@ import qu.model.ConcreteQuModel.ServerId
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Success
 
+trait Startable {
+  def start(): Unit
+}
 
 trait Shutdownable {
-  def shutdown(): Unit
+  def shutdown()/*(implicit ec: ExecutionContext)*/: Future[Unit]
+
+  def isShutdown: Boolean
 }
 
 abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, GrpcClientStub[Transportable]],
@@ -55,6 +60,10 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, GrpcClie
     completionPromise.future
   }
 
-  override def shutdown(): Unit = servers.values.foreach(_.shutdown())
+  override def shutdown(): Future[Unit] =
+    Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ())
+  //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())
+
+  override def isShutdown: Boolean = servers.values.filterNot(_.isShutdown).headOption.isEmpty
 }
 

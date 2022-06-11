@@ -48,7 +48,7 @@ abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chos
                                                              protected val ip: String,
                                                              protected val port: Int,
                                                              protected val privateKey: String,
-                                                             protected val obj: ObjectT)
+                                                             protected val obj: ObjectT)(implicit executor: ExecutionContext)
   extends BindableService with QuService[Transportable, ObjectT] with Shutdownable {
   private val ssd = CachingServiceServerDefinitionBuilder(SERVICE_NAME)
 
@@ -102,7 +102,9 @@ abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chos
 
   override def bindService(): ServerServiceDefinition = ssd.build()
 
-  override def shutdown()(implicit ec: ExecutionContext): Future[Unit] = quorumPolicy.shutdown
+  override def shutdown(): Future[Unit] = quorumPolicy.shutdown
+
+  override def isShutdown: Flag = quorumPolicy.isShutdown
 }
 
 
@@ -114,7 +116,7 @@ object AbstractQuService {
   type ServiceFactory[Transportable[_], U] =
     (ServerInfo, U, QuorumSystemThresholds) => AbstractQuService[Transportable, U]
 
-  def jacksonSimpleQuorumServiceFactory[U: TypeTag](): ServiceFactory[JavaTypeable, U] = (serverInfo, obj, quorumSystemThresholds) =>
+  def jacksonSimpleQuorumServiceFactory[U: TypeTag]()(implicit executor: ExecutionContext): ServiceFactory[JavaTypeable, U] = (serverInfo, obj, quorumSystemThresholds) =>
     new QuServiceImpl(
       methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable],
       policyFactory = simpleDistributedJacksonServerQuorumFactory(),
@@ -128,7 +130,7 @@ object AbstractQuService {
   //todo (if wanting to use named params for more readability)
   def jacksonSimpleQuorumServiceFactoryWithServerInfo[U: TypeTag]()(serverInfo: ServerInfo,
                                                                     obj: U,
-                                                                    quorumSystemThresholds: QuorumSystemThresholds) =
+                                                                    quorumSystemThresholds: QuorumSystemThresholds)(implicit executor: ExecutionContext) =
     new QuServiceImpl(
       methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
       policyFactory = simpleDistributedJacksonServerQuorumFactory[U](),

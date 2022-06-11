@@ -23,7 +23,7 @@ trait QuClient[ObjectT, Transferable[_]] extends Shutdownable {
 }
 
 object QuClient {
-  def defaultBuilder[U](token: Token): AuthenticatedClientBuilder[U, JavaTypeable] =
+  def defaultBuilder[U](token: Token)(implicit executor: ExecutionContext): AuthenticatedClientBuilder[U, JavaTypeable] =
     simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 }
 

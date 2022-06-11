@@ -6,6 +6,8 @@ import io.grpc.{Grpc, InsecureChannelCredentials, TlsChannelCredentials}
 import qu.GrpcClientStub.{JwtJacksonClientStub, UnauthenticatedJacksonClientStub}
 import qu.auth.Token
 
+import scala.concurrent.ExecutionContext
+
 trait AbstractRecipientInfo {
   def ip: String
 
@@ -23,12 +25,12 @@ object RecipientInfo {
 object StubFactories {
   //here key is ignored
 
-  type StubFactory[Transportable[_]] = (String, Int) => GrpcClientStub[Transportable] //or def stubFactory[Transportable[_]](ip:String, port:Int):GrpcClientStub[Transportable] = ???
+  type StubFactory[Transportable[_]] = (String, Int, ExecutionContext) => GrpcClientStub[Transportable] //or def stubFactory[Transportable[_]](ip:String, port:Int):GrpcClientStub[Transportable] = ???
 
-  val inNamedProcessJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port) => {
+  val inNamedProcessJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port, ec) => {
     //could also use for address/for port
     //could validate with InetAddress
-    new UnauthenticatedJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build())
+    new UnauthenticatedJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build())(ec)
   }
 
   /*def inNamedProcessJacksonStubFactory(ip:String, port:Int): UnauthenticatedJacksonClientStub = {
@@ -37,23 +39,23 @@ object StubFactories {
     new UnauthenticatedJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build())
   }*/
 
-  val unencryptedDistributedJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port) =>
+  val unencryptedDistributedJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port, ec) =>
     new UnauthenticatedJacksonClientStub(Grpc.newChannelBuilder(ip + ":" + port,
       TlsChannelCredentials.create())
-      .build)
+      .build)(ec)
 
-  val tlsDistributedJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port) =>
+  val tlsDistributedJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port, ec) =>
     new UnauthenticatedJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port)
-      .build)
+      .build)(ec)
 
-  type AuthenticatedStubFactory[Transportable[_]] = (Token, String, Int) => JwtGrpcClientStub[Transportable]
+  type AuthenticatedStubFactory[Transportable[_]] = (Token, String, Int, ExecutionContext) => JwtGrpcClientStub[Transportable]
 
-  val inProcessJacksonJwtStubFactory: AuthenticatedStubFactory[JavaTypeable] = (token, ip, port) =>
-    new JwtJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build, token)
+  val inProcessJacksonJwtStubFactory: AuthenticatedStubFactory[JavaTypeable] = (token, ip, port, ec) =>
+    new JwtJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build, token)(ec)
 
-  val distributedJacksonJwtStubFactory: AuthenticatedStubFactory[JavaTypeable] = (token, ip, port) =>
+  val distributedJacksonJwtStubFactory: AuthenticatedStubFactory[JavaTypeable] = (token, ip, port, ec) =>
     new JwtJacksonClientStub(Grpc.newChannelBuilder(ip + ":" + port, InsecureChannelCredentials.create())
-      .build, token)
+      .build, token)(ec)
 
   //analogous but with tls...
   //...
