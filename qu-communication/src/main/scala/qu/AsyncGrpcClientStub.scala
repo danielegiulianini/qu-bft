@@ -1,9 +1,10 @@
 package qu
 
-import auth.{Constants, Token}
+import auth.Token
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc._
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
+import qu.auth.common.Constants
 import scalapb.grpc.ClientCalls
 
 import java.util.concurrent.TimeUnit

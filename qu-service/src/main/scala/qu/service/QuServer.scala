@@ -2,6 +2,7 @@ package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{Server, ServerBuilder, ServerInterceptor}
+import qu.auth.server.JwtAuthorizationServerInterceptor
 import qu.{Shutdownable, Startable}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds

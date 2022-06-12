@@ -1,4 +1,4 @@
-import qu.auth.AuthClient
+import qu.auth.client.AuthClient
 
 object AuthSpec extends App {
 

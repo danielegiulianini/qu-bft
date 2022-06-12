@@ -5,7 +5,8 @@ import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.scalatest.flatspec.FixtureAnyFlatSpecLike
 import org.scalatest._
 import qu.StubFactories.{inNamedProcessJacksonStubFactory, inProcessJacksonJwtStubFactory}
-import qu.auth.{Constants, Token}
+import qu.auth.Token
+import qu.auth.common.Constants
 
 
 trait AuthStubFixture extends BeforeAndAfterAll {

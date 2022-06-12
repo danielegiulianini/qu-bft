@@ -1,4 +1,4 @@
-package qu.auth
+package qu.auth.common
 
 class WrongCredentialsException(message:String) extends Exception {
 

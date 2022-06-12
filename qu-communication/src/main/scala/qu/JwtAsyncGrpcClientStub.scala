@@ -1,7 +1,8 @@
 package qu
 
 import io.grpc.{CallCredentials, CallOptions, ManagedChannel, Metadata, Status}
-import qu.auth.{Constants, Token}
+import qu.auth.Token
+import qu.auth.common.Constants
 
 import java.util.concurrent.Executor
 import scala.concurrent.ExecutionContext

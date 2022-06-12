@@ -1,8 +1,8 @@
-package qu.auth
+package qu.auth.common
 
-import FutureUtilities.mapThrowableByStatus
 import io.grpc.Status
 import qu.auth._
+import qu.auth.common.FutureUtilities.mapThrowableByStatus
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

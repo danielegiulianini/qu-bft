@@ -1,7 +1,8 @@
 //class not dependent on specific transport layer
-package qu.auth
+package qu.auth.common
 
 import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
+import qu.auth.{Credentials, Role, Token, User}
 
 class LocalAuthenticator {
   private val usersByUsername = Map[String, User]()

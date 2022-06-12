@@ -1,6 +1,8 @@
 import io.grpc.{Server, ServerBuilder}
 import io.grpc.inprocess.InProcessChannelBuilder
-import qu.auth.{AuthClient, AuthGrpc, MyAuthService}
+import qu.auth.client.AuthClient
+import qu.auth.AuthGrpc
+import qu.auth.common.MyAuthService
 
 import scala.concurrent.ExecutionContext
 import scala.util.Failure

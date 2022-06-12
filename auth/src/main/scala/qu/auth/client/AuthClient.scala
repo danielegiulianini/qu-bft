@@ -1,9 +1,9 @@
-package qu.auth
+package qu.auth.client
 
-import FutureUtilities.mapThrowable
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.{ManagedChannel, ManagedChannelBuilder, StatusRuntimeException}
 import qu.auth.AuthGrpc.AuthStub
+import qu.auth.common.FutureUtilities.mapThrowable
 import qu.auth._
 
 import java.util.concurrent.TimeUnit

@@ -1,7 +1,7 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.auth.AuthClient
+import qu.auth.client.AuthClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future

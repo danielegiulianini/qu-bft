@@ -3,11 +3,11 @@ package qu.service
 import io.grpc.Context
 import io.grpc.stub.StreamObserver
 import qu.RecipientInfo.id
+import qu.auth.common.Constants
 import qu.{MethodDescriptorFactory, RecipientInfo}
-import qu.auth.Constants
 import qu.model.ConcreteQuModel.hmac
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
-import qu.service.ServerQuorumPolicy.ServerQuorumPolicyFactory
+import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.storage.ImmutableStorage
 
 import java.util.logging.{Level, Logger}
