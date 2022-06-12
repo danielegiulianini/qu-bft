@@ -7,6 +7,7 @@ import qu.{RecipientInfo, Shutdownable}
 import qu.client.ClientQuorumPolicy.{ClientPolicyFactory, simpleJacksonPolicyFactoryUnencrypted}
 import qu.model.QuorumSystemThresholds
 
+import java.util.Objects
 import scala.concurrent.ExecutionContext
 
 
@@ -17,16 +18,22 @@ case class AuthenticatedClientBuilder[ObjectT, Transportable[_]]( //programmer d
                                                                   private val serversInfo: Set[RecipientInfo],
                                                                   private val thresholds: Option[QuorumSystemThresholds],
                                                                 ) {
+  Objects.requireNonNull(policyFactory)
+  Objects.requireNonNull(backOffPolicy)
+  Objects.requireNonNull(serversInfo)
+  Objects.requireNonNull(thresholds)
 
-  def addServer(ip: String, port: Int): AuthenticatedClientBuilder[ObjectT, Transportable] =
-    this.copy(serversInfo = serversInfo + RecipientInfo(ip, port)) //could create channels here instead of creating in policy
+  def addServer(ip: String, port: Int): AuthenticatedClientBuilder[ObjectT, Transportable] = {
+    //todo validation with inetsocketaddress??
+    this.copy(serversInfo = serversInfo + RecipientInfo(ip, port))
+  }
 
-  def withThresholds(thresholds: QuorumSystemThresholds): AuthenticatedClientBuilder[ObjectT, Transportable] =
+  def withThresholds(thresholds: QuorumSystemThresholds): AuthenticatedClientBuilder[ObjectT, Transportable] = {
+    Objects.requireNonNull(thresholds)
     this.copy(thresholds = Some(thresholds))
+  }
 
   def build: AuthenticatedQuClientImpl[ObjectT, Transportable] = {
-
-    //todo missing validation
     new AuthenticatedQuClientImpl[ObjectT, Transportable](policyFactory(serversInfo, thresholds.get),
       backOffPolicy,
       serversInfo.map(id(_)),

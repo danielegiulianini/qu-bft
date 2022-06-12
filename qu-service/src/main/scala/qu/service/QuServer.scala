@@ -25,10 +25,7 @@ object QuServer {
 }
 
 
-//todo must inject dependency on:
-// - interceptor (call authentication)... (one field more), and for
-// - inprocess (fixture)? another dependencies (or could be the same if abstracting all in one)
-// - tls support
+
 class QuServerImpl[Transportable[_], U](authorizationInterceptor: ServerInterceptor,
                                         quService: AbstractQuService[Transportable, U],
                                         port: Int)(implicit executor: ExecutionContext) extends QuServer {
@@ -83,7 +80,6 @@ class QuServerBuilder[Transportable[_], ObjectT](private val serviceFactory: Ser
   }
 
   def addServer(ip: String, port: Int, keySharedWithMe: String): QuServerBuilder[Transportable, ObjectT] = {
-    println("server " + this.ip + this.port + ", adding server " + ip + port + ", with key:" + keySharedWithMe)
     quService.addServer(ip, port, keySharedWithMe)
     this
   }
