@@ -10,7 +10,7 @@ import qu.service.datastructures.RemoteCounterServer
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Success}
+import scala.util.{Failure, Success, Try}
 
 
 class SyncSmrSystemImpl extends SyncSmrSystem {
@@ -74,18 +74,18 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
     quServerIpPorts,
     thresholds)
 
-  override def killServer(sid: ConcreteQuModel.ServerId): ServerEventResult = {
+  override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = {
     Await.ready(servers(sid).shutdown(), atMost = 1.seconds)
     ServerKilled(sid, servers.view.mapValues(server => if (server.isShutdown) SHUTDOWN else ACTIVE).toMap)
   }
 
-  override def increment(): CounterEventResult = {
+  override def increment():  Try[CounterEventResult] = {
     distributedClient.increment()
     IncResult
   }
 
 
-  override def value(): CounterEventResult = {
+  override def value():  Try[CounterEventResult] = {
     ValueResult(distributedClient.value())
   }
 
@@ -100,7 +100,7 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
     lastOperation2
   }*/
 
-  override def reset(): CounterEventResult = {
+  override def reset():  Try[CounterEventResult] = {
     distributedClient.reset()
     ResetResult
   }

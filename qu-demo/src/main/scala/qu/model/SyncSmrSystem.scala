@@ -7,16 +7,15 @@ import scala.util.Try
 
 trait SyncSmrSystem {
 
-  //@throws(classOf[qu.model.ThresholdsExceededExeption])
   def killServer(sid: ServerId): Try[ServerEventResult]
 
-  def increment(): CounterEventResult
+  def increment(): Try[CounterEventResult]
 
-  //def decrement(): Unit
+  def decrement(): Try[CounterEventResult]
 
-  def value(): CounterEventResult
+  def value(): Try[CounterEventResult]
 
-  def reset(): CounterEventResult
+  def reset(): Try[CounterEventResult]
 
   def stop(): Unit
 }

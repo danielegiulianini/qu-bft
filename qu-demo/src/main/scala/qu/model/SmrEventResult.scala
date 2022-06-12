@@ -7,27 +7,15 @@ import qu.model.examples.Commands.Increment
 sealed trait SmrEventResult
 
 
-sealed trait CounterEventResult extends SmrEventResult {
-  def of: Operation[_, Int]
-}
+sealed trait CounterEventResult extends SmrEventResult
 
-object IncResult extends CounterEventResult {
-  def of = Increment()
-}
+object IncResult extends CounterEventResult
 
-object DecResult extends CounterEventResult {
-  def of: Increment = ???
+object DecResult extends CounterEventResult
 
+object ResetResult extends CounterEventResult
 
-}
-
-object ResetResult extends CounterEventResult {
-  def of: Increment = ???
-}
-
-case class ValueResult(value: Int) extends CounterEventResult {
-  def of: Increment = ???
-}
+case class ValueResult(value: Int) extends CounterEventResult
 
 sealed trait ServerEventResult extends SmrEventResult
 

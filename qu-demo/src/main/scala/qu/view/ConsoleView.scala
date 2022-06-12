@@ -1,11 +1,10 @@
 package qu.view
 
-import qu.client.datastructures.{Decrement, Increment, Reset, Value}
 import qu.controller.Controller
 import qu.model.ConcreteQuModel.{Operation, ServerId}
 import qu.model.{DecResult, IncResult, ServerKilled, SmrEventResult, ThresholdsExceededException, ValueResult}
 import qu.view.ConsoleView.AbstractCliCmd.KillServer.getParamFromInputLine
-import qu.view.ConsoleView.AbstractCliCmd.{Exit, InvalidInput, KillServer, commands}
+import qu.view.ConsoleView.AbstractCliCmd.{Decrement, Exit, Increment, InvalidInput, KillServer, Reset, Value, commands}
 import qu.view.ConsoleView.{AbstractCliCmd, CliCmdWithoutArg, UnrecognizedCommand, parse}
 import qu.view.StringUtils.{concatenateByNewLine, padRight}
 
@@ -25,16 +24,19 @@ class ConsoleView extends View {
     println(generalPrompt)
 
     while (myScanner.hasNextLine && !stop) {
-      parse(myScanner.nextLine()) match { // Scan next line from command-prompt
-        case AbstractCliCmd.Exit => stop = true
-        case AbstractCliCmd.Exit => stop = true
-        case AbstractCliCmd.Exit => stop = true
-        case AbstractCliCmd.Exit => stop = true
-        case AbstractCliCmd.InvalidInput => result(Failure(new UnrecognizedCommand))
+      parse(myScanner.nextLine()) match {
+        case Exit =>
+          stop = true
+          observer.quit()
+        case KillServer(id) => observer.killServer(id)
+        case Increment => observer.increment()
+        case Decrement => observer.reset()
+        case Reset => observer.reset()
+        case Value => observer.value()
+        case InvalidInput => result(Failure(new UnrecognizedCommand))
       }
     }
   }
-
 
   val title = "Q/U protocol example SMR System"
 
@@ -54,17 +56,12 @@ class ConsoleView extends View {
     result match {
       case Success(ValueResult(value)) => operationOk + "Updated counter value is: " + value
       case Success(ServerKilled(id, serversStatuses)) => operationOk + "Servers " + id + "stopped. Servers status are: " + serversStatuses
-      case Failure(_: ThresholdsExceededException) => null
+      case Failure(ThresholdsExceededException()) => null
       case _ => operationOk
     }
   })
 
- /* def problem(ex: Exception): Unit = println({
-    ex match {
-      case _: ThresholdsExceededException => "problem..."
-      case _ => "problem..."
-    }
-  })*/
+
 }
 
 object ConsoleView {
@@ -125,10 +122,10 @@ object ConsoleView {
       case Some(cmd) => cmd
       case _ => InvalidInput
     }
-
-
   }
+}
 
+object ExampleOfGui extends App {
 
 }
 
@@ -215,3 +212,9 @@ def parse(inputLine: String): AbstractCliCmd = {
 
     */
 
+/* def problem(ex: Exception): Unit = println({
+     ex match {
+       case _: ThresholdsExceededException => "problem..."
+       case _ => "problem..."
+     }
+   })*/

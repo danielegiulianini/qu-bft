@@ -1,5 +1,3 @@
 package qu.model
 
-class ThresholdsExceededException {
-
-}
+case class ThresholdsExceededException() extends Exception
