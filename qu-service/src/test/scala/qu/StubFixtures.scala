@@ -12,7 +12,7 @@ trait AuthStubFixture extends BeforeAndAfterAll {
   this: AsyncTestSuite =>
 
   //lazy val for dealing with initialization issues
-  lazy val authStub: JwtGrpcClientStub[JavaTypeable] = {
+  lazy val authStub: JwtAsyncGrpcClientStub[JavaTypeable] = {
     println("creating authstub")
 
     inProcessJacksonJwtStubFactory(getJwt,

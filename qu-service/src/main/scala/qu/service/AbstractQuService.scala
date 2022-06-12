@@ -67,7 +67,6 @@ abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chos
                                              transportableObjectRequest: Transportable[Request[Object, ObjectT]],
                                              transportableObjectResponse: Transportable[Response[Option[Object]]],
                                              last: TypeTag[OperationOutputT]): AbstractQuService[Transportable, ObjectT] = {
-    //could be a separate reusable utility to plug into ssd (by implicit conversion)
     def addMethod[X: Transportable, Y: Transportable](handler: ServerCalls.UnaryMethod[X, Y]): Unit =
       ssd.addMethod(
         methodDescriptorFactory.generateMethodDescriptor5[X, Y](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME),
@@ -78,7 +77,6 @@ abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chos
     addMethod[LogicalTimestamp, ObjectSyncResponse[ObjectT]]((request, obs) => sObjectRequest(request, obs))
     //adding mds needed for handling barrier and copy requests
     addMethod[Request[Object, ObjectT], Response[Option[Object]]]((request, obs) => sRequest(request, obs))
-    //this is not needed?: addMethod[LogicalTimestamp, ObjectSyncResponse[Object]]((request, obs) => sObjectRequest(request, obs))
     this
   }
 

@@ -2,6 +2,7 @@ package qu
 
 import qu.model.ConcreteQuModel.ServerId
 
+import java.util.Objects
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -12,14 +13,16 @@ trait Startable {
 }
 
 trait Shutdownable {
-  def shutdown()/*(implicit ec: ExecutionContext)*/: Future[Unit]
+  def shutdown(): Future[Unit]
 
   def isShutdown: Boolean
 }
 
-abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, GrpcClientStub[Transportable]],
+abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncGrpcClientStub[Transportable]],
                                                    private val retryingTime: FiniteDuration = 3.seconds)
   extends Shutdownable {
+
+  Objects.requireNonNull(servers)
 
   private val scheduler = new OneShotAsyncScheduler(2) //concurrency level configurable by user??
   //is it possible to have overlapping calls to schedule? (only so it's convenient to use >1 threads)?? no, actually!
@@ -61,8 +64,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, GrpcClie
   }
 
   override def shutdown(): Future[Unit] =
-    Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ())
-  //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())
+    Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ())  //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())
 
   override def isShutdown: Boolean = servers.values.filterNot(_.isShutdown).headOption.isEmpty
 }

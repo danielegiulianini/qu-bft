@@ -3,7 +3,7 @@ package qu.service
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.RecipientInfo.id
 import qu.StubFactories.unencryptedDistributedJacksonStubFactory
-import qu.{GrpcClientStub, JwtGrpcClientStub, RecipientInfo, ResponsesGatherer, Shutdownable}
+import qu.{AsyncGrpcClientStub, JwtAsyncGrpcClientStub, RecipientInfo, ResponsesGatherer, Shutdownable}
 import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
 
@@ -17,7 +17,7 @@ trait ServerQuorumPolicy[Transportable[_], ObjectT] extends Shutdownable {
   ): Future[ObjectT]
 }
 
-class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId, GrpcClientStub[Transportable]],
+class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId, AsyncGrpcClientStub[Transportable]],
                                                           private val thresholds: QuorumSystemThresholds,
                                                           private val retryingTime: FiniteDuration = 3.seconds)(implicit executor: ExecutionContext)
   extends ResponsesGatherer[Transportable](servers, retryingTime)
@@ -36,7 +36,7 @@ class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId,
 }
 
 class JacksonSimpleBroadcastServerPolicy[ObjectT](private val thresholds: QuorumSystemThresholds,
-                                                  private val servers: Map[ServerId, JwtGrpcClientStub[JavaTypeable]])(implicit executor: ExecutionContext)
+                                                  private val servers: Map[ServerId, JwtAsyncGrpcClientStub[JavaTypeable]])(implicit executor: ExecutionContext)
   extends SimpleServerQuorumPolicy[JavaTypeable, ObjectT](servers, thresholds = thresholds) with Shutdownable
 
 

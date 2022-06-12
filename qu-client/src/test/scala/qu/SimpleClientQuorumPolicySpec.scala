@@ -7,7 +7,7 @@ import qu.client.JacksonSimpleBroadcastClientPolicy
 
 class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with FourServersScenario {
 
-  val mockedServersStubs = serversIds.map(_ -> mock[JwtGrpcClientStub[JavaTypeable]]).toMap
+  val mockedServersStubs = serversIds.map(_ -> mock[JwtAsyncGrpcClientStub[JavaTypeable]]).toMap
 
   val policy = new JacksonSimpleBroadcastClientPolicy[Int](thresholds,
     mockedServersStubs

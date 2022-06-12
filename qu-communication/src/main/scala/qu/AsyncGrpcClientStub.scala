@@ -3,14 +3,14 @@ package qu
 import auth.{Constants, Token}
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc._
-import qu.GrpcClientStub.{methodName, serviceName}
+import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import scalapb.grpc.ClientCalls
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 
 //a stub reusable between client and server sides
-abstract class GrpcClientStub[Transferable[_]](val chan: ManagedChannel)(implicit executor: ExecutionContext)
+abstract class AsyncGrpcClientStub[Transferable[_]](val chan: ManagedChannel)(implicit executor: ExecutionContext)
   extends MethodDescriptorFactory[Transferable] with MarshallerFactory[Transferable] with Shutdownable {
 
   protected val callOptions: CallOptions = CallOptions.DEFAULT
@@ -19,7 +19,7 @@ abstract class GrpcClientStub[Transferable[_]](val chan: ManagedChannel)(implici
   Future[OutputT] = {
 
     //todo must add timeout
-    val md = generateMethodDescriptor5[InputT, OutputT](methodName, serviceName)
+    val md = generateMethodDescriptor5[InputT, OutputT](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME)
     ClientCalls.asyncUnaryCall(chan, md, callOptions, toBeSent)
   }
 
@@ -32,15 +32,14 @@ abstract class GrpcClientStub[Transferable[_]](val chan: ManagedChannel)(implici
 }
 
 
-abstract class JwtGrpcClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)(implicit executor: ExecutionContext)
-  extends GrpcClientStub[Transferable](chan) {
+abstract class JwtAsyncGrpcClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)(implicit executor: ExecutionContext)
+  extends AsyncGrpcClientStub[Transferable](chan) {
   override val callOptions = CallOptions.DEFAULT.withCallCredentials(new AuthenticationCallCredentials(token))
 }
 
 import java.util.concurrent.Executor
 
 
-//this is used client side only?
 class AuthenticationCallCredentials(var token: Token) extends CallCredentials {
   override def applyRequestMetadata(requestInfo: CallCredentials.RequestInfo,
                                     executor: Executor,
@@ -65,17 +64,17 @@ class AuthenticationCallCredentials(var token: Token) extends CallCredentials {
 }
 
 
-object GrpcClientStub {
+object AsyncGrpcClientStub {
 
-  val methodName = QuServiceDescriptors.OPERATION_REQUEST_METHOD_NAME
-  val serviceName = QuServiceDescriptors.SERVICE_NAME
+  /*val methodName = QuServiceDescriptors.OPERATION_REQUEST_METHOD_NAME
+  val serviceName = QuServiceDescriptors.SERVICE_NAME*/
 
-  class UnauthenticatedJacksonClientStub(channel: ManagedChannel)(implicit executor: ExecutionContext)
-    extends GrpcClientStub[JavaTypeable](channel) with JacksonMethodDescriptorFactory
+  class UnauthenticatedJacksonClientStubAsync(channel: ManagedChannel)(implicit executor: ExecutionContext)
+    extends AsyncGrpcClientStub[JavaTypeable](channel) with JacksonMethodDescriptorFactory
       with CachingMethodDescriptorFactory[JavaTypeable]
 
-  class JwtJacksonClientStub(channel: ManagedChannel, token: Token)(implicit executor: ExecutionContext)
-    extends JwtGrpcClientStub[JavaTypeable](channel, token) with JacksonMethodDescriptorFactory
+  class JwtJacksonClientStubAsync(channel: ManagedChannel, token: Token)(implicit executor: ExecutionContext)
+    extends JwtAsyncGrpcClientStub[JavaTypeable](channel, token) with JacksonMethodDescriptorFactory
       with CachingMethodDescriptorFactory[JavaTypeable]
 
 }
