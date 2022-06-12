@@ -142,13 +142,13 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
     if (opType == ConcreteOperationTypes.METHOD
       || opType == ConcreteOperationTypes.INLINE_METHOD
       || opType == ConcreteOperationTypes.COPY) {
-      val retrievedObj = storage.retrieveObject(ltCo) //[AnswerT](ltCo) //retrieve[T, U](lt)
+      val retrievedObj = storage.retrieveObject(ltCo)
 
       if (retrievedObj.isEmpty && ltCo > emptyLT) {
         logger.log(Level.INFO, "object version NOT available, object-syncing for lt " + ltCo, 2)
         quorumPolicy.objectSync(ltCo).onComplete({
           case Success(obj) => onObjectRetrieved(obj) //here I know that a quorum is found...
-          case _ => //what can actually happen here? (malformed json, bad url) those must be notified to server user
+          case _ => //what can actually happen here? (malformed json, bad url) those must be notified to server user?
         })(ec)
       } else {
         objToWorkOn = retrievedObj.getOrElse(throw new Exception("just checked if it was not none!"))
