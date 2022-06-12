@@ -1,13 +1,9 @@
-package qu.client
+package qu.client.backoff
 
 import qu.OneShotAsyncScheduler
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}
-
-trait BackOffPolicy {
-  def backOff()(implicit ec: ExecutionContext): Future[Unit]
-}
 
 class ExponentialBackOffPolicy(private var initialBackOffTime: FiniteDuration = 1000.millis,
                                private var scheduler: OneShotAsyncScheduler) extends BackOffPolicy {

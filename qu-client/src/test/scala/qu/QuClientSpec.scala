@@ -7,7 +7,9 @@ import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.must.Matchers.be
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
-import qu.client.{AuthenticatedQuClientImpl, BackOffPolicy, JacksonSimpleBroadcastClientPolicy, SimpleBroadcastClientPolicy}
+import qu.client.backoff.BackOffPolicy
+import qu.client.quorum.{JacksonSimpleBroadcastClientPolicy, SimpleBroadcastClientPolicy}
+import qu.client.AuthenticatedQuClientImpl
 import qu.model.examples.Commands.{GetObj, IncrementAsObj}
 import qu.model.ConcreteQuModel.{Key, OHS, Operation, Request, Response, ServerId, emptyOhs}
 import qu.model.examples.OHSFixture5

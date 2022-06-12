@@ -2,6 +2,8 @@ package qu.client
 
 //import that declares specific dependency
 
+import qu.client.backoff.BackOffPolicy
+import qu.client.quorum.ClientQuorumPolicy
 import qu.model.ConcreteQuModel._
 import qu.model.ConcreteQuModel.ConcreteOperationTypes._
 import qu.model.QuorumSystemThresholds

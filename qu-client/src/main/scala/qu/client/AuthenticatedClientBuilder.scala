@@ -4,7 +4,8 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.RecipientInfo.id
 import qu.auth.Token
 import qu.{RecipientInfo, Shutdownable}
-import qu.client.ClientQuorumPolicy.{ClientPolicyFactory, simpleJacksonPolicyFactoryUnencrypted}
+import qu.client.quorum.ClientQuorumPolicy.{ClientPolicyFactory, simpleJacksonPolicyFactoryUnencrypted}
+import qu.client.backoff.{BackOffPolicy, ExponentialBackOffPolicy}
 import qu.model.QuorumSystemThresholds
 
 import java.util.Objects

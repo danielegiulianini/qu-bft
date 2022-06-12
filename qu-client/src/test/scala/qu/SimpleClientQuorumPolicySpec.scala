@@ -3,7 +3,7 @@ package qu
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.funspec.AnyFunSpec
-import qu.client.JacksonSimpleBroadcastClientPolicy
+import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
 
 class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with FourServersScenario {
 
