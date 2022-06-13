@@ -6,12 +6,12 @@ import javax.crypto.{KeyGenerator, Mac, SecretKey}
 trait CryptoMd5Authenticator {
   self: QuModel with AbstractAbstractQuModel => //needs the ordering defined by SortedSet
 
-  override type HMAC = String //so authenticator is a map[ServerId, String]
+  override type hMac = String //so authenticator is a map[ServerId, String]
 
   override def nullAuthenticator: authenticator = Map[String, String]()
 
   //adapted from https://gist.github.com/ohac/310945/7642d5432ca5f38d6341d7e7076073d98354c1a7, leveraging sortedSet ordering here
-  def hmac(key: Key, replicaHistory: ReplicaHistory): HMAC = {
+  def hmac(key: Key, replicaHistory: ReplicaHistory): hMac = {
     hmacString(key, replicaHistory.hashCode().toString)
   }
 
