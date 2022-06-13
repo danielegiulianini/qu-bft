@@ -7,7 +7,7 @@ import org.scalatest._
 import qu.stub.client.StubFactories.{inNamedProcessJacksonStubFactory, inProcessJacksonJwtStubFactory}
 import qu.auth.Token
 import qu.auth.common.Constants
-import qu.stub.client.{JwtAsyncClientStub, RecipientInfo}
+import qu.stub.client.JwtAsyncClientStub
 
 
 trait AuthStubFixture extends BeforeAndAfterAll {

@@ -2,14 +2,13 @@ package qu.service
 
 import io.grpc.Context
 import io.grpc.stub.StreamObserver
-import qu.stub.client.RecipientInfo.id
+import qu.RecipientInfo.id
 import qu.auth.common.Constants
-import qu.MethodDescriptorFactory
+import qu.{MethodDescriptorFactory, RecipientInfo}
 import qu.model.ConcreteQuModel.hmac
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.storage.ImmutableStorage
-import qu.stub.client.RecipientInfo
 
 import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}

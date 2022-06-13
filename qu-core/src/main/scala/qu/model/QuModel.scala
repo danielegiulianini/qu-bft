@@ -98,7 +98,7 @@ trait AbstractAbstractQuModel extends QuModel {
   }
 
   def contains(replicaHistory: ReplicaHistory, candidate: Candidate): Flag =
-    replicaHistory.contains(candidate) //with ReplicaHistory as SortedSet: replicaHistory(candidate)
+    replicaHistory.contains(candidate)
 
   override def latestTime(rh: ReplicaHistory): LogicalTimestamp =
     rh
@@ -114,7 +114,6 @@ trait AbstractAbstractQuModel extends QuModel {
                                barrierFlag: Boolean,
                                repairableThreshold: Int):
   Option[(ConcreteLogicalTimestamp, ConcreteLogicalTimestamp)] = {
-    //println("le rh:")
     ohs
       .values //authenticated rhs here
       .map(e => {
@@ -270,28 +269,4 @@ object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticat
 }
 
 
-
-
-
-//Wrapping for objectSyncRequest:
-//object sync request:
-//1. LogicalTimestamp only
-//2. wrapping class:
-/*case class LogicalTimestampOperation[ReturnValueObjectT](logicalTimestamp:
-                                                         LogicalTimestamp)
-  extends Query[ReturnValueObjectT, ReturnValueObjectT] {
-  override def compute(obj: ReturnValueObjectT): ReturnValueObjectT = obj
-}*/
-
-//object sync response:
-//1. reuse response (some fields are null)
-//2. new class:
-
-//old latest candidate
-/*ohs
-  .values
-  .map(rh => rh._1.max) //I can filter by order > repairableThreshold first first (and taking the max then) or viceversa
-  .filter(candidate => order(candidate, ohs) > repairableThreshold)
-  .max*/
-//println("printing the ohs inside latestCandidate: " + ohs)
 

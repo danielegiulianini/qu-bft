@@ -6,9 +6,15 @@ import org.scalatest.funspec.AnyFunSpec
 import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
 import qu.stub.client.JwtAsyncClientStub
 
+import java.util.concurrent.Executors
+import scala.concurrent.ExecutionContext
+
 class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with FourServersScenario {
 
   val mockedServersStubs = serversIds.map(_ -> mock[JwtAsyncClientStub[JavaTypeable]]).toMap
+
+  //determinism in tests
+  implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
   val policy = new JacksonSimpleBroadcastClientPolicy[Int](thresholds,
     mockedServersStubs

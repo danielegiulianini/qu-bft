@@ -1,15 +1,14 @@
 package qu.controller
 
-import qu.stub.client.RecipientInfo.id
 import qu.client.datastructures.DistributedCounter
 import qu.model.ConcreteQuModel.{Key, Query, Request, Response, ServerId, emptyAuthenticatedRh, emptyOhs, emptyRh, nullAuthenticator}
 import qu.model.{IncResult, QuorumSystemThresholds, ResetResult, SmrEventResult, SyncSmrSystem, SyncSmrSystemImpl, ValueResult}
 import io.grpc.inprocess.InProcessServerBuilder
+import qu.RecipientInfo
 import qu.stub.client.StubFactories.inNamedProcessJacksonStubFactory
 import qu.model.examples.Commands.Increment
 import qu.service.AbstractQuService.{ServerInfo, jacksonSimpleQuorumServiceFactory}
 import qu.service.datastructures.RemoteCounterServer
-import qu.stub.client.RecipientInfo
 import qu.view.{ConsoleView, View}
 
 import java.util.Scanner

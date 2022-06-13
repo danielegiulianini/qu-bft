@@ -4,13 +4,12 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.stub.ServerCalls
 import io.grpc.{BindableService, MethodDescriptor, ServerCallHandler, ServerMethodDefinition, ServerServiceDefinition}
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
+import qu.RecipientInfo.id
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.ServerInfo
 import qu.service.quorum.ServerQuorumPolicy.{ServerQuorumPolicyFactory, simpleDistributedJacksonServerQuorumFactory}
-import qu.{CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory, Shutdownable}
-import qu.stub.client.RecipientInfo._
+import qu.{AbstractRecipientInfo, CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory, RecipientInfo, Shutdownable}
 import qu.service.quorum.ServerQuorumPolicy
-import qu.stub.client.{AbstractRecipientInfo, RecipientInfo}
 
 import java.util.Objects
 import scala.concurrent.{ExecutionContext, Future}
@@ -102,7 +101,7 @@ abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chos
 
   override def bindService(): ServerServiceDefinition = ssd.build()
 
-  override def shutdown(): Future[Unit] = quorumPolicy.shutdown
+  override def shutdown(): Future[Unit] = quorumPolicy.shutdown()
 
   override def isShutdown: Flag = quorumPolicy.isShutdown
 }

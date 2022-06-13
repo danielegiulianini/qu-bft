@@ -1,12 +1,11 @@
 package qu.service.quorum
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.stub.client.RecipientInfo.id
+import qu.RecipientInfo.id
 import qu.stub.client.StubFactories.unencryptedDistributedJacksonStubFactory
 import qu._
 import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
-import qu.stub.client.RecipientInfo
 
 import scala.concurrent.{ExecutionContext, Future}
 

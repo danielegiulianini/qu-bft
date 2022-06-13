@@ -7,18 +7,11 @@ import qu.auth.Token
 
 import scala.concurrent.ExecutionContext
 
-trait AbstractRecipientInfo {
-  def ip: String
 
-  def port: Int
-}
 
-case class RecipientInfo(ip: String, port: Int) extends AbstractRecipientInfo
 
-object RecipientInfo {
-  //could be a method of RecipientInfo
-  def id(serverInfo: AbstractRecipientInfo): String = serverInfo.ip + ":" + serverInfo.port
-}
+
+
 
 //equivalent of multiple applys
 object StubFactories {
@@ -75,12 +68,3 @@ object StubFactories {
 }
 */
 
-
-/*object Shared {
-  trait WithIp{ def ip: String }
-  trait WithPort{def port: Int}
-  trait WithSocket extends WithIp with WithPort
-
-  trait WithHmacKey {def keySharedWithMe: String}
-  case class RecipientInfo(ip: String, port: Int, keySharedWithMe: String) extends WithHmacKey with WithSocket
-}*/

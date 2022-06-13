@@ -19,34 +19,27 @@ import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario with OHSFixture with ScalaFutures { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
+class QuClientSpec extends AnyFunSpec
+  with MockFactory
+  with FourServersScenario
+  with OHSFixture
+  with ScalaFutures
+  with QuClientFixture { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
+  /*
+    //todo should go in fixture (to be shutdown between tetsts (as it is stateful))
+    //stubbed dependencies
+    val mockedQuorumPolicy = mock[JacksonSimpleBroadcastClientPolicy[Int]]
+    val mockedBackOffPolicy = mock[BackOffPolicy]
 
-  //devo tirar su tanti server... no basta una quorum policy
-  //devo avere un altra stub per simulare contentnion
-
-  //non ho tante leve … ho
-  // 1. la answer ritornata allo user da ispezionare
-  // le invocazioni a quorumrpc (numero e valore argomenti (captor) es : operation null)
-  // l'invocazioni a backoff (solo numero)
-  //OCCHIO CHE COME DICEVA QUELLO SPLENDIDO CONSIGLIO NON DEVO TESTARE IL GENERALE, devo stare specifico al client,
-  //non devo attribuire al client errori del server ...
-
-
-  //todo should go in fixture (to be shutdown between tetsts (as it is stateful))
-  //stubbed dependencies
-  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastClientPolicy[Int]]
-  val mockedBackOffPolicy = mock[BackOffPolicy]
-
-  //using constructor (instead of builder) for wiring SUT with stubbed dependencies
-  val client = new QuClientImpl[Int, JavaTypeable](
-    policy = mockedQuorumPolicy,
-    backoffPolicy = mockedBackOffPolicy,
-    serversIds = serversIds.toSet,
-    thresholds = thresholds)
-
-  val updateQuorum: MockFunction4[Option[Operation[Unit, Int]], OHS, JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[(Option[Unit], Int, OHS)]] = (mockedQuorumPolicy.quorum[Unit](_: Option[Operation[Unit, Int]], _: OHS)(_: JavaTypeable[Request[Unit, Int]],
-    _: JavaTypeable[Response[Option[Unit]]]))
-
+    //using constructor (instead of builder) for wiring SUT with stubbed dependencies
+    val client = new QuClientImpl[Int, JavaTypeable](
+      policy = mockedQuorumPolicy,
+      backoffPolicy = mockedBackOffPolicy,
+      serversIds = serversIds.toSet,
+      thresholds = thresholds)
+    val updateQuorum: MockFunction4[Option[Operation[Unit, Int]], OHS, JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[(Option[Unit], Int, OHS)]] = (mockedQuorumPolicy.quorum[Unit](_: Option[Operation[Unit, Int]], _: OHS)(_: JavaTypeable[Request[Unit, Int]],
+      _: JavaTypeable[Response[Option[Unit]]]))
+  */
   //determinism in tests
   implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
@@ -114,8 +107,8 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
       }
     }
     //QUERY
-    val queryQuorum: MockFunction4[Option[Operation[Int, Int]], OHS, JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[(Option[Int], Int, OHS)]] = mockedQuorumPolicy.quorum[Int](_: Option[Operation[Int, Int]], _: OHS)(_: JavaTypeable[Request[Int, Int]],
-      _: JavaTypeable[Response[Option[Int]]])
+   /* val queryQuorum: MockFunction4[Option[Operation[Int, Int]], OHS, JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[(Option[Int], Int, OHS)]] = mockedQuorumPolicy.quorum[Int](_: Option[Operation[Int, Int]], _: OHS)(_: JavaTypeable[Request[Int, Int]],
+      _: JavaTypeable[Response[Option[Int]]])*/
     val queryOp = new GetObj[Int] //todo o uso l'bject anche qui oppure deposito in una var e uso sempre quello (essendo generico non puoi creare un object!)
 
     describe("when requesting a query operation and receiving a response with order >= q and an ohs with method") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
@@ -140,7 +133,7 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
 
         queryQuorum.expects(Some(queryOp), emptyOhs(serversIdsAsSet), *, *).noMoreThanOnce().returning(Future.successful(
           (Some(expectedResponse),
-            thresholds.r /* less than q !!*/,
+            thresholds.r /* less than q !!*/ ,
             ohsWithMethodFor(serversKeys))))
         (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).never()
 

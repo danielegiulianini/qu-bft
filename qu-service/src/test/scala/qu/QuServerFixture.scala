@@ -5,7 +5,7 @@ import io.grpc.inprocess.InProcessServerBuilder
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome, Outcome, Suite, SuiteMixin}
-import qu.stub.client.RecipientInfo.id
+import qu.RecipientInfo.id
 import qu.auth.server.JwtAuthorizationServerInterceptor
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, latestCandidate}
 import qu.model.QuorumSystemThresholds
@@ -24,11 +24,13 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
 
   self: AsyncTestSuite with ServersFixture =>
 
-  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastServerPolicy[Int]]
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
   def freshService(): AbstractQuService[JavaTypeable, Int] = {
-    val service  = new QuServiceImpl[JavaTypeable, Int](
+
+    val mockedQuorumPolicy = mock[JacksonSimpleBroadcastServerPolicy[Int]]
+
+    val service = new QuServiceImpl[JavaTypeable, Int](
       methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
       policyFactory = (_, _) => mockedQuorumPolicy,
       ip = quServer1WithKey.ip,
@@ -46,7 +48,8 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
       .addOperationOutput[Unit]()
   }
 
-   override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
+  override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
+
     // Perform setup
     val server = InProcessServerBuilder
       .forName(id(quServer1))

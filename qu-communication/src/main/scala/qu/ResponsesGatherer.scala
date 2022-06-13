@@ -14,24 +14,22 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
                                                   (implicit ec: ExecutionContext)
   extends Shutdownable {
 
-  ValidationUtils.requireNonNullAsInvalid(servers)
+//  ValidationUtils.requireNonNullAsInvalid(servers)
 
   private val scheduler = new OneShotAsyncScheduler(1)
 
   def gatherResponses[RequestT, ResponseT](request: RequestT,
-                                           completionPromise: Promise[Map[ServerId, ResponseT]] = Promise[Map[ServerId, ResponseT]](),
-                                           //responseSet: Map[ServerId, ResponseT] = Map[ServerId, ResponseT](),
                                            responsesQuorum: Int,
                                            successResponseFilter: ResponseT => Boolean)(implicit transportableRequest: Transportable[RequestT],
                                                                                         transportableResponse: Transportable[ResponseT]):
   Future[Map[ServerId, ResponseT]] = {
 
-    def gatherResponsesImpl[RequestT, ResponseT](request: RequestT,
-                                                 completionPromise: Promise[Map[ServerId, ResponseT]] = Promise[Map[ServerId, ResponseT]](),
-                                                 responseSet: Map[ServerId, ResponseT],
-                                                 responsesQuorum: Int,
-                                                 successResponseFilter: ResponseT => Boolean)(implicit transportableRequest: Transportable[RequestT],
-                                                                                              transportableResponse: Transportable[ResponseT]):
+    def gatherResponsesImpl(request: RequestT,
+                            completionPromise: Promise[Map[ServerId, ResponseT]] = Promise[Map[ServerId, ResponseT]](),
+                            responseSet: Map[ServerId, ResponseT],
+                            responsesQuorum: Int,
+                            successResponseFilter: ResponseT => Boolean)(implicit transportableRequest: Transportable[RequestT],
+                                                                         transportableResponse: Transportable[ResponseT]):
     Future[Map[ServerId, ResponseT]] = {
 
       var currentResponseSet = responseSet
@@ -60,7 +58,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
           case Failure(ex) => this.synchronized(
             inspectExceptions[ResponseT](completionPromise, exceptionsByServerId + (serverId -> ex))
           )
-          case _ =>
+          case _ => //ignored since not interested in this
         })
         }
       completionPromise.future
@@ -69,7 +67,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
 
     gatherResponsesImpl(request,
       completionPromise = Promise[Map[ServerId, ResponseT]](),
-      responseSet = Map(), //passing all the servers the first time
+      responseSet = Map(),
       responsesQuorum: Int,
       successResponseFilter)
   }

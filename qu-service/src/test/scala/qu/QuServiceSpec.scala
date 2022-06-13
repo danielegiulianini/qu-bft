@@ -13,7 +13,6 @@ import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
 import qu.model.StatusCode.{FAIL, SUCCESS}
 import qu.model.examples.OHSFixture
-import qu.stub.client.RecipientInfo
 
 import scala.concurrent.Future
 

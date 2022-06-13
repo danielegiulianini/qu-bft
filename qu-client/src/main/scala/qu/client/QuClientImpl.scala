@@ -15,7 +15,7 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPolicy[ObjectT, Transportable],
                                               private var backoffPolicy: BackOffPolicy,
-                                              private val serversIds: Set[String], //only servers ids are actually required in this class
+                                              private val serversIds: Set[ServerId],
                                               private val thresholds: QuorumSystemThresholds)
   extends QuClient[ObjectT, Transportable] {
   private val logger = Logger.getLogger(classOf[QuClientImpl[ObjectT, Transportable]].getName)

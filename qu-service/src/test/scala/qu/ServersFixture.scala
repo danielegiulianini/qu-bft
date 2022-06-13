@@ -5,7 +5,6 @@ import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
 import qu.model.QuorumSystemThresholds
 import qu.model.examples.OHSFixture
 import qu.service.AbstractQuService.ServerInfo
-import qu.stub.client.RecipientInfo
 
 //"fixture-context objects" pattern from https://www.scalatest.org/user_guide/sharing_fixtures#fixtureContextObjects
 //(as don't need to clean up after.)
