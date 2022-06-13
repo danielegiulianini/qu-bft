@@ -15,7 +15,7 @@ import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
 import scala.math.Ordered.orderingToOrdered
 import scala.reflect.runtime.universe._
-import scala.util.Success
+import scala.util.{Failure, Success}
 
 //import that declares specific dependency
 import qu.model.ConcreteQuModel._
@@ -149,7 +149,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
         logger.log(Level.INFO, "object version NOT available, object-syncing for lt " + ltCo, 2)
         quorumPolicy.objectSync(ltCo).onComplete({
           case Success(obj) => onObjectRetrieved(obj) //here I know that a quorum is found...
-          case _ => //what can actually happen here? (malformed json, bad url) those must be notified to server user?
+          case Failure(thr) => throw thr//what can actually happen here? (malformed json, bad url) those must be notified to server user!
         })(ec)
       } else {
         objToWorkOn = retrievedObj.getOrElse(throw new Exception("just checked if it was not none!"))
