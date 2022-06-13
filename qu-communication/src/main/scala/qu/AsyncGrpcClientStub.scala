@@ -1,10 +1,9 @@
 package qu
 
-import auth.Token
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc._
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
-import qu.auth.common.Constants
+import qu.auth.Token
 import scalapb.grpc.ClientCalls
 
 import java.util.concurrent.TimeUnit
@@ -35,16 +34,8 @@ abstract class AsyncGrpcClientStub[Transferable[_]](val chan: ManagedChannel)(im
 
 
 
-import java.util.concurrent.Executor
-
-
-
-
 
 object AsyncGrpcClientStub {
-
-  /*val methodName = QuServiceDescriptors.OPERATION_REQUEST_METHOD_NAME
-  val serviceName = QuServiceDescriptors.SERVICE_NAME*/
 
   class UnauthenticatedJacksonClientStubAsync(channel: ManagedChannel)(implicit executor: ExecutionContext)
     extends AsyncGrpcClientStub[JavaTypeable](channel) with JacksonMethodDescriptorFactory

@@ -1,6 +1,7 @@
 package qu
 
 import qu.model.ConcreteQuModel.ServerId
+import qu.model.ValidationUtils
 
 import java.util.Objects
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -19,10 +20,10 @@ trait Shutdownable {
 }
 
 abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncGrpcClientStub[Transportable]],
-                                                   private val retryingTime: FiniteDuration = 3.seconds)
+                                                   private val retryingTime: FiniteDuration = 1.seconds)
   extends Shutdownable {
 
-  Objects.requireNonNull(servers)
+  ValidationUtils.requireNonNullAsInvalid(servers)
 
   private val scheduler = new OneShotAsyncScheduler(2) //concurrency level configurable by user??
   //is it possible to have overlapping calls to schedule? (only so it's convenient to use >1 threads)?? no, actually!
@@ -64,7 +65,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncGrp
   }
 
   override def shutdown(): Future[Unit] =
-    Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ())  //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())
+    Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ()) //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())
 
   override def isShutdown: Boolean = servers.values.filterNot(_.isShutdown).headOption.isEmpty
 }

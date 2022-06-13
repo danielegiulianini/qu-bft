@@ -7,7 +7,7 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import qu.client.AuthenticatedClientBuilder.simpleJacksonQuClientBuilderInFunctionalStyle
 import qu.model.QuorumSystemThresholds
-import qu.model.Validation.requireNotNullAsInvalid
+import qu.model.ValidationUtils.requireNonNullAsInvalid
 
 import java.util.Objects
 
@@ -17,8 +17,8 @@ case class AuthenticatingClient[U](ip: String,
                                    port: Int,
                                    username: String,
                                    password: String) {
-  requireNotNullAsInvalid(username)
-  requireNotNullAsInvalid(password)
+  requireNonNullAsInvalid(username)
+  requireNonNullAsInvalid(password)
 
   val authClient = AuthClient(ip, port)
 

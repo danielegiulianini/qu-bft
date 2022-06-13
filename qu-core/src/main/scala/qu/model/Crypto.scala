@@ -8,7 +8,7 @@ trait CryptoMd5Authenticator {
 
   override type HMAC = String //so authenticator is a map[ServerId, String]
 
-  override def nullAuthenticator: α = Map[String, String]()
+  override def nullAuthenticator: authenticator = Map[String, String]()
 
   //adapted from https://gist.github.com/ohac/310945/7642d5432ca5f38d6341d7e7076073d98354c1a7, leveraging sortedSet ordering here
   def hmac(key: Key, replicaHistory: ReplicaHistory): HMAC = {
@@ -25,7 +25,7 @@ trait CryptoMd5Authenticator {
     sha256_HMAC.doFinal(data.getBytes("UTF-8")).map(_.toString).mkString(",")
   }
 
-  def authenticateRh(rh: ReplicaHistory, keys: Map[ServerId, Key]): α =
+  def authenticateRh(rh: ReplicaHistory, keys: Map[ServerId, Key]): authenticator =
     keys.view.mapValues(hmac(_, rh)).toMap
 /*
   def updateAuthenticatorFor(keys: Map[ServerId, Key])(serverIdToUpdate: ServerId)(replicaHistory: ReplicaHistory): α

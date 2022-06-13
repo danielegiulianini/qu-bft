@@ -9,7 +9,8 @@ import scala.concurrent.{ExecutionContext, Future}
 
 class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId, AsyncGrpcClientStub[Transportable]],
                                                           private val thresholds: QuorumSystemThresholds,
-                                                          private val retryingTime: FiniteDuration = 3.seconds)(implicit executor: ExecutionContext)
+                                                          private val retryingTime: FiniteDuration = 3.seconds)
+                                                         (implicit executor: ExecutionContext)
   extends ResponsesGatherer[Transportable](servers, retryingTime)
     with ServerQuorumPolicy[Transportable, ObjectT] {
 

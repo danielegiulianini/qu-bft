@@ -21,7 +21,7 @@ trait QuModel {
   type LogicalTimestamp <: {val time: Int; val barrierFlag: Flag; val clientId: Option[ClientId]; val operation: Option[OperationRepresentation]; val ohs: Option[OHSRepresentation]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
 
   type OperationType
-  type α //authenticator
+  type authenticator //authenticator
   type Candidate = (LogicalTimestamp, LogicalTimestamp)
 
   //number of replica histories in the object history set in which it appears
@@ -56,23 +56,23 @@ trait AbstractAbstractQuModel extends QuModel {
 
   override type ReplicaHistory = List[Candidate] //SortedSet[Candidate] for avoid hitting bug https://github.com/FasterXML/jackson-module-scala/issues/410
 
-  type HMAC
+  type hMac
 
-  override type α = Map[ServerId, HMAC]
+  override type authenticator = Map[ServerId, hMac]
 
-  type AuthenticatedReplicaHistory = (ReplicaHistory, α) //case class MyAuthenticatedReplicaHistory(serverId: ServerId, authenticator: α)  //tuples are difficult to read...  //refactored since used in responses also...
+  type AuthenticatedReplicaHistory = (ReplicaHistory, authenticator)
 
   override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
   val startingTime = 0
-  val emptyLT = ConcreteLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty) //false because it must allow client to exit from repairing (if al servers sent the empty ohs)
+  val emptyLT: ConcreteLogicalTimestamp = ConcreteLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty) //false because it must allow client to exit from repairing (if al servers sent the empty ohs)
   val emptyCandidate: Candidate = (emptyLT, emptyLT)
   val emptyRh: ReplicaHistory = List(emptyCandidate)
 
   type Key = String
 
 
-  def nullAuthenticator(): α //= Map[String, String]()
+  def nullAuthenticator(): authenticator //= Map[String, String]()
 
   val emptyAuthenticatedRh: AuthenticatedReplicaHistory = (emptyRh, nullAuthenticator()) //emptyRh -> nullAuthenticator
 
@@ -97,7 +97,7 @@ trait AbstractAbstractQuModel extends QuModel {
       .max
   }
 
-  def contains(replicaHistory: ReplicaHistory, candidate: Candidate) =
+  def contains(replicaHistory: ReplicaHistory, candidate: Candidate): Flag =
     replicaHistory.contains(candidate) //with ReplicaHistory as SortedSet: replicaHistory(candidate)
 
   override def latestTime(rh: ReplicaHistory): LogicalTimestamp =
@@ -152,29 +152,16 @@ trait AbstractAbstractQuModel extends QuModel {
     Option[Candidate],
     Option[Candidate]) = {
 
-    //    if (ohs == Map()) throw new Exception("ohs empty!")
-
     val latestObjectVersion = latestCandidate(ohs, barrierFlag = false, repairableThreshold)
     val latestBarrierVersion = latestCandidate(ohs, barrierFlag = true, repairableThreshold)
     //println("il latestObjectVersion : " + latestObjectVersion)
     //println("il latestBarrierVersion : " + latestBarrierVersion)
     val ltLatest = latestTime(ohs)
-    (latestObjectVersion, latestBarrierVersion) match {
-      //before the most restrictive (pattern matching implicitly breaks)
-      case (Some((objectLt, objectLtCo)), _) => {
-        /*println("l'order del cand nella ohs is: " + order((objectLt, objectLtCo), ohs) + ", q is : " + quorumThreshold)
-
-        println("1o test: " + (objectLt == ltLatest) + ", il latest time is: " + ltLatest + "l'objectLt:" + objectLt)
-        println("2o test: " + (order((objectLt, objectLtCo), ohs) >= repairableThreshold))*/
-
-      }
-    }
     val opType = (latestObjectVersion, latestBarrierVersion) match {
       //before the most restrictive (pattern matching implicitly breaks)
       case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= quorumThreshold => ConcreteOperationTypes.METHOD
-      case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= repairableThreshold => {
+      case (Some((objectLt, objectLtCo)), _) if objectLt == ltLatest & order((objectLt, objectLtCo), ohs) >= repairableThreshold =>
         ConcreteOperationTypes.INLINE_METHOD
-      }
       case (_, Some((barrierLt, barrierLtCo))) if barrierLt == ltLatest & order((barrierLt, barrierLtCo), ohs) >= quorumThreshold => ConcreteOperationTypes.COPY
       case (_, Some((barrierLt, barrierLtCo))) if barrierLt == ltLatest & order((barrierLt, barrierLtCo), ohs) >= repairableThreshold => ConcreteOperationTypes.INLINE_BARRIER
       case _ => ConcreteOperationTypes.BARRIER
