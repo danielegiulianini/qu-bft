@@ -1,5 +1,3 @@
 package qu.auth.common
 
-class BadContentException(message:String) extends Exception{
-
-}
+case class BadContentException(message:String) extends Exception

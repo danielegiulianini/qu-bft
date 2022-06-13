@@ -2,7 +2,6 @@ package qu.auth.server
 
 import io.grpc.{Server, ServerBuilder}
 import qu.auth.AuthGrpc
-import qu.auth.common.MyAuthService
 
 import scala.concurrent.{ExecutionContext, Future}
 

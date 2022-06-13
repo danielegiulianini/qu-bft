@@ -1,8 +1,9 @@
-package qu.auth.common
+package qu.auth.server
 
 import io.grpc.Status
 import qu.auth._
 import qu.auth.common.FutureUtilities.mapThrowableByStatus
+import qu.auth.common.{BadContentException, ConflictException, LocalAuthenticator, WrongCredentialsException}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
@@ -21,7 +22,7 @@ class MyAuthService extends AuthGrpc.Auth {
     mapThrowableByStatus(Future.successful(
       localAuthenticator.register(request)
     ).map(_ => RegisterResponse()), {
-      case _: BadContentException => Status.INVALID_ARGUMENT
+      case _: BadContentException => Status.INVALID_ARGUMENT  //already wrapping message inside...
       case _: ConflictException => Status.ALREADY_EXISTS
     })
   }

@@ -1,5 +1,3 @@
 package qu.auth.common
 
-class WrongCredentialsException(message:String) extends Exception {
-
-}
+case class WrongCredentialsException(message: String) extends Exception
