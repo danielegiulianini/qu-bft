@@ -25,8 +25,7 @@ class ConsoleView extends View {
 
     while (myScanner.hasNextLine && !stop) {
       parse(myScanner.nextLine()) match {
-        case Exit =>
-          stop = true
+        case Exit => stop = true
           observer.quit()
         case KillServer(id) => observer.killServer(id)
         case Increment => observer.increment()

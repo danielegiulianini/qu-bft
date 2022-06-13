@@ -6,7 +6,7 @@ import qu.model.ConcreteQuModel.{Candidate, Key, OHS, OHSRepresentation, Operati
 import scala.collection.immutable.{List => RH}
 
 //some utilities for constructing ohs, rhs and authenticators (can also be a object of utilities
-// (instead of a trait to mix)
+// (object or a trait to mix)
 trait OHSFixture5 {
 
   val aEmptyOhsRepresentation: Option[OperationRepresentation] = emptyOhsRepresentation(List())

@@ -5,7 +5,6 @@ import qu.model.ValidationUtils
 import qu.stub.client.AsyncGrpcClientStub
 
 import java.util.Objects
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.Success
@@ -21,13 +20,13 @@ trait Shutdownable {
 }
 
 abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncGrpcClientStub[Transportable]],
-                                                   private val retryingTime: FiniteDuration = 1.seconds)
+                                                   private val retryingTime: FiniteDuration = 1.seconds)(implicit ec: ExecutionContext)
   extends Shutdownable {
 
   ValidationUtils.requireNonNullAsInvalid(servers)
 
   private val scheduler = new OneShotAsyncScheduler(2) //concurrency level configurable by user??
-  //is it possible to have overlapping calls to schedule? (only so it's convenient to use >1 threads)?? no, actually!
+  //todo is it possible to have overlapping calls to schedule? (only so it's convenient to use >1 threads)?? no, actually!
 
   def gatherResponses[RequestT, ResponseT](request: RequestT,
                                            completionPromise: Promise[Map[ServerId, ResponseT]] = Promise[Map[ServerId, ResponseT]](),
@@ -35,8 +34,8 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncGrp
                                            responsesQuorum: Int,
                                            filterSuccess: ResponseT => Boolean)
                                           (implicit transportableRequest: Transportable[RequestT],
-                                           transportableResponse: Transportable[ResponseT]
-                                          ): Future[Map[ServerId, ResponseT]] = {
+                                           transportableResponse: Transportable[ResponseT]):
+  Future[Map[ServerId, ResponseT]] = {
 
     var currentResponseSet = responseSet
     val cancelable = scheduler.scheduleOnceAsCallback(retryingTime)(gatherResponses(request,

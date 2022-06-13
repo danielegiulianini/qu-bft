@@ -60,6 +60,7 @@ object ImmutableStorage {
 
 }
 
+//to move in tests
 object UseCase2 extends App {
   println("--now testing REALLY immutableStorage")
   val myLt = ConcreteLogicalTimestamp(2, barrierFlag = false, Some("id1"), Option.empty, Option.empty)
