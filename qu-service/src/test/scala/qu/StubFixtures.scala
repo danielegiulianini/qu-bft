@@ -9,22 +9,26 @@ import qu.auth.Token
 import qu.auth.common.Constants
 import qu.stub.client.JwtAsyncClientStub
 
+import java.util.concurrent.Executors
+import scala.concurrent.ExecutionContext
+
 
 trait AuthStubFixture extends BeforeAndAfterAll {
   this: AsyncTestSuite =>
 
-  //lazy val for dealing with initialization issues
-  lazy val authStub: JwtAsyncClientStub[JavaTypeable] = {
-    println("creating authstub")
+  def authStub2()(implicit ex:ExecutionContext) : JwtAsyncClientStub[JavaTypeable] =
+    inProcessJacksonJwtStubFactory(getJwt,
+    serverInfo.ip,
+    serverInfo.port, ex)
 
+  //lazy val for dealing with initialization issues
+  /*lazy val authStub: JwtAsyncClientStub[JavaTypeable] =
     inProcessJacksonJwtStubFactory(getJwt,
       serverInfo.ip,
-      serverInfo.port)
-  }
+      serverInfo.port, e)*/
 
   //afterAll takes care of async code too (see https://github.com/scalatest/scalatest/issues/953)
   override def afterAll(): Unit = {
-    println("shutting down ...")
     authStub.shutdown()
   }
 
@@ -39,17 +43,16 @@ trait AuthStubFixture extends BeforeAndAfterAll {
 
 trait UnAuthStubFixture extends BeforeAndAfterAll {
   this: Suite =>
-
+  protected[this] implicit def e: ExecutionContext = implicitly
 
   lazy val unAuthStub = {
-    println("creating unauthstub")
-    inNamedProcessJacksonStubFactory(serverInfo.ip, serverInfo.port)
+    inNamedProcessJacksonStubFactory(serverInfo.ip, serverInfo.port, e)
   }
 
   override def afterAll(): Unit = {
-    println("shutting down ...")
     unAuthStub.shutdown()
   }
 
   protected val serverInfo: RecipientInfo
+
 }
