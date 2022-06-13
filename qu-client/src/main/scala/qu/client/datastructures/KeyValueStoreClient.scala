@@ -1,10 +1,10 @@
 package qu.client.datastructures
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.RecipientInfo
 import qu.client.{AuthenticatingClient, QuClient}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
+import qu.stub.client.RecipientInfo
 
 import scala.collection.mutable.{Map => MutableMap}
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}

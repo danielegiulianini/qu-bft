@@ -1,9 +1,8 @@
-package qu
+package qu.stub.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.{Grpc, InsecureChannelCredentials, TlsChannelCredentials}
-import qu.AsyncGrpcClientStub.{JwtJacksonClientStubAsync, UnauthenticatedJacksonClientStubAsync}
 import qu.auth.Token
 
 import scala.concurrent.ExecutionContext

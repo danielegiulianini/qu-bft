@@ -1,10 +1,11 @@
 package qu.client.datastructures
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.{RecipientInfo, Shutdownable}
+import qu.Shutdownable
 import qu.client.{QuClientImpl, AuthenticatingClient}
 import qu.model.ConcreteQuModel.Operation
 import qu.model.QuorumSystemThresholds
+import qu.stub.client.RecipientInfo
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}

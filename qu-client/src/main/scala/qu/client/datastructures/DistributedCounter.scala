@@ -4,10 +4,11 @@ package qu.client.datastructures
 //this packages contains some data structures implementations built over Qu core
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.{RecipientInfo, Shutdownable}
+import qu.Shutdownable
 import qu.client.{QuClientBuilder, AuthenticatingClient, QuClient}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
+import qu.stub.client.RecipientInfo
 
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}

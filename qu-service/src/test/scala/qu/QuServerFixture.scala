@@ -5,7 +5,7 @@ import io.grpc.inprocess.InProcessServerBuilder
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome, Outcome, Suite, SuiteMixin}
-import qu.RecipientInfo.id
+import qu.stub.client.RecipientInfo.id
 import qu.auth.server.JwtAuthorizationServerInterceptor
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, latestCandidate}
 import qu.model.QuorumSystemThresholds

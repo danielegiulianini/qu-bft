@@ -4,9 +4,10 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.scalatest.flatspec.FixtureAnyFlatSpecLike
 import org.scalatest._
-import qu.StubFactories.{inNamedProcessJacksonStubFactory, inProcessJacksonJwtStubFactory}
+import qu.stub.client.StubFactories.{inNamedProcessJacksonStubFactory, inProcessJacksonJwtStubFactory}
 import qu.auth.Token
 import qu.auth.common.Constants
+import qu.stub.client.{JwtAsyncGrpcClientStub, RecipientInfo}
 
 
 trait AuthStubFixture extends BeforeAndAfterAll {

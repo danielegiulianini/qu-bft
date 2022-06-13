@@ -2,7 +2,7 @@ package qu
 
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome, Suite, SuiteMixin, fixture}
-import qu.RecipientInfo.id
+import qu.stub.client.RecipientInfo.id
 import qu.model.ConcreteQuModel.{Key, OHS, ReplicaHistory, ServerId, emptyCandidate, emptyLT, authenticator}
 import qu.model.examples.OHSFixture5
 

@@ -3,7 +3,8 @@ package qu.service.quorum
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.model.ConcreteQuModel.ServerId
 import qu.model.QuorumSystemThresholds
-import qu.{JwtAsyncGrpcClientStub, Shutdownable}
+import qu.Shutdownable
+import qu.stub.client.JwtAsyncGrpcClientStub
 
 import scala.concurrent.ExecutionContext
 

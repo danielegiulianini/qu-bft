@@ -1,11 +1,12 @@
 package qu.client.quorum
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.RecipientInfo.id
-import qu.StubFactories.distributedJacksonJwtStubFactory
+import qu.stub.client.RecipientInfo.id
+import qu.stub.client.StubFactories.distributedJacksonJwtStubFactory
 import qu.auth.Token
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
-import qu.{JwtAsyncGrpcClientStub, RecipientInfo, ResponsesGatherer, Shutdownable}
+import qu.stub.client.{JwtAsyncGrpcClientStub, RecipientInfo}
+import qu.{ResponsesGatherer, Shutdownable}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}

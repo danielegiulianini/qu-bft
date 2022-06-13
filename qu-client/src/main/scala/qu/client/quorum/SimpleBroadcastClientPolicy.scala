@@ -2,7 +2,8 @@ package qu.client.quorum
 
 import qu.model.ConcreteQuModel.{OHS, Operation, Request, Response, ServerId}
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
-import qu.{JwtAsyncGrpcClientStub, ResponsesGatherer}
+import qu.ResponsesGatherer
+import qu.stub.client.JwtAsyncGrpcClientStub
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future}

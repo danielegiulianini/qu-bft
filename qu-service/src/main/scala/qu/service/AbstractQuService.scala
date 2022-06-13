@@ -7,9 +7,10 @@ import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.ServerInfo
 import qu.service.quorum.ServerQuorumPolicy.{ServerQuorumPolicyFactory, simpleDistributedJacksonServerQuorumFactory}
-import qu.{AbstractRecipientInfo, CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory, RecipientInfo, Shutdownable}
-import qu.RecipientInfo._
+import qu.{CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory, Shutdownable}
+import qu.stub.client.RecipientInfo._
 import qu.service.quorum.ServerQuorumPolicy
+import qu.stub.client.{AbstractRecipientInfo, RecipientInfo}
 
 import java.util.Objects
 import scala.concurrent.{ExecutionContext, Future}

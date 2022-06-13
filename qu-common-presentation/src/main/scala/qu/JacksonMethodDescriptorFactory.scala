@@ -9,7 +9,6 @@ trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory[JavaTypeabl
     (typeIdentifier[ReqT]() + typeIdentifier[RespT]()).replace("/", "")
 
   private def typeIdentifier[T: JavaTypeable](): String = {
-    //println("la erasure is: " + implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getErasedSignature)
     implicitly[JavaTypeable[T]].asJavaType(TypeFactory.defaultInstance()).getGenericSignature
   }
 }

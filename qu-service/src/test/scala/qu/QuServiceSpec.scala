@@ -7,12 +7,13 @@ import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
 import org.scalatest.FutureOutcome
 import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should.Matchers
-import qu.RecipientInfo.id
+import qu.stub.client.RecipientInfo.id
 import qu.model.examples.Commands.{GetObj, Increment, IncrementAsObj}
 import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
 import qu.model.StatusCode.{FAIL, SUCCESS}
 import qu.model.examples.OHSFixture5
+import qu.stub.client.RecipientInfo
 
 import scala.concurrent.Future
 

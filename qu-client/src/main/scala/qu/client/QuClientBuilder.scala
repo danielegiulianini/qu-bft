@@ -1,12 +1,13 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.RecipientInfo.id
+import qu.stub.client.RecipientInfo.id
 import qu.auth.Token
-import qu.{RecipientInfo, Shutdownable}
+import qu.Shutdownable
 import qu.client.quorum.ClientQuorumPolicy.{ClientPolicyFactory, simpleJacksonPolicyFactoryUnencrypted}
 import qu.client.backoff.{BackOffPolicy, ExponentialBackOffPolicy}
 import qu.model.QuorumSystemThresholds
+import qu.stub.client.RecipientInfo
 
 import java.util.Objects
 import scala.concurrent.ExecutionContext

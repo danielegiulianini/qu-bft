@@ -2,6 +2,7 @@ package qu
 
 import qu.model.ConcreteQuModel.ServerId
 import qu.model.ValidationUtils
+import qu.stub.client.AsyncGrpcClientStub
 
 import java.util.Objects
 import scala.concurrent.ExecutionContext.Implicits.global

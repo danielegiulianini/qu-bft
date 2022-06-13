@@ -1,9 +1,9 @@
 package qu.client.quorum
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.JwtAsyncGrpcClientStub
 import qu.model.ConcreteQuModel.ServerId
 import qu.model.QuorumSystemThresholds
+import qu.stub.client.JwtAsyncGrpcClientStub
 
 import scala.concurrent.ExecutionContext
 

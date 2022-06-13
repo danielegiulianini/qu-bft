@@ -1,6 +1,6 @@
-package qu
+package qu.stub.client
 
-import io.grpc.{CallCredentials, CallOptions, ManagedChannel, Metadata, Status}
+import io.grpc._
 import qu.auth.Token
 import qu.auth.common.Constants
 

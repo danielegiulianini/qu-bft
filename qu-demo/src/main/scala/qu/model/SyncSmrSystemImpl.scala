@@ -1,11 +1,11 @@
 package qu.model
 
-import qu.RecipientInfo
-import qu.RecipientInfo.id
+import qu.stub.client.RecipientInfo.id
 import qu.client.datastructures.DistributedCounter
 import qu.model.ConcreteQuModel.{Key, ServerId}
 import qu.model.ServerStatus._
 import qu.service.datastructures.RemoteCounterServer
+import qu.stub.client.RecipientInfo
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
