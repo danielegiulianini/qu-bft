@@ -9,7 +9,7 @@ import org.scalatest.matchers.must.Matchers.be
 import org.scalatest.matchers.should.Matchers.convertToAnyShouldWrapper
 import qu.client.backoff.BackOffPolicy
 import qu.client.quorum.{JacksonSimpleBroadcastClientPolicy, SimpleBroadcastClientPolicy}
-import qu.client.AuthenticatedQuClientImpl
+import qu.client.QuClientImpl
 import qu.model.examples.Commands.{GetObj, IncrementAsObj}
 import qu.model.ConcreteQuModel.{Key, OHS, Operation, Request, Response, ServerId, emptyOhs}
 import qu.model.examples.OHSFixture5
@@ -38,7 +38,7 @@ class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario 
   val mockedBackOffPolicy = mock[BackOffPolicy]
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
-  val client = new AuthenticatedQuClientImpl[Int, JavaTypeable](
+  val client = new QuClientImpl[Int, JavaTypeable](
     policy = mockedQuorumPolicy,
     backoffPolicy = mockedBackOffPolicy,
     serversIds = serversIds.toSet,

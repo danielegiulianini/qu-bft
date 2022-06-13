@@ -5,7 +5,7 @@ import qu.auth.client.AuthClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import qu.client.AuthenticatedClientBuilder.simpleJacksonQuClientBuilderInFunctionalStyle
+import qu.client.QuClientBuilder.simpleJacksonQuClientBuilderInFunctionalStyle
 import qu.model.QuorumSystemThresholds
 import qu.model.ValidationUtils.requireNonNullAsInvalid
 
@@ -29,7 +29,7 @@ case class AuthenticatingClient[U](ip: String,
   }
 
   def authorize():
-  Future[AuthenticatedClientBuilder[U, JavaTypeable]] = {
+  Future[QuClientBuilder[U, JavaTypeable]] = {
     for {
       token <- authClient.authorize(username, password)
     } yield simpleJacksonQuClientBuilderInFunctionalStyle[U](token = token)

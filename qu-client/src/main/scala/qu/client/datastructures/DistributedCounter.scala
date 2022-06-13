@@ -5,7 +5,7 @@ package qu.client.datastructures
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.{RecipientInfo, Shutdownable}
-import qu.client.{AuthenticatedClientBuilder, AuthenticatingClient, QuClient}
+import qu.client.{QuClientBuilder, AuthenticatingClient, QuClient}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
 
@@ -51,7 +51,7 @@ class DistributedCounter(username: String,
                          authServerPort: Int,
                          serversInfo: Set[RecipientInfo],
                          thresholds: QuorumSystemThresholds)(implicit executionContext: ExecutionContext)
-  extends AbstractStateMachine[Int] (username,
+  extends AuthenticatedQuClient[Int] (username,
     password,
     authServerIp,
     authServerPort,

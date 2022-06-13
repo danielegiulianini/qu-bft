@@ -13,12 +13,12 @@ import java.util.logging.Logger
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPolicy[ObjectT, Transportable] /* with Shutdownable*/ ,
-                                                           private var backoffPolicy: BackOffPolicy,
-                                                           private val serversIds: Set[String], //only servers ids are actually required in this class
-                                                           private val thresholds: QuorumSystemThresholds)
+class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPolicy[ObjectT, Transportable],
+                                              private var backoffPolicy: BackOffPolicy,
+                                              private val serversIds: Set[String], //only servers ids are actually required in this class
+                                              private val thresholds: QuorumSystemThresholds)
   extends QuClient[ObjectT, Transportable] {
-  private val logger = Logger.getLogger(classOf[AuthenticatedQuClientImpl[ObjectT, Transportable]].getName)
+  private val logger = Logger.getLogger(classOf[QuClientImpl[ObjectT, Transportable]].getName)
 
   override def submit[T](op: Operation[T, ObjectT])(implicit
                                                     ec: ExecutionContext,
@@ -43,16 +43,7 @@ class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: C
         } yield optimisticAnswer else Future(answer.getOrElse(
           throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None answer")))
       } yield answer
-      /*
-            for {
-              (answer, order, updatedOhs) <- policy.quorum(Some(op), ohs)
-              (opType, _, _) <- classifyAsync(ohs)
-              oanswer <- if (opType == METHOD) Future {
-                answer
-              } else for { a <- Future {
-                answer
-              }} yield a
-            } yield oanswer.get*/
+
     }
 
     submitWithOhs(emptyOhs(serversIds))
@@ -102,3 +93,14 @@ class AuthenticatedQuClientImpl[ObjectT, Transportable[_]](private var policy: C
   override def isShutdown: Flag = policy.isShutdown
 }
 
+
+/*
+      for {
+        (answer, order, updatedOhs) <- policy.quorum(Some(op), ohs)
+        (opType, _, _) <- classifyAsync(ohs)
+        oanswer <- if (opType == METHOD) Future {
+          answer
+        } else for { a <- Future {
+          answer
+        }} yield a
+      } yield oanswer.get*/

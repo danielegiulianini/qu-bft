@@ -33,7 +33,7 @@ class KeyValueStoreClient[K, V](username: String,
                                 authServerPort: Int,
                                 serversInfo: Set[RecipientInfo],
                                 thresholds: QuorumSystemThresholds)(implicit executionContext: ExecutionContext)
-  extends AbstractStateMachine[MutableMap[K, V]](username,
+  extends AuthenticatedQuClient[MutableMap[K, V]](username,
     password,
     authServerIp,
     authServerPort,
