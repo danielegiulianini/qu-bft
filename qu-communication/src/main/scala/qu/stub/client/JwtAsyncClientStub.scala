@@ -7,8 +7,8 @@ import qu.auth.common.Constants
 import java.util.concurrent.Executor
 import scala.concurrent.ExecutionContext
 
-abstract class JwtAsyncGrpcClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)(implicit executor: ExecutionContext)
-  extends AsyncGrpcClientStub[Transferable](chan) {
+abstract class JwtAsyncClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)(implicit executor: ExecutionContext)
+  extends AsyncClientStub[Transferable](chan) {
   override val callOptions = CallOptions.DEFAULT.withCallCredentials(new AuthenticationCallCredentials(token))
 }
 

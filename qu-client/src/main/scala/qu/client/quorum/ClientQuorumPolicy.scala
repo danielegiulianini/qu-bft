@@ -5,7 +5,7 @@ import qu.stub.client.RecipientInfo.id
 import qu.stub.client.StubFactories.distributedJacksonJwtStubFactory
 import qu.auth.Token
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
-import qu.stub.client.{JwtAsyncGrpcClientStub, RecipientInfo}
+import qu.stub.client.{JwtAsyncClientStub, RecipientInfo}
 import qu.{ResponsesGatherer, Shutdownable}
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}

@@ -3,7 +3,7 @@ package qu
 import qu.stub.client.RecipientInfo.id
 import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
 import qu.model.QuorumSystemThresholds
-import qu.model.examples.OHSFixture5
+import qu.model.examples.OHSFixture
 import qu.service.AbstractQuService.ServerInfo
 import qu.stub.client.RecipientInfo
 
@@ -11,7 +11,7 @@ import qu.stub.client.RecipientInfo
 //(as don't need to clean up after.)
 trait ServersFixture {
 
-  self: OHSFixture5 =>
+  self: OHSFixture =>
 
   val quServer1 = RecipientInfo(ip = "ciao2", port = 1)
   val quServer2 = RecipientInfo(ip = "localhost", port = 2)

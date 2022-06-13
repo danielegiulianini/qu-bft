@@ -4,10 +4,10 @@ import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome, Suite, SuiteMixin, fixture}
 import qu.stub.client.RecipientInfo.id
 import qu.model.ConcreteQuModel.{Key, OHS, ReplicaHistory, ServerId, emptyCandidate, emptyLT, authenticator}
-import qu.model.examples.OHSFixture5
+import qu.model.examples.OHSFixture
 
 //todo could now go together with serverFixture
-trait ServerOhsFixture { self:OHSFixture5 with ServersFixture =>
+trait ServerOhsFixture { self:OHSFixture with ServersFixture =>
 
 }
 
@@ -113,6 +113,6 @@ trait AsyncStub extends SuiteMixin { this: Suite =>
 
 
 //prder of declaration affects initialization order!
-object Prova222 extends App with ServersFixture with OHSFixture5 with ServerOhsFixture  {
+object Prova222 extends App with ServersFixture with OHSFixture with ServerOhsFixture  {
 println("ciao")
 }

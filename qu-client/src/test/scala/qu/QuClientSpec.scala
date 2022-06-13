@@ -12,14 +12,14 @@ import qu.client.quorum.{JacksonSimpleBroadcastClientPolicy, SimpleBroadcastClie
 import qu.client.QuClientImpl
 import qu.model.examples.Commands.{GetObj, IncrementAsObj}
 import qu.model.ConcreteQuModel.{Key, OHS, Operation, Request, Response, ServerId, emptyOhs}
-import qu.model.examples.OHSFixture5
+import qu.model.examples.OHSFixture
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
 
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 import scala.language.postfixOps
 
-class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario with OHSFixture5 with ScalaFutures { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
+class QuClientSpec extends AnyFunSpec with MockFactory with FourServersScenario with OHSFixture with ScalaFutures { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
 
   //devo tirar su tanti server... no basta una quorum policy
   //devo avere un altra stub per simulare contentnion

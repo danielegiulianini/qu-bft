@@ -2,17 +2,18 @@ package qu.client.quorum
 
 import qu.model.ConcreteQuModel.{OHS, Operation, Request, Response, ServerId}
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
-import qu.ResponsesGatherer
-import qu.stub.client.JwtAsyncGrpcClientStub
+import qu.{ExceptionsInspector, ResponsesGatherer}
+import qu.ListUtils.getMostFrequentElement
+import qu.stub.client.JwtAsyncClientStub
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
 class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
-                                                             protected val servers: Map[ServerId, JwtAsyncGrpcClientStub[Transportable]],
+                                                             protected val servers: Map[ServerId, JwtAsyncClientStub[Transportable]],
                                                              private val retryingTime: FiniteDuration = 3.seconds)(implicit ec: ExecutionContext)
-  extends ResponsesGatherer[Transportable](servers, retryingTime) with ClientQuorumPolicy[ObjectT, Transportable] {
+  extends ResponsesGatherer[Transportable](servers, retryingTime) with ClientQuorumPolicy[ObjectT, Transportable] with ExceptionsInspector[Transportable] {
 
 
   override def quorum[AnswerT](operation: Option[Operation[AnswerT, ObjectT]],
@@ -30,7 +31,7 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
         responses <- gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
           request = Request[AnswerT, ObjectT](operation, ohs),
           responsesQuorum = thresholds.q,
-          filterSuccess = _.responseCode == StatusCode.SUCCESS)
+          successResponseFilter = _.responseCode == StatusCode.SUCCESS)
       } yield (responses.values.toSet, extractOhsFromResponses(responses))
     }
 
@@ -48,4 +49,6 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
       (response, voteCount) <- scrutinize(responses)
     } yield (response.answer, voteCount, ohs)
   }
+
+  override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId, ResponseT]], exceptionsByServerId: Map[ConcreteQuModel.ServerId, Throwable]): Unit = inspectExceptions(completionPromise, exceptionsByServerId, thresholds)
 }

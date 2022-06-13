@@ -7,7 +7,7 @@ import scala.collection.immutable.{List => RH}
 
 //some utilities for constructing ohs, rhs and authenticators (can also be a object of utilities
 // (object or a trait to mix)
-trait OHSFixture5 {
+trait OHSFixture {
 
   val aEmptyOhsRepresentation: Option[OperationRepresentation] = emptyOhsRepresentation(List())
 

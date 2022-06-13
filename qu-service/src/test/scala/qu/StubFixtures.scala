@@ -7,14 +7,14 @@ import org.scalatest._
 import qu.stub.client.StubFactories.{inNamedProcessJacksonStubFactory, inProcessJacksonJwtStubFactory}
 import qu.auth.Token
 import qu.auth.common.Constants
-import qu.stub.client.{JwtAsyncGrpcClientStub, RecipientInfo}
+import qu.stub.client.{JwtAsyncClientStub, RecipientInfo}
 
 
 trait AuthStubFixture extends BeforeAndAfterAll {
   this: AsyncTestSuite =>
 
   //lazy val for dealing with initialization issues
-  lazy val authStub: JwtAsyncGrpcClientStub[JavaTypeable] = {
+  lazy val authStub: JwtAsyncClientStub[JavaTypeable] = {
     println("creating authstub")
 
     inProcessJacksonJwtStubFactory(getJwt,

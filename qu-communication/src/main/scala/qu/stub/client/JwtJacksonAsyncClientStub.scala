@@ -8,6 +8,6 @@ import qu.auth.Token
 import scala.concurrent.ExecutionContext
 
 
-class JwtJacksonClientStubAsync(channel: ManagedChannel, token: Token)(implicit executor: ExecutionContext)
-  extends JwtAsyncGrpcClientStub[JavaTypeable](channel, token) with JacksonMethodDescriptorFactory
+class JwtJacksonAsyncClientStub(channel: ManagedChannel, token: Token)(implicit executor: ExecutionContext)
+  extends JwtAsyncClientStub[JavaTypeable](channel, token) with JacksonMethodDescriptorFactory
     with CachingMethodDescriptorFactory[JavaTypeable]

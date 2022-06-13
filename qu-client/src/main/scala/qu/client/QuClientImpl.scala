@@ -30,7 +30,6 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
     def submitWithOhs(ohs: OHS): Future[T] = {
       for {
         (answer, order, updatedOhs) <- policy.quorum(Some(op), ohs)
-        //todo mapping grpc exceptions to custom
         answer <- if (order < thresholds.q) for {
           (opType, _, _) <- classifyAsync(updatedOhs)
           optimisticAnswer <- if (opType == METHOD) Future(

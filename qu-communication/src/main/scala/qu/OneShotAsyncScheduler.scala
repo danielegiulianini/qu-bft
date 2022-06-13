@@ -11,8 +11,8 @@ class OneShotAsyncScheduler(poolSize: Int) {
   private implicit val scheduler: SchedulerService = Scheduler.fixedPool("schedulerService", poolSize)
 
   def scheduleOnceAsPromise(duration: FiniteDuration): Future[Unit] = {
-    val promise = Promise()
-    scheduler.scheduleOnce(duration)(())
+    val promise = Promise[Unit]()
+    scheduler.scheduleOnce(duration)(promise success ())//scheduler.scheduleOnce(duration)(())
     promise.future
   }
 

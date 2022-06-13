@@ -4,7 +4,7 @@ import qu.model.ConcreteQuModel.ServerId
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
 
 //commands shared between test suites
-object SharedContainer2 {
+/*object SharedContainer2 {
   def generateKey(a: String, b: String): ServerId = "k" + a + b
 
   def keysForServer(serverId: ServerId, serversIds: Set[ServerId]): Map[ServerId, String] =
@@ -22,4 +22,4 @@ object SharedContainer2 {
   val thresholds: QuorumSystemThresholds = QuorumSystemThresholds(t = 1, q = 3, b = 0)
   )
 */
-}
+}*/

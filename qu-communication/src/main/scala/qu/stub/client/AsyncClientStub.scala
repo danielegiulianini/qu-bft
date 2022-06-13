@@ -11,7 +11,7 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 
 //a stub reusable between client and server sides
-abstract class AsyncGrpcClientStub[Transferable[_]](val chan: ManagedChannel)(implicit executor: ExecutionContext)
+abstract class AsyncClientStub[Transferable[_]](val chan: ManagedChannel)(implicit executor: ExecutionContext)
   extends MethodDescriptorFactory[Transferable] with MarshallerFactory[Transferable] with Shutdownable {
 
   protected val callOptions: CallOptions = CallOptions.DEFAULT
