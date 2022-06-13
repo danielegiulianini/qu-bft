@@ -7,7 +7,7 @@ import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
 import org.scalatest.FutureOutcome
 import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should.Matchers
-import qu.stub.client.RecipientInfo.id
+import qu.RecipientInfo.id
 import qu.model.examples.Commands.{GetObj, Increment, IncrementAsObj}
 import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}

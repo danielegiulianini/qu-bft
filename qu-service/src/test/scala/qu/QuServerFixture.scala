@@ -24,11 +24,11 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
 
   self: AsyncTestSuite with ServersFixture =>
 
+  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastServerPolicy[Int]]
 
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
   def freshService(): AbstractQuService[JavaTypeable, Int] = {
 
-    val mockedQuorumPolicy = mock[JacksonSimpleBroadcastServerPolicy[Int]]
 
     val service = new QuServiceImpl[JavaTypeable, Int](
       methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},

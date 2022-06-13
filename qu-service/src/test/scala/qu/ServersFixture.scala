@@ -1,6 +1,6 @@
 package qu
 
-import qu.stub.client.RecipientInfo.id
+import qu.RecipientInfo.id
 import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
 import qu.model.QuorumSystemThresholds
 import qu.model.examples.OHSFixture
