@@ -9,11 +9,8 @@ trait MethodDescriptorFactory[Transferable[_]] {
   //a deterministic function on parameter types
   def genericTypesIdentifier[ReqT: Transferable, RespT: Transferable]: String
 
-  def generateMethodDescriptor5[ReqT: Transferable, RespT: Transferable](methodName: String, serviceName: String):
+  def generateMethodDescriptor[ReqT: Transferable, RespT: Transferable](methodName: String, serviceName: String):
   MethodDescriptor[ReqT, RespT] = {
-    //println("generating for (request):  " + implicitly[Transferable[ReqT]] + "and response: " +implicitly[Transferable[ReqT]] )
-//println("calling ... with name:" + MethodDescriptor.generateFullMethodName(serviceName,
-  //methodName + genericTypesIdentifier[ReqT, RespT]))
     MethodDescriptor.newBuilder(
       marshallerFor[ReqT],
       marshallerFor[RespT])

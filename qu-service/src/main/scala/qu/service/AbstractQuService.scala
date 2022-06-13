@@ -71,7 +71,7 @@ abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chos
                                              last: TypeTag[OperationOutputT]): AbstractQuService[Transportable, ObjectT] = {
     def addMethod[X: Transportable, Y: Transportable](handler: ServerCalls.UnaryMethod[X, Y]): Unit =
       ssd.addMethod(
-        methodDescriptorFactory.generateMethodDescriptor5[X, Y](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME),
+        methodDescriptorFactory.generateMethodDescriptor[X, Y](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME),
         ServerCalls.asyncUnaryCall[X, Y](handler))
 
 

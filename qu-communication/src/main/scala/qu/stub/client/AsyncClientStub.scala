@@ -20,7 +20,7 @@ abstract class AsyncClientStub[Transferable[_]](val chan: ManagedChannel)(implic
   Future[OutputT] = {
 
     //todo must add timeout
-    val md = generateMethodDescriptor5[InputT, OutputT](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME)
+    val md = generateMethodDescriptor[InputT, OutputT](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME)
     ClientCalls.asyncUnaryCall(chan, md, callOptions, toBeSent)
   }
 
