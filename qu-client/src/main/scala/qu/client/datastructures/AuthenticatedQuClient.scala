@@ -34,6 +34,7 @@ class AuthenticatedQuClient[ObjectT](username: String,
       _ <- Future {
         mode match {
           case NOT_REGISTER => authClient.register()
+          case _ =>
         }
       }
       builder <- authClient.authorize()

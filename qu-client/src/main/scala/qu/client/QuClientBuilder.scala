@@ -1,11 +1,11 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
+import qu.RecipientInfo
 import qu.RecipientInfo.id
 import qu.auth.Token
-import qu.{RecipientInfo, Shutdownable}
-import qu.client.quorum.ClientQuorumPolicy.{ClientPolicyFactory, simpleJacksonPolicyFactoryUnencrypted}
 import qu.client.backoff.{BackOffPolicy, ExponentialBackOffPolicy}
+import qu.client.quorum.{ClientQuorumPolicy, JacksonSimpleBroadcastClientPolicy}
 import qu.model.QuorumSystemThresholds
 
 import java.util.Objects
@@ -13,12 +13,12 @@ import scala.concurrent.ExecutionContext
 
 
 case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
-                                                       private val policyFactory: ClientPolicyFactory[Transportable, ObjectT],
+                                                       private val policyFactory: ClientQuorumPolicy.ClientQuorumPolicyFactory[ObjectT, Transportable],
                                                        private val backOffPolicy: BackOffPolicy,
                                                        //user dependencies
                                                        private val serversInfo: Set[RecipientInfo],
                                                        private val thresholds: Option[QuorumSystemThresholds],
-                                                                ) {
+                                                     ) {
   Objects.requireNonNull(policyFactory)
   Objects.requireNonNull(backOffPolicy)
   Objects.requireNonNull(serversInfo)
@@ -46,21 +46,21 @@ case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
 object QuClientBuilder {
 
   //choosing an implementation as the default
-  def builder[U](token: Token)(implicit ec:ExecutionContext): QuClientBuilder[U, JavaTypeable] =
+  def builder[U](token: Token)(implicit ec: ExecutionContext): QuClientBuilder[U, JavaTypeable] =
     simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 
-  private def empty[U, Transferable[_]](policyFactory: ClientPolicyFactory[Transferable, U],
+  private def empty[U, Transferable[_]](policyFactory: ClientQuorumPolicy.ClientQuorumPolicyFactory[U, Transferable],
                                         policy: BackOffPolicy):
   QuClientBuilder[U, Transferable] =
-    QuClientBuilder((mySet, thresholds) => policyFactory(mySet, thresholds),
+    QuClientBuilder(policyFactory,//(mySet:Set[RecipientInfo], thresholds:QuorumSystemThresholds) => policyFactory.ff[U](mySet, thresholds),
       policy,
       Set(),
       Option.empty)
 
   //builder implementations
-  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: Token)(implicit ec:ExecutionContext):
+  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: Token)(implicit ec: ExecutionContext):
   QuClientBuilder[U, JavaTypeable] =
     QuClientBuilder.empty[U, JavaTypeable](
-      simpleJacksonPolicyFactoryUnencrypted(token),
+      JacksonSimpleBroadcastClientPolicy[U](token)(_,_), //simpleJacksonPolicyFactoryUnencrypted(token),
       ExponentialBackOffPolicy())
 }

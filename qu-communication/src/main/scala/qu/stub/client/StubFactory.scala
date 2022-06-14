@@ -3,21 +3,90 @@ package qu.stub.client
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.{Grpc, InsecureChannelCredentials, TlsChannelCredentials}
+import qu.RecipientInfo
+import qu.RecipientInfo.id
 import qu.auth.Token
 
 import scala.concurrent.ExecutionContext
 
+//abstract factory method
+trait StubFactory3[Transportable[_]] {
+  def inNamedProcessStub(ip: String, port: Int)
+                        (implicit ec: ExecutionContext): AsyncClientStub[Transportable]
 
+  def inNamedProcessStub(recInfo: RecipientInfo)
+                        (implicit ec: ExecutionContext): AsyncClientStub[Transportable]
 
+  def unencryptedDistributedStub(ip: String, port: Int)
+                                (implicit ec: ExecutionContext): AsyncClientStub[Transportable]
 
+  def unencryptedDistributedStub(recInfo: RecipientInfo)
+                                (implicit ec: ExecutionContext): AsyncClientStub[Transportable]
 
+}
 
+trait AuthenticatedStubFactory3[Transportable[_]] {
+  def inNamedProcessJwtStub(token: Token, ip: String, port: Int)
+                           (implicit ec: ExecutionContext): JwtAsyncClientStub[Transportable]
 
+  def inNamedProcessJwtStub(token: Token, recInfo: RecipientInfo)
+                           (implicit ec: ExecutionContext): JwtAsyncClientStub[Transportable]
+
+  def unencryptedDistributedJwtStub(token: Token, ip: String, port: Int)
+                                   (implicit ec: ExecutionContext): JwtAsyncClientStub[Transportable]
+
+  def unencryptedDistributedJwtStub(token: Token, recInfo: RecipientInfo)
+                                   (implicit ec: ExecutionContext): JwtAsyncClientStub[Transportable]
+
+}
+
+class JacksonStubFactory extends StubFactory3[JavaTypeable] {
+  override def inNamedProcessStub(ip: String, port: Int)
+                                 (implicit ec: ExecutionContext): AsyncClientStub[JavaTypeable] =
+    inNamedProcessStub(RecipientInfo(ip, port))
+
+  override def inNamedProcessStub(recInfo: RecipientInfo)
+                                 (implicit ec: ExecutionContext): AsyncClientStub[JavaTypeable] =
+    new UnauthenticatedJacksonAsyncClientStub(InProcessChannelBuilder.forName(id(recInfo)).build())
+
+  override def unencryptedDistributedStub(ip: String, port: Int)
+                                         (implicit ec: ExecutionContext): AsyncClientStub[JavaTypeable] =
+    unencryptedDistributedStub(RecipientInfo(ip, port))
+
+  override def unencryptedDistributedStub(recInfo: RecipientInfo)
+                                         (implicit ec: ExecutionContext): AsyncClientStub[JavaTypeable] =
+    new UnauthenticatedJacksonAsyncClientStub(Grpc.newChannelBuilder(id(recInfo),
+      TlsChannelCredentials.create()).build)
+}
+
+class JacksonAuthenticatedStubFactory extends AuthenticatedStubFactory3[JavaTypeable] {
+  override def inNamedProcessJwtStub(token: Token, ip: String, port: Int)
+                                    (implicit ec: ExecutionContext): JwtAsyncClientStub[JavaTypeable] =
+    inNamedProcessJwtStub(token, RecipientInfo(ip, port))
+
+  override def inNamedProcessJwtStub(token: Token, recInfo: RecipientInfo)
+                                    (implicit ec: ExecutionContext): JwtAsyncClientStub[JavaTypeable] =
+    new JwtJacksonAsyncClientStub(InProcessChannelBuilder.forName(id(recInfo)).build, token)
+
+  override def unencryptedDistributedJwtStub(token: Token, ip: String, port: Int)
+                                            (implicit ec: ExecutionContext): JwtAsyncClientStub[JavaTypeable] =
+    unencryptedDistributedJwtStub(token, RecipientInfo(ip, port))
+
+  override def unencryptedDistributedJwtStub(token: Token, recInfo: RecipientInfo)
+                                            (implicit ec: ExecutionContext): JwtAsyncClientStub[JavaTypeable] =
+    new JwtJacksonAsyncClientStub(Grpc.newChannelBuilder(id(recInfo),
+      TlsChannelCredentials.create()).build, token)
+}
+
+/*
 //equivalent of multiple applys
 object StubFactories {
-  //here key is ignored
 
   type StubFactory[Transportable[_]] = (String, Int, ExecutionContext) => AsyncClientStub[Transportable] //or def stubFactory[Transportable[_]](ip:String, port:Int):GrpcClientStub[Transportable] = ???
+
+  trait StubFactory2 {
+
+  }
 
   val inNamedProcessJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port, ec) => {
     //could also use for address/for port
@@ -25,11 +94,11 @@ object StubFactories {
     new UnauthenticatedJacksonAsyncClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build())(ec)
   }
 
-  /*def inNamedProcessJacksonStubFactory(ip:String, port:Int): UnauthenticatedJacksonClientStub = {
+  def inNamedProcessJacksonStubFactory(ip: String, port: Int)(implicit ec: ExecutionContext): UnauthenticatedJacksonAsyncClientStub = {
     //could also use for address/for port
     //could validate with InetAddress
-    new UnauthenticatedJacksonClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build())
-  }*/
+    new UnauthenticatedJacksonAsyncClientStub(InProcessChannelBuilder.forName(ip + ":" + port).build())
+  }
 
   val unencryptedDistributedJacksonStubFactory: StubFactory[JavaTypeable] = (ip, port, ec) =>
     new UnauthenticatedJacksonAsyncClientStub(Grpc.newChannelBuilder(ip + ":" + port,
@@ -53,7 +122,7 @@ object StubFactories {
   //...
 
 }
-
+*/
 
 /*object ChannelFactories {
 

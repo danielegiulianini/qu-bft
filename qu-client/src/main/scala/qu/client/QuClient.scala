@@ -1,6 +1,5 @@
 package qu.client
 
-import qu.client.quorum.ClientQuorumPolicy.simpleJacksonPolicyFactoryUnencrypted
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.Shutdownable
 import qu.auth.Token

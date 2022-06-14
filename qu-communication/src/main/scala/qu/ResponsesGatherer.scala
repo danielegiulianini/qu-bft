@@ -14,7 +14,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
                                                   (implicit ec: ExecutionContext)
   extends Shutdownable {
 
-//  ValidationUtils.requireNonNullAsInvalid(servers)
+  //  ValidationUtils.requireNonNullAsInvalid(servers)
 
   private val scheduler = new OneShotAsyncScheduler(1)
 
@@ -48,7 +48,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
         }
         .foreach { case (serverId, stubToServer) => stubToServer.onComplete({
           case Success(response) if successResponseFilter(response) =>
-            this.synchronized { //mutex needed because of multithreaded ex context
+            this.synchronized { //mutex needed because of possible multithreaded ex context (user provided)
               currentResponseSet = currentResponseSet + (serverId -> response)
               if (currentResponseSet.size == responsesQuorum) {
                 cancelable.cancel()
@@ -58,7 +58,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
           case Failure(ex) => this.synchronized(
             inspectExceptions[ResponseT](completionPromise, exceptionsByServerId + (serverId -> ex))
           )
-          case _ => //ignored since not interested in this
+          case _ => //ignored since not interested in this situation
         })
         }
       completionPromise.future
