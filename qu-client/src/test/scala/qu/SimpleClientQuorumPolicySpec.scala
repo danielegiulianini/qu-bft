@@ -42,10 +42,10 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Four
   //                               transportableResponse: Transportable[Response[Option[AnswerT]]])
   // : Future[(Option[AnswerT], Int, OHS)] = {
   def sendIncrementRequest(mockedStub: JwtAsyncClientStub[JavaTypeable]):
-  MockFunction3[Request[Unit, Int], JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Unit]],Future[Response[Unit]]] = (mockedStub.send[Request[Unit, Int], Response[Unit]](_: Request[Unit, Int])(_: JavaTypeable[Request[Unit, Int]], _: JavaTypeable[Response[Unit]]))
+  MockFunction3[Request[Unit, Int], JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Unit]], Future[Response[Unit]]] = (mockedStub.send[Request[Unit, Int], Response[Unit]](_: Request[Unit, Int])(_: JavaTypeable[Request[Unit, Int]], _: JavaTypeable[Response[Unit]]))
 
   def sendGetObjRequest(mockedStub: JwtAsyncClientStub[JavaTypeable]):
-  MockFunction3[Request[Int, Int], JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Int]],Future[Response[Int]]] = (mockedStub.send[Request[Int, Int], Response[Int]](_: Request[Int, Int])(_: JavaTypeable[Request[Int, Int]], _: JavaTypeable[Response[Int]]))
+  MockFunction3[Request[Int, Int], JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Int]], Future[Response[Int]]] = (mockedStub.send[Request[Int, Int], Response[Int]](_: Request[Int, Int])(_: JavaTypeable[Request[Int, Int]], _: JavaTypeable[Response[Int]]))
 
 
   //sends to all servers
@@ -58,20 +58,13 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Four
 
         policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
       }
-      /* it("should broadcast to all servers the ohs passed to it") {
-         mockedServersStubs.values.foreach(mockedStub => {
-           (mockedStub.send _).expects(emptyOhs(serversIds.toSet),)
-         })
+      it("should broadcast to all servers the ohs and the operation passed to it") {
+        mockedServersStubs.values.foreach(mockedStub => {
+          sendGetObjRequest(mockedStub).expects(Request[Int, Int](Some(GetObj()), emptyOhs(serversIds.toSet)), *, *).returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
+        })
 
-         policy.quorum[Unit](Some(Increment()), emptyOhs(serversIds.toSet))
-       }
-       it("should broadcast to all servers the operation passed to it") {
-         mockedServersStubs.values.foreach(mockedStub => {
-           (mockedStub.send _).expects(emptyOhs(serversIds.toSet),)
-         })
-
-         policy.quorum[Unit](Some(Increment()), emptyOhs(serversIds.toSet))
-       }*/
+        policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
+      }
     }
 
 
