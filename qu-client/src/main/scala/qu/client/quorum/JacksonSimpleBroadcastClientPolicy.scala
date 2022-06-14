@@ -21,12 +21,14 @@ object JacksonSimpleBroadcastClientPolicy {
   //factory method
   def apply[U](token: Token)(servers: Set[RecipientInfo], thresholds: QuorumSystemThresholds)
               (implicit ec: ExecutionContext)
-  : JacksonSimpleBroadcastClientPolicy[U] =
+  : JacksonSimpleBroadcastClientPolicy[U] = {
+    val factory = new JacksonAuthenticatedStubFactory()
     new JacksonSimpleBroadcastClientPolicy[U](thresholds,
       servers
         .map { recipientInfo =>
-          id(recipientInfo) -> new JacksonAuthenticatedStubFactory()
-            .unencryptedDistributedJwtStub(token, recipientInfo.ip, recipientInfo.port)
+          id(recipientInfo) -> factory
+            .unencryptedDistributedJwtStub(token, recipientInfo)
         }
         .toMap)
+  }
 }

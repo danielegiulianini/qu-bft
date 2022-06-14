@@ -52,7 +52,7 @@ object QuClientBuilder {
   private def empty[U, Transferable[_]](policyFactory: ClientQuorumPolicy.ClientQuorumPolicyFactory[U, Transferable],
                                         policy: BackOffPolicy):
   QuClientBuilder[U, Transferable] =
-    QuClientBuilder(policyFactory,//(mySet:Set[RecipientInfo], thresholds:QuorumSystemThresholds) => policyFactory.ff[U](mySet, thresholds),
+    QuClientBuilder(policyFactory,
       policy,
       Set(),
       Option.empty)
@@ -61,6 +61,6 @@ object QuClientBuilder {
   def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: Token)(implicit ec: ExecutionContext):
   QuClientBuilder[U, JavaTypeable] =
     QuClientBuilder.empty[U, JavaTypeable](
-      JacksonSimpleBroadcastClientPolicy[U](token)(_,_), //simpleJacksonPolicyFactoryUnencrypted(token),
+      JacksonSimpleBroadcastClientPolicy[U](token)(_, _), //simpleJacksonPolicyFactoryUnencrypted(token) //JacksonBroadcastClientPolicy[U](token).simplePolicy(_,_)
       ExponentialBackOffPolicy())
 }

@@ -13,7 +13,7 @@ import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
 import qu.model.StatusCode.{FAIL, SUCCESS}
 import qu.model.examples.OHSFixture
-import qu.stub.client.StubFactories.inNamedProcessJacksonStubFactory
+import qu.stub.client.JacksonStubFactory
 
 import scala.concurrent.Future
 
@@ -36,8 +36,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
       lazy val storedObjResponse = authStub.send[LogicalTimestamp, ObjectSyncResponse[Int]](unStoredObjLt)
 
       it("should succeed") {
-        ConExC()
-        //storedObjResponse.map(_.responseCode should be(SUCCESS))
+        storedObjResponse.map(_.responseCode should be(SUCCESS))
       }
 
       it("should respond with a empty Option") {
@@ -401,8 +400,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
 
       describe("when OHS contains invalid authenticator referred to its replica history") {
         it("should cull it") {
-          val  unAuthStub =
-            inNamedProcessJacksonStubFactory(serverInfo.ip, serverInfo.port, e)
+          val  unAuthStub = new JacksonStubFactory().inNamedProcessStub(serverInfo)
           for {
             _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
               Request(operation = Some(IncrementAsObj), //updating server rh (since with emptyLt I cannot detect...)

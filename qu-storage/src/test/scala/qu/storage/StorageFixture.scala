@@ -13,7 +13,7 @@ trait StorageFixture extends TestSuiteMixin with Matchers with MockFactory {
     // Perform setup
     storage = ImmutableStorage[Int]()
     try super.withFixture(test) // To be stackable, must call super.withFixture
-    //no clean up
+    finally {}//no clean up
   }
 }
 

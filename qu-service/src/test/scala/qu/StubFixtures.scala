@@ -4,28 +4,26 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.scalatest.flatspec.FixtureAnyFlatSpecLike
 import org.scalatest._
-import qu.stub.client.StubFactories.{inNamedProcessJacksonStubFactory, inProcessJacksonJwtStubFactory}
 import qu.auth.Token
 import qu.auth.common.Constants
-import qu.stub.client.JwtAsyncClientStub
+import qu.stub.client.{JacksonAuthenticatedStubFactory, JacksonStubFactory, JwtAsyncClientStub}
 
 import java.util.concurrent.Executors
 import scala.concurrent.ExecutionContext
 
 
+trait withImplicitExContext {
+  protected[this] implicit def ec: ExecutionContext
+}
+
 trait AuthStubFixture extends BeforeAndAfterAll {
   this: AsyncTestSuite =>
 
-  def authStub2()(implicit ex:ExecutionContext) : JwtAsyncClientStub[JavaTypeable] =
-    inProcessJacksonJwtStubFactory(getJwt,
-    serverInfo.ip,
-    serverInfo.port, ex)
-
   //lazy val for dealing with initialization issues
-  /*lazy val authStub: JwtAsyncClientStub[JavaTypeable] =
-    inProcessJacksonJwtStubFactory(getJwt,
-      serverInfo.ip,
-      serverInfo.port, e)*/
+
+  lazy val authStub =
+    new JacksonAuthenticatedStubFactory().inNamedProcessJwtStub(getJwt,
+      serverInfo)
 
   //afterAll takes care of async code too (see https://github.com/scalatest/scalatest/issues/953)
   override def afterAll(): Unit = {
@@ -41,12 +39,12 @@ trait AuthStubFixture extends BeforeAndAfterAll {
   }
 }
 
+
 trait UnAuthStubFixture extends BeforeAndAfterAll {
-  this: Suite =>
-  protected[this] implicit def e: ExecutionContext = implicitly
+  this: AsyncTestSuite =>
 
   lazy val unAuthStub = {
-    inNamedProcessJacksonStubFactory(serverInfo.ip, serverInfo.port, e)
+    new JacksonStubFactory().inNamedProcessStub(serverInfo)
   }
 
   override def afterAll(): Unit = {
