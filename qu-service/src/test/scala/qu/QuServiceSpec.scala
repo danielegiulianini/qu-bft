@@ -1,11 +1,12 @@
 package qu
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.grpc.StatusRuntimeException
+import io.grpc.{Status, StatusRuntimeException}
 import io.grpc.inprocess.InProcessServerBuilder
 import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
 import org.scalatest.FutureOutcome
 import org.scalatest.funspec.AsyncFunSpec
+import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
 import org.scalatest.matchers.should.Matchers
 import qu.RecipientInfo.id
 import qu.model.examples.Commands.{GetObj, Increment, IncrementAsObj}
@@ -57,14 +58,20 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
       }
     }
     describe("when contacted by an unauthenticated user") {
-
       it("should fail") {
+        recoverToExceptionIf[StatusRuntimeException] {
+          unAuthStub.send[Request[Unit, Int], Response[Option[Unit]]](
+            Request(operation = Some(IncrementAsObj),
+              ohs = emptyOhs(serverIds)))
+        }.map(_.getStatus must be(Status.UNAUTHENTICATED))
+      }
+      /*it("should fail") {
         recoverToSucceededIf[StatusRuntimeException] {
           unAuthStub.send[Request[Unit, Int], Response[Option[Unit]]](
             Request(operation = Some(IncrementAsObj),
               ohs = emptyOhs(serverIds)))
         }
-      }
+      }*/
       describe("when OHS contains all valid authenticators") {
         //laziness needed for correct initialization dependency and for performance reason
         lazy val responseForUpdateWithOutdatedOhs = for {

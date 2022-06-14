@@ -10,14 +10,13 @@ import scala.reflect.runtime.universe._
 
 import scala.concurrent.ExecutionContext
 
-//alternative to apply in companion object
+//alternative to QuServer apply in companion object
 class QuServerBuilder[Transportable[_], ObjectT](private val serviceFactory: ServiceFactory[Transportable, ObjectT],
                                                  private val authorizationInterceptor: ServerInterceptor,
                                                  //user (injected) dependencies:
                                                  private val ip: String,
                                                  private val port: Int,
                                                  private val privateKey: String,
-                                                 //private val
                                                  private val quorumSystemThresholds: QuorumSystemThresholds,
                                                  private val obj: ObjectT)(implicit executor: ExecutionContext) {
 
@@ -48,6 +47,7 @@ class QuServerBuilder[Transportable[_], ObjectT](private val serviceFactory: Ser
 }
 
 object QuServerBuilder {
+
   //hided builder implementations (injecting dependencies)
   def jacksonSimpleServerBuilder[ObjectT: TypeTag](ip: String,
                                                    port: Int,
@@ -57,8 +57,27 @@ object QuServerBuilder {
     new QuServerBuilder[JavaTypeable, ObjectT](
       jacksonSimpleQuorumServiceFactory(),
       new JwtAuthorizationServerInterceptor(),
-      ip, port, privateKey,
+      ip,
+      port,
+      privateKey,
       thresholds,
       obj)
 
 }
+
+
+/*
+object QuServerBuilder {
+  //hided builder implementations (injecting dependencies)
+  def jacksonSimpleServerBuilder[U: TypeTag](myServerInfo: RecipientInfo,
+                                             thresholds: QuorumSystemThresholds,
+                                             obj: U,
+                                             port: Int) =
+    new QuServerBuilder[JavaTypeable, U](
+      jacksonSimpleQuorumServiceFactory(),
+      new JwtAuthorizationServerInterceptor(),
+      myServerInfo,
+      thresholds,
+      obj,
+      port)
+*/

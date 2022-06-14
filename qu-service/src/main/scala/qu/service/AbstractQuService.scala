@@ -15,30 +15,8 @@ import java.util.Objects
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
 
-
 //import that declares specific dependency
 import qu.model.ConcreteQuModel._
-
-
-class CachingServiceServerDefinitionBuilder(private var serviceName: String) {
-  private val builder = ServerServiceDefinition.builder(serviceName)
-  private var mds = Set[String]()
-
-  def addMethod[ReqT, RespT](`def`: MethodDescriptor[ReqT, RespT], handler: ServerCallHandler[ReqT, RespT]): CachingServiceServerDefinitionBuilder = {
-    if (!mds.contains(`def`.getFullMethodName)) {
-      mds = mds + `def`.getFullMethodName
-      builder.addMethod(`def`, handler)
-    }
-    this
-  }
-
-  def build(): ServerServiceDefinition = builder.build
-}
-
-object CachingServiceServerDefinitionBuilder {
-  def apply(serviceName: String) =
-    new CachingServiceServerDefinitionBuilder(serviceName)
-}
 
 //QuServiceImplBase without builder... (each method could or not return the QuServiceImplBase itself)
 abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chosen by programmer
@@ -51,6 +29,7 @@ abstract class AbstractQuService[Transportable[_], ObjectT]( //dependencies chos
                                                              protected val privateKey: String,
                                                              protected val obj: ObjectT)(implicit executor: ExecutionContext)
   extends BindableService with QuService[Transportable, ObjectT] with Shutdownable {
+
   private val ssd = CachingServiceServerDefinitionBuilder(SERVICE_NAME)
 
   protected var servers: Set[AbstractRecipientInfo] = Set[AbstractRecipientInfo]()
@@ -115,18 +94,6 @@ object AbstractQuService {
   type ServiceFactory[Transportable[_], U] =
     (ServerInfo, U, QuorumSystemThresholds) => AbstractQuService[Transportable, U]
 
-  def jacksonSimpleQuorumServiceFactory[U: TypeTag]()(implicit executor: ExecutionContext)
-  : ServiceFactory[JavaTypeable, U] =
-    (serverInfo, obj, quorumSystemThresholds) =>
-      new QuServiceImpl(
-        methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable],
-        policyFactory = JacksonSimpleBroadcastServerPolicy[U](_, _),
-        ip = serverInfo.ip,
-        port = serverInfo.port,
-        privateKey = serverInfo.keySharedWithMe,
-        obj = obj,
-        thresholds = quorumSystemThresholds)
-
 
   //todo (if wanting to use named params for more readability)
   def jacksonSimpleQuorumServiceFactoryWithServerInfo[U: TypeTag]()(serverInfo: ServerInfo,
@@ -142,6 +109,22 @@ object AbstractQuService {
       obj = obj,
       thresholds = quorumSystemThresholds)
   }
+
+
+  //strange
+  def jacksonSimpleQuorumServiceFactory[U: TypeTag]()(implicit executor: ExecutionContext)
+  : ServiceFactory[JavaTypeable, U] =
+    (serverInfo, obj, quorumSystemThresholds) =>
+      new QuServiceImpl(
+        methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable],
+        policyFactory = JacksonSimpleBroadcastServerPolicy[U](_, _),
+        ip = serverInfo.ip,
+        port = serverInfo.port,
+        privateKey = serverInfo.keySharedWithMe,
+        obj = obj,
+        thresholds = quorumSystemThresholds)
+
+
 }
 
 /* old:

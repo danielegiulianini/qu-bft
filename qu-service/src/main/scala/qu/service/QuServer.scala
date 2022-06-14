@@ -57,18 +57,3 @@ class QuServerImpl[Transportable[_], U](authorizationInterceptor: ServerIntercep
 }
 
 
-/*
-object QuServerBuilder {
-  //hided builder implementations (injecting dependencies)
-  def jacksonSimpleServerBuilder[U: TypeTag](myServerInfo: RecipientInfo,
-                                             thresholds: QuorumSystemThresholds,
-                                             obj: U,
-                                             port: Int) =
-    new QuServerBuilder[JavaTypeable, U](
-      jacksonSimpleQuorumServiceFactory(),
-      new JwtAuthorizationServerInterceptor(),
-      myServerInfo,
-      thresholds,
-      obj,
-      port)
-*/
