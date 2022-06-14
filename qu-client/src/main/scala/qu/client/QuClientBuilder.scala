@@ -17,7 +17,7 @@ case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
                                                        private val backOffPolicy: BackOffPolicy,
                                                        //user dependencies
                                                        private val serversInfo: Set[RecipientInfo],
-                                                       private val thresholds: Option[QuorumSystemThresholds],
+                                                       private val thresholds: Option[QuorumSystemThresholds]
                                                      ) {
   Objects.requireNonNull(policyFactory)
   Objects.requireNonNull(backOffPolicy)

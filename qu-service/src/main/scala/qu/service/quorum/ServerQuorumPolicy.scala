@@ -20,16 +20,6 @@ trait ServerQuorumPolicy[Transportable[_], ObjectT] extends Shutdownable {
 object ServerQuorumPolicy {
 
   type ServerQuorumPolicyFactory[Transportable[_], U] =
-    (Set[RecipientInfo], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, U] with Shutdownable
+    (Set[AbstractRecipientInfo], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, U]
 
-
-  def simpleDistributedJacksonServerQuorumFactory[U]()(implicit executor: ExecutionContext): ServerQuorumPolicyFactory[JavaTypeable, U] = {
-    val jacksonFactory = new JacksonStubFactory
-    (serversSet, thresholds) => new SimpleServerQuorumPolicy[JavaTypeable, U](
-      servers = serversSet.map { recipientInfo =>
-        id(recipientInfo) -> jacksonFactory.unencryptedDistributedStub(recipientInfo.ip, recipientInfo.port)
-      }.toMap,
-      thresholds = thresholds
-    )
-  }
 }

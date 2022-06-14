@@ -22,7 +22,7 @@ import scala.concurrent.Future
 class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
   with OHSFixture with ServersFixture with QuServerFixture with AuthStubFixture with UnAuthStubFixture {
 
-  //for client stub fixture
+  //for client stubs fixture
   override protected val serverInfo: RecipientInfo = RecipientInfo(quServer1.ip, quServer1.port)
   override protected val clientId: String = "client1"
 
@@ -136,7 +136,6 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
 
               it("should object sync") {
 
-                //potrei simulare uno scambio (anziché one shot scenario) e verificare che continua a fare object sync sinché chiedo oggetto che non ha...
                 val op = Some(new Increment)
                 val (_, (_, ltCo), _) = setup(op,
                   aOhsWithMethod,
@@ -203,7 +202,6 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                 val updatedAuthenticator = authenticateRh(correctRh, keysByServer(id(quServer1)))
                 responseForUpdate.map(_.authenticatedRh._2 should be(updatedAuthenticator))
               }
-              //should return correct answer
               it("should return success") {
                 for {
                   response <- responseForUpdate
@@ -400,7 +398,6 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
 
       describe("when OHS contains invalid authenticator referred to its replica history") {
         it("should cull it") {
-          val  unAuthStub = new JacksonStubFactory().inNamedProcessStub(serverInfo)
           for {
             _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
               Request(operation = Some(IncrementAsObj), //updating server rh (since with emptyLt I cannot detect...)

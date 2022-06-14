@@ -24,22 +24,8 @@ class QuClientSpec extends AnyFunSpec
   with FourServersScenario
   with OHSFixture
   with ScalaFutures
-  with QuClientFixture { //AsyncFunSpec with AsyncMockFactory with OHSFixture2 {
-  /*
-    //todo should go in fixture (to be shutdown between tetsts (as it is stateful))
-    //stubbed dependencies
-    val mockedQuorumPolicy = mock[JacksonSimpleBroadcastClientPolicy[Int]]
-    val mockedBackOffPolicy = mock[BackOffPolicy]
+  with QuClientFixture {
 
-    //using constructor (instead of builder) for wiring SUT with stubbed dependencies
-    val client = new QuClientImpl[Int, JavaTypeable](
-      policy = mockedQuorumPolicy,
-      backoffPolicy = mockedBackOffPolicy,
-      serversIds = serversIds.toSet,
-      thresholds = thresholds)
-    val updateQuorum: MockFunction4[Option[Operation[Unit, Int]], OHS, JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[(Option[Unit], Int, OHS)]] = (mockedQuorumPolicy.quorum[Unit](_: Option[Operation[Unit, Int]], _: OHS)(_: JavaTypeable[Request[Unit, Int]],
-      _: JavaTypeable[Response[Option[Unit]]]))
-  */
   //determinism in tests
   implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
@@ -107,9 +93,7 @@ class QuClientSpec extends AnyFunSpec
       }
     }
     //QUERY
-   /* val queryQuorum: MockFunction4[Option[Operation[Int, Int]], OHS, JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[(Option[Int], Int, OHS)]] = mockedQuorumPolicy.quorum[Int](_: Option[Operation[Int, Int]], _: OHS)(_: JavaTypeable[Request[Int, Int]],
-      _: JavaTypeable[Response[Option[Int]]])*/
-    val queryOp = new GetObj[Int] //todo o uso l'bject anche qui oppure deposito in una var e uso sempre quello (essendo generico non puoi creare un object!)
+    val queryOp = GetObj[Int]
 
     describe("when requesting a query operation and receiving a response with order >= q and an ohs with method") { //l'ordine può anche essere declinato in temrini più di alto livello (di concurrency...)
 
@@ -294,7 +278,4 @@ class QuClientSpec extends AnyFunSpec
   //***ADVANCED FUNCTIONING***
   //scenari di scambi più lunghi ... vedere se rispetta anche andando avanti ...
 
-
-  //in fixture...
-  //client.shutdown()
 }

@@ -1,6 +1,5 @@
 package qu.service.quorum
 
-import io.grpc.internal.AbstractStream.TransportState
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, ServerId}
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 import qu.{ExceptionsInspector, ResponsesGatherer}

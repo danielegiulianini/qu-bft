@@ -33,7 +33,6 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       it("should be classified as previous to a ConcreteLogicalTimestamp with a greater logical time") {
         forAll(arbitraryLt) { aLt =>
           forAll(logicalTimestampWithGreaterTimeThan(aLt.time)) { lt =>
-            println("tested couple, alt:" + aLt + ", lt:" + lt)
             assert(true) // aLt should be < lt //assert(aLt>aLt2)
             lt should be > aLt
           }
@@ -46,18 +45,12 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
             lt should be > aLt
           }
         }
-        /*forAll(ltWithSameTimeOfAndBarrierGreaterThan(aLt2.time, aLt2.barrierFlag)) { lt =>
-          println("tested lt: " + lt)
-          lt should be > aLt2
-        }*/
       }
 
       //todo verify if actually it generates them
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, same barrier flag but lexicographically greater clientId") {
         forAll(arbitraryLt) { aLt =>
           forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt =>
-            println("testing " + aLt + " vs " + lt)
-            println("RET: " + (lt > aLt))
             lt should be > aLt //_ < aLt
           }
           /* check {
@@ -140,9 +133,6 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     exampleServersIds.map(id => id -> keysForServer(id, exampleServersIds.toSet)).toMap
   val r = 2
   val q = 3
-  println("la ohs con inline method *******************************")
-  println(ohsWithInlineMethodFor(exampleServersKeys, r))
-  println("++++++++++++++la classify lo sclassifica come: " + classify(ohsWithInlineMethodFor(exampleServersKeys, r), r, q)._1)
 
   //candidate
   describe("A candidate") {
