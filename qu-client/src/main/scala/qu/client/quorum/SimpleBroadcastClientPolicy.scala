@@ -11,9 +11,13 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
 class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
-                                                             protected val servers: Map[ServerId, JwtAsyncClientStub[Transportable]],
-                                                             private val retryingTime: FiniteDuration = 3.seconds)(implicit ec: ExecutionContext)
-  extends ResponsesGatherer[Transportable](servers, retryingTime) with ClientQuorumPolicy[ObjectT, Transportable] with ExceptionsInspector[Transportable] {
+                                                             protected val servers: Map[ServerId,
+                                                               JwtAsyncClientStub[Transportable]],
+                                                             private val retryingTime: FiniteDuration = 3.seconds)
+                                                            (implicit ec: ExecutionContext)
+  extends ResponsesGatherer[Transportable](servers, retryingTime)
+    with ClientQuorumPolicy[ObjectT, Transportable]
+    with ExceptionsInspector[Transportable] {
 
 
   override def quorum[AnswerT](operation: Option[Operation[AnswerT, ObjectT]],
@@ -50,5 +54,8 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
     } yield (response.answer, voteCount, ohs)
   }
 
-  override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId, ResponseT]], exceptionsByServerId: Map[ConcreteQuModel.ServerId, Throwable]): Unit = inspectExceptions(completionPromise, exceptionsByServerId, thresholds)
+  override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId,
+    ResponseT]],
+                                                      exceptionsByServerId: Map[ConcreteQuModel.ServerId, Throwable])
+  : Unit = inspectExceptions(completionPromise, exceptionsByServerId, thresholds)
 }

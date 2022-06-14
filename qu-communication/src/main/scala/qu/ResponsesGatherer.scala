@@ -64,11 +64,10 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
       completionPromise.future
     }
 
-
     gatherResponsesImpl(request,
       completionPromise = Promise[Map[ServerId, ResponseT]](),
       responseSet = Map(),
-      responsesQuorum: Int,
+      responsesQuorum,
       successResponseFilter)
   }
 
