@@ -63,7 +63,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
           unAuthStub.send[Request[Unit, Int], Response[Option[Unit]]](
             Request(operation = Some(IncrementAsObj),
               ohs = emptyOhs(serverIds)))
-        }.map(_.getStatus must be(Status.UNAUTHENTICATED))
+        }.map(_.getStatus.getCode must be(Status.UNAUTHENTICATED.getCode))
       }
       /*it("should fail") {
         recoverToSucceededIf[StatusRuntimeException] {
