@@ -2,7 +2,7 @@ package qu.view
 
 import qu.controller.Controller
 import qu.model.ConcreteQuModel.{Operation, ServerId}
-import qu.model.{DecResult, IncResult, ServerKilled, SmrEventResult, ThresholdsExceededException, ValueResult}
+import qu.model.{DecResult, IncResult, ServerAlreadyKilledException, ServerKilled, ServerStatus, SmrEventResult, ThresholdsExceededException, ValueResult}
 import qu.view.ConsoleView.AbstractCliCmd.KillServer.getParamFromInputLine
 import qu.view.ConsoleView.AbstractCliCmd.{Decrement, Exit, Increment, InvalidInput, KillServer, Reset, Value, commands}
 import qu.view.ConsoleView.{AbstractCliCmd, CliCmdWithoutArg, UnrecognizedCommand, parse}
@@ -52,10 +52,17 @@ class ConsoleView extends View {
 
   override def result(result: Try[SmrEventResult]): Unit = println({
     val operationOk = "operation completed correctly. "
+    /*def printValue =
+    def printStatus(serversStatuses: Map[ServerId, ServerStatus]) = operationOk + "Servers " + id + "stopped. Servers status are: " + serversStatuses
+*/
     result match {
-      case Success(ValueResult(value)) => operationOk + "Updated counter value is: " + value
-      case Success(ServerKilled(id, serversStatuses)) => operationOk + "Servers " + id + "stopped. Servers status are: " + serversStatuses
+      case Success(ValueResult(value)) =>
+        operationOk + "Updated counter value is: " + value
+      case Success(ServerKilled(id, serversStatuses)) =>
+        operationOk + "Servers " + id + "stopped. Servers status are: " + serversStatuses
       case Failure(ThresholdsExceededException()) => null
+      case Failure(ServerAlreadyKilledException()) => null
+      case Failure(_) =>
       case _ => operationOk
     }
   })
@@ -112,7 +119,7 @@ object ConsoleView {
     val commands = Set(Exit, KillServer("exampleId"), Increment, Decrement, Reset, Value, InvalidInput)
   }
 
-  class UnrecognizedCommand extends Exception
+  case class UnrecognizedCommand() extends Exception
 
   def parse(inputLine: String): AbstractCliCmd = {
     commands.filter(cmd => inputLine.startsWith(cmd.command)).headOption match {
@@ -122,6 +129,7 @@ object ConsoleView {
       case _ => InvalidInput
     }
   }
+
 }
 
 object ExampleOfGui extends App {

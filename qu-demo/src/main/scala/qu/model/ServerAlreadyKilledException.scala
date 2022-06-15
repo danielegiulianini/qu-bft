@@ -1,3 +1,8 @@
 package qu.model
 
-case class ServerAlreadyKilledException() extends Exception
+case class ServerAlreadyKilledException(message: String) extends Exception
+
+object ServerAlreadyKilledException {
+  //default message
+  def apply() = ServerAlreadyKilledException("Server already previously killed, can't kill it twice.")
+}

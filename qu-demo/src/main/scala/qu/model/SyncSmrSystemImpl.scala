@@ -15,7 +15,6 @@ import scala.util.{Failure, Success, Try}
 
 class SyncSmrSystemImpl extends SyncSmrSystem {
 
-  var quServerIpPorts = Set[RecipientInfo]()
 
   val authServerInfo = RecipientInfo(ip = "localhost3", port = 1)
   val quServer1 = RecipientInfo(ip = "localhost1", port = 1)
@@ -23,6 +22,8 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
   val quServer3 = RecipientInfo(ip = "localhost3", port = 3)
   val quServer4 = RecipientInfo(ip = "localhost4", port = 4)
 
+
+  var quServerIpPorts = Set[RecipientInfo]()
   quServerIpPorts = quServerIpPorts + quServer1
   quServerIpPorts = quServerIpPorts + quServer2
   quServerIpPorts = quServerIpPorts + quServer3
@@ -46,8 +47,8 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
       id(quServer3) -> "ks3s4",
       id(quServer4) -> "ks4s4"))
 
-  //creating servers automatically
-  private def createServersFromKeys(keysByServer: Map[ServerId, Map[ServerId, Key]]) = {
+  //creating servers automatically from keys
+  private def buildServersFromRecipientInfoAndKeys(quServerIpPorts: Set[RecipientInfo], keysByServer: Map[ServerId, Map[ServerId, Key]]) = {
     val servers = quServerIpPorts.map(ipPort => id(ipPort) -> {
       val server = RemoteCounterServer.builder(ipPort.ip, ipPort.port, keysByServer(id(ipPort))(id(ipPort)),
         thresholds = thresholds) //ipPorts.filterNot(_==ipPort)
@@ -59,7 +60,7 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
     servers
   }
 
-  val servers = createServersFromKeys(keysByServer)
+  val servers = buildServersFromRecipientInfoAndKeys(quServerIpPorts, keysByServer)
 
   val FaultyServersCount = 1
   val MalevolentServersCount = 0
