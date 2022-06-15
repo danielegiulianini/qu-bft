@@ -1,4 +1,4 @@
-package qu.view
+package qu.view.console
 
 object StringUtils {
   def padRight(s: String, n: Int): String = {

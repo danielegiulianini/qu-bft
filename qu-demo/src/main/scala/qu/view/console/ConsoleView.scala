@@ -1,12 +1,13 @@
-package qu.view
+package qu.view.console
 
 import qu.controller.Controller
-import qu.model.ConcreteQuModel.{Operation, ServerId}
-import qu.model.{DecResult, IncResult, ServerAlreadyKilledException, ServerKilled, ServerStatus, SmrEventResult, ThresholdsExceededException, ValueResult}
-import qu.view.ConsoleView.AbstractCliCmd.KillServer.getParamFromInputLine
-import qu.view.ConsoleView.AbstractCliCmd.{Decrement, Exit, Increment, InvalidInput, KillServer, Reset, Value, commands}
-import qu.view.ConsoleView.{AbstractCliCmd, CliCmdWithoutArg, UnrecognizedCommand, parse}
-import qu.view.StringUtils.{concatenateByNewLine, padRight}
+import qu.model.ConcreteQuModel.ServerId
+import qu.model._
+import qu.view.View
+import qu.view.console.AbstractCliCmd.KillServer.getParamFromInputLine
+import qu.view.console.AbstractCliCmd.{InvalidInput, KillServer, commands}
+import qu.view.console.AbstractCliCmd._
+import qu.view.console.StringUtils.{concatenateByNewLine, padRight}
 
 import java.util.Scanner
 import scala.util.{Failure, Success, Try}
@@ -24,15 +25,17 @@ class ConsoleView extends View {
     println(generalPrompt)
 
     while (myScanner.hasNextLine && !stop) {
-      parse(myScanner.nextLine()) match {
-        case Exit => stop = true
+      ConsoleView.parse(myScanner.nextLine()) match {
+        case Exit => println("quitting")
+          stop = true
           observer.quit()
+        case Help => println(generalPrompt)
         case KillServer(id) => observer.killServer(id)
         case Increment => observer.increment()
         case Decrement => observer.reset()
         case Reset => observer.reset()
         case Value => observer.value()
-        case InvalidInput => result(Failure(new UnrecognizedCommand))
+        case InvalidInput => result(Failure(UnrecognizedCommand()))
       }
     }
   }
@@ -62,64 +65,16 @@ class ConsoleView extends View {
         operationOk + "Servers " + id + "stopped. Servers status are: " + serversStatuses
       case Failure(ThresholdsExceededException(msg)) => msg
       case Failure(ServerAlreadyKilledException(msg)) => msg
+      case Failure(UnrecognizedCommand()) => "command not recognized. Please attain to the syntax, digit help to display commands."
       case Failure(_) => "a problem raised up."
       case _ => operationOk
     }
   })
-
-
 }
 
+
+
 object ConsoleView {
-
-  trait AbstractCliCmd {
-    def command: String
-
-    def arguments: String
-
-    def descriptions: String
-  }
-
-  case class CliCmdWithoutArg(command: String,
-                              arguments: String,
-                              descriptions: String) extends AbstractCliCmd
-
-  case class CliCmdWithArg[T](command: String,
-                              arguments: String,
-                              descriptions: String, args: T*) extends AbstractCliCmd
-
-  object AbstractCliCmd {
-
-    object Exit extends CliCmdWithoutArg("exit", "", "shutdown the SMR system.")
-
-    case class KillServer(id: ServerId) extends AbstractCliCmd {
-      override def command: ServerId = KillServer.cmd
-
-      override def arguments: ServerId = "<server>"
-
-      override def descriptions: ServerId = "shutdown a single server replica for simulating fault."
-    }
-
-    object KillServer {
-      val cmd = "kill"
-
-      def getParamFromInputLine(inputLine: String) = inputLine.substring(KillServer.cmd.length + 1)
-    }
-
-    object Increment extends CliCmdWithoutArg("exit", "", "shutdown the SMR system.")
-
-    object Decrement extends CliCmdWithoutArg("dec", "", "shutdown the SMR system.")
-
-    object Reset extends CliCmdWithoutArg("reset", "", "reset the distributed counter.")
-
-    object Value extends CliCmdWithoutArg("value", "", "get the value of the distributed counter.")
-
-    object InvalidInput extends CliCmdWithoutArg("-", "-", "unrecognized command.")
-
-    val commands = Set(Exit, KillServer("exampleId"), Increment, Decrement, Reset, Value, InvalidInput)
-  }
-
-  case class UnrecognizedCommand() extends Exception
 
   def parse(inputLine: String): AbstractCliCmd = {
     commands.find(cmd => inputLine.startsWith(cmd.command)) match {
@@ -129,10 +84,6 @@ object ConsoleView {
       case _ => InvalidInput
     }
   }
-
-}
-
-object ExampleOfGui extends App {
 
 }
 

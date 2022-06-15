@@ -8,7 +8,8 @@ import qu.RecipientInfo
 import qu.model.examples.Commands.Increment
 import qu.service.AbstractQuService.{ServerInfo, jacksonSimpleQuorumServiceFactory}
 import qu.service.datastructures.RemoteCounterServer
-import qu.view.{ConsoleView, View}
+import qu.view.View
+import qu.view.console.ConsoleView
 
 import java.util.Scanner
 import scala.collection.immutable.Map
@@ -17,12 +18,14 @@ import scala.util.{Success, Try}
 import scala.concurrent.ExecutionContext.Implicits.global
 
 //object as it's a singleton
-object ControllerImpl extends Controller {
+class ControllerImpl extends Controller {
 
   private val model: SyncSmrSystem = new SyncSmrSystemImpl()
   private val view: View = new ConsoleView
 
   view.setObserver(this)
+
+  view.start()
 
   //todo really needed?
   override def start(): Unit = {} //model.
@@ -56,6 +59,7 @@ object ControllerImpl extends Controller {
 
 }
 
+//prova che dimostra che readline fa buffering
 object ProvaCaching extends App {
   val myScanner = new Scanner(System.in)
 
@@ -69,6 +73,12 @@ object ProvaCaching extends App {
     Thread.sleep(5000)
   }
 }
+
+object Demo extends App {
+  //hides view start
+  new ControllerImpl()
+}
+
 
 /*private val authServer = ???
 
