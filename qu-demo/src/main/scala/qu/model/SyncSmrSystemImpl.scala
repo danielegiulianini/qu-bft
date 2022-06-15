@@ -75,22 +75,19 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
     quServerIpPorts,
     thresholds)
 
-  override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = {
+  override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = Try {
     Await.ready(servers(sid).shutdown(), atMost = 1.seconds)
     ServerKilled(sid, servers.view.mapValues(server => if (server.isShutdown) SHUTDOWN else ACTIVE).toMap)
-    null
   }
 
-  override def increment(): Try[CounterEventResult] = {
+  override def increment(): Try[CounterEventResult] = Try {
     distributedClient.increment()
     IncResult
-    null
   }
 
 
-  override def value(): Try[CounterEventResult] = {
+  override def value(): Try[CounterEventResult] = Try {
     ValueResult(distributedClient.value())
-    null
   }
 
 
@@ -104,15 +101,17 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
     lastOperation2
   }*/
 
-  override def reset(): Try[CounterEventResult] = {
+  override def reset(): Try[CounterEventResult] = Try {
     distributedClient.reset()
     ResetResult
-    null
   }
 
   override def stop(): Unit = {
     Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ())
   }
 
-  override def decrement(): Try[CounterEventResult] = null
+  override def decrement(): Try[CounterEventResult] = Try {
+    distributedClient.decrement()
+    DecResult
+  }
 }
