@@ -1,6 +1,6 @@
 import org.scalatest.funspec.AnyFunSpec
 
-/*class SystemTesting extends AnyFunSpec {
+class SystemTesting extends AnyFunSpec {
   //type information survives network transit
   describe("A World") {
     describe("when initialized") {
@@ -13,5 +13,5 @@ import org.scalatest.funspec.AnyFunSpec
       }
     }
   }
-}*/
+}
 

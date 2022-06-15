@@ -1,5 +1,7 @@
 package qu
 
+import io.grpc.{Status, StatusRuntimeException}
+import qu.auth.common.FutureUtilities.mapThrowable
 import qu.model.ConcreteQuModel.ServerId
 import qu.model.ValidationUtils
 import qu.stub.client.AsyncClientStub
@@ -7,7 +9,6 @@ import qu.stub.client.AsyncClientStub
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
-
 import scala.collection.mutable.{Map => MutableMap}
 
 
@@ -58,15 +59,16 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
                 completionPromise success currentResponseSet
               }
             }
-          case Failure(ex) => this.synchronized(
-            inspectExceptions[ResponseT](completionPromise, {
-              exceptionsByServerId.put(serverId, ex); exceptionsByServerId
-            }) //exceptionsByServerId + (serverId -> ex))
-          )
+          case Failure(ex) =>
+            this.synchronized(
+              inspectExceptions[ResponseT](completionPromise, {
+                exceptionsByServerId.put(serverId, ex);
+                exceptionsByServerId
+              }) //exceptionsByServerId + (serverId -> ex))
+            )
           case _ => //ignored since not interested in this situation
         })
         }
-      completionPromise.future
     }
 
     gatherResponsesImpl(request,

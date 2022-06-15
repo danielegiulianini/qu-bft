@@ -1,14 +1,16 @@
 package qu.client.quorum
 
+import io.grpc.{Status, StatusRuntimeException}
 import qu.model.ConcreteQuModel.{OHS, Operation, Request, Response, ServerId}
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 import qu.{ExceptionsInspector, ResponsesGatherer}
 import qu.ListUtils.getMostFrequentElement
+import qu.auth.common.FutureUtilities.mapThrowable
+import qu.client.OperationOutputNotRegisteredException
 import qu.stub.client.JwtAsyncClientStub
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
-
 import scala.collection.mutable.{Map => MutableMap}
 
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
@@ -34,10 +36,12 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
 
     def gatherResponsesAndOhs(): Future[(Set[Response[Option[AnswerT]]], OHS)] = {
       for {
-        responses <- gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
+        responses <- mapThrowable(gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
           request = Request[AnswerT, ObjectT](operation, ohs),
           responsesQuorum = thresholds.q,
-          successResponseFilter = _.responseCode == StatusCode.SUCCESS)
+          successResponseFilter = _.responseCode == StatusCode.SUCCESS), ex => ex match {
+          case ex: StatusRuntimeException if ex.getStatus.getCode == Status.UNIMPLEMENTED => OperationOutputNotRegisteredException()
+        })
       } yield (responses.values.toSet, extractOhsFromResponses(responses))
     }
 
