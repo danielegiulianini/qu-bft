@@ -65,13 +65,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               ohs = emptyOhs(serverIds)))
         }.map(_.getStatus.getCode must be(Status.UNAUTHENTICATED.getCode))
       }
-      /*it("should fail") {
-        recoverToSucceededIf[StatusRuntimeException] {
-          unAuthStub.send[Request[Unit, Int], Response[Option[Unit]]](
-            Request(operation = Some(IncrementAsObj),
-              ohs = emptyOhs(serverIds)))
-        }
-      }*/
+
       describe("when OHS contains all valid authenticators") {
         //laziness needed for correct initialization dependency and for performance reason
         lazy val responseForUpdateWithOutdatedOhs = for {

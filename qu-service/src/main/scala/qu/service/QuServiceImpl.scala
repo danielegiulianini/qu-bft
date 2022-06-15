@@ -35,7 +35,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
 
   //must be protected from concurrent access
-  storage = storage.store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)//.store[Any](emptyLT, (obj, Option.empty[Any]))
+  storage = storage.store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
 
   val clientId: Context.Key[Key] = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
 

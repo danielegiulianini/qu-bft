@@ -62,7 +62,7 @@ class ConsoleView extends View {
         operationOk + "Servers " + id + "stopped. Servers status are: " + serversStatuses
       case Failure(ThresholdsExceededException(msg)) => msg
       case Failure(ServerAlreadyKilledException(msg)) => msg
-      case Failure(UnrecognizedCommand()) => "command not recognized. Please attain to the syntax, digit help to display commands."
+      case Failure(UnrecognizedCommand()) => "command not recognized. Please attain to the syntax, digit " + Help.command + " to display commands."
       case Failure(_) => "a problem raised up."
       case _ => operationOk
     }
