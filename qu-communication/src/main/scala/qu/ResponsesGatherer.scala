@@ -8,6 +8,8 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
 
+import scala.collection.mutable.{Map => MutableMap}
+
 
 abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncClientStub[Transportable]],
                                                    private val retryingTime: FiniteDuration = 1.seconds)
@@ -27,18 +29,19 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
     def gatherResponsesImpl(request: RequestT,
                             completionPromise: Promise[Map[ServerId, ResponseT]] = Promise[Map[ServerId, ResponseT]](),
                             responseSet: Map[ServerId, ResponseT],
+                            exceptionsByServerId: MutableMap[ServerId, Throwable],
                             responsesQuorum: Int,
                             successResponseFilter: ResponseT => Boolean)(implicit transportableRequest: Transportable[RequestT],
                                                                          transportableResponse: Transportable[ResponseT]):
     Future[Map[ServerId, ResponseT]] = {
 
       var currentResponseSet = responseSet
-      val exceptionsByServerId: Map[ServerId, Throwable] = Map()
 
       //not requires lock here as 1. cancelable val is not shared at this moment and 2. scheduler scheduleOnceAsCallback being thread-safe
       val cancelable = scheduler.scheduleOnceAsCallback(retryingTime)(gatherResponsesImpl(request,
         completionPromise,
         responseSet,
+        exceptionsByServerId,
         responsesQuorum,
         successResponseFilter))
 
@@ -56,7 +59,9 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
               }
             }
           case Failure(ex) => this.synchronized(
-            inspectExceptions[ResponseT](completionPromise, exceptionsByServerId + (serverId -> ex))
+            inspectExceptions[ResponseT](completionPromise, {
+              exceptionsByServerId.put(serverId, ex); exceptionsByServerId
+            }) //exceptionsByServerId + (serverId -> ex))
           )
           case _ => //ignored since not interested in this situation
         })
@@ -67,12 +72,13 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
     gatherResponsesImpl(request,
       completionPromise = Promise[Map[ServerId, ResponseT]](),
       responseSet = Map(),
+      MutableMap[ServerId, Throwable](),
       responsesQuorum,
       successResponseFilter)
   }
 
   protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ServerId, ResponseT]],
-                                             exceptionsByServerId: Map[ServerId, Throwable]): Unit
+                                             exceptionsByServerId: MutableMap[ServerId, Throwable]): Unit
 
   override def shutdown(): Future[Unit] =
     Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ()) //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())

@@ -159,27 +159,30 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Four
       }*/
 
       //checking exceptions launched match servers thrown exceptions...
-      describe("when asked for finding a quorum with max t faulty servers and receiving more than t exceptions") {
+      describe("when asked for finding a quorum with max t faulty servers " +
+        "and receiving more than t exceptions") {
         it("should throw the corresponding exception to the caller") {
           //get o inc è uguale...
 
           /*println("t is " + thresholds.t + ", n is : " + thresholds.n)
           mockedServersStubs.values.take(thresholds.t + 1).foreach(e => println("(1o step)invio a : " + e))
-          mockedServersStubs.values.takeRight(thresholds.n - thresholds.t - 1).foreach(e => println("(2o step)invio a : " + e))
-*/
+          mockedServersStubs.values.takeRight(thresholds.n - thresholds.t - 1).foreach(e => println("(2o step)invio a : " + e))*/
 
+          //cannot control over the order to which
           mockedServersStubs.values.take(thresholds.t + 1).foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
               .returning(Future.failed(new StatusRuntimeException(Status.UNAUTHENTICATED))) //fsuccessful(Response[Int](SUCCESS, initialValue, emptyAuthenticatedRh)))
           })
+
+          //queste non dovrebbero essere chiamate...
           mockedServersStubs.values.takeRight(thresholds.n - thresholds.t - 1).foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
               .returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh))) //fsuccessful(Response[Int](SUCCESS, initialValue, emptyAuthenticatedRh)))
           })
-          policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
-          /*whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet)).failed) { e =>
+          //policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
+          whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet)).failed) { e =>
             e shouldBe a[StatusRuntimeException]
-          }*/
+          }
         }
       }
 

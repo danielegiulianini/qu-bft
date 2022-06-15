@@ -9,6 +9,8 @@ import qu.stub.client.JwtAsyncClientStub
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
+import scala.collection.mutable.{Map => MutableMap}
+
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
 class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
                                                              protected val servers: Map[ServerId,
@@ -55,7 +57,6 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
   }
 
   override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId,
-    ResponseT]],
-                                                      exceptionsByServerId: Map[ConcreteQuModel.ServerId, Throwable])
+    ResponseT]], exceptionsByServerId: MutableMap[ConcreteQuModel.ServerId, Throwable])
   : Unit = inspectExceptions(completionPromise, exceptionsByServerId, thresholds)
 }
