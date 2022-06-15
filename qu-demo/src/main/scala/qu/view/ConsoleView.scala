@@ -60,9 +60,9 @@ class ConsoleView extends View {
         operationOk + "Updated counter value is: " + value
       case Success(ServerKilled(id, serversStatuses)) =>
         operationOk + "Servers " + id + "stopped. Servers status are: " + serversStatuses
-      case Failure(ThresholdsExceededException()) => null
-      case Failure(ServerAlreadyKilledException()) => null
-      case Failure(_) =>
+      case Failure(ThresholdsExceededException(msg)) => msg
+      case Failure(ServerAlreadyKilledException(msg)) => msg
+      case Failure(_) => "a problem raised up."
       case _ => operationOk
     }
   })
@@ -122,9 +122,9 @@ object ConsoleView {
   case class UnrecognizedCommand() extends Exception
 
   def parse(inputLine: String): AbstractCliCmd = {
-    commands.filter(cmd => inputLine.startsWith(cmd.command)).headOption match {
+    commands.find(cmd => inputLine.startsWith(cmd.command)) match {
       case Some(KillServer(_)) if getParamFromInputLine(inputLine).toIntOption.isEmpty => InvalidInput
-      case Some(KillServer(_)) if getParamFromInputLine(inputLine).toIntOption.isEmpty => KillServer(getParamFromInputLine(inputLine))
+      case Some(KillServer(_)) if getParamFromInputLine(inputLine).toIntOption.isDefined => KillServer(getParamFromInputLine(inputLine))
       case Some(cmd) => cmd
       case _ => InvalidInput
     }
