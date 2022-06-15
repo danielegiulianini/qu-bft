@@ -60,7 +60,7 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Four
 
         policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
       }
-      it("should broadcast to all servers the ohs and the operation passed to it") {
+      it("should broadcast to all servers the ohs and the operation passed to it at the first round") {
         mockedServersStubs.values.foreach(mockedStub => {
           sendGetObjRequest(mockedStub).expects(Request[Int, Int](Some(GetObj()), emptyOhs(serversIds.toSet)), *, *)
             .returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
@@ -68,9 +68,37 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Four
 
         policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
       }
+
+      //continuous
+      it("should keep broadcasting to all servers until receiving SUCCESS responses by all the servers") {
+        mockedServersStubs.values.foreach(mockedStub => {
+          sendGetObjRequest(mockedStub).expects(Request[Int, Int](Some(GetObj()), emptyOhs(serversIds.toSet)), *, *)
+            .returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
+        })
+
+        policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
+      }
+
+
+      it("should keep broadcasting to all servers the updated ohs and the given operation until receiving SUCCESS responses by all of them") {
+        mockedServersStubs.values.foreach(mockedStub => {
+          sendGetObjRequest(mockedStub).expects(Request[Int, Int](Some(GetObj()), emptyOhs(serversIds.toSet)), *, *)
+            .returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
+        })
+
+        policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
+      }
+
     }
 
-    //checking values returned...
+    //checking values returned match servers response...
+    describe("when asked for finding a quorum") {
+      it("return the correct ") {
+
+      }
+    }
+
+    //checking exceptions launched match servers thrown exceptions...
 
 
 

@@ -8,7 +8,7 @@ import qu.{MethodDescriptorFactory, RecipientInfo}
 import qu.model.ConcreteQuModel.hmac
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
-import qu.storage.ImmutableStorage
+import qu.storage.{ImmutableStorage, Storage}
 
 import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
@@ -28,13 +28,14 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
                                                          override val port: Int,
                                                          override val privateKey: String,
                                                          override val obj: ObjectT,
-                                                         override val thresholds: QuorumSystemThresholds)(implicit executor: ExecutionContext)
+                                                         override val thresholds: QuorumSystemThresholds,
+                                                         private var storage: Storage[ObjectT] = ImmutableStorage[ObjectT]())(implicit executor: ExecutionContext)
   extends AbstractQuService[Transportable, ObjectT](methodDescriptorFactory, policyFactory, thresholds, ip, port, privateKey, obj) {
 
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
 
   //must be protected from concurrent access
-  private var storage = ImmutableStorage[ObjectT]().store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)//.store[Any](emptyLT, (obj, Option.empty[Any]))
+  storage = storage.store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)//.store[Any](emptyLT, (obj, Option.empty[Any]))
 
   val clientId: Context.Key[Key] = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
 
@@ -148,7 +149,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
         logger.log(Level.INFO, "object version NOT available, object-syncing for lt " + ltCo, 2)
         quorumPolicy.objectSync(ltCo).onComplete({
           case Success(obj) => onObjectRetrieved(obj) //here I know that a quorum is found...
-          case Failure(thr) => throw thr//what can actually happen here? (malformed json, bad url) those must be notified to server user!
+          case Failure(thr) => throw thr //what can actually happen here? (malformed json, bad url) those must be notified to server user!
         })(ec)
       } else {
         objToWorkOn = retrievedObj.getOrElse(throw new Exception("just checked if it was not none!"))

@@ -4,7 +4,6 @@ import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
 import qu.model.QuorumSystemThresholds
 import qu.model.examples.SharedContainer2.keysForServer
 
-//import scala.language.postfixOps
 
 //or as obj or as  a case class
 trait FourServersScenario {
