@@ -65,7 +65,7 @@ class DistributedCounter(username: String,
   override def increment(): Unit = await(incrementAsync())
 
   /** Decrement this counter. */
-  override protected def decrement(): Unit = await(decrementAsync())
+  override def decrement(): Unit = await(decrementAsync())
 
   override def reset(): Unit = await(resetAsync())
 

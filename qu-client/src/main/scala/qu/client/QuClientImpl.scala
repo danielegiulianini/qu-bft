@@ -20,6 +20,9 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
   extends QuClient[ObjectT, Transportable] {
   private val logger = Logger.getLogger(classOf[QuClientImpl[ObjectT, Transportable]].getName)
 
+  var lastOperation: Future[_] = Future.unit
+
+
   override def submit[T](op: Operation[T, ObjectT])(implicit
                                                     ec: ExecutionContext,
                                                     transportableRequest: Transportable[Request[T, ObjectT]],
@@ -45,8 +48,13 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
 
     }
 
+    this.synchronized {
+      lastOperation = lastOperation.map(_ => submitWithOhs(emptyOhs(serversIds)))
+    }
+
     submitWithOhs(emptyOhs(serversIds))
   }
+
 
   private def classifyAsync(ohs: OHS) = Future.successful {
     classify(ohs, thresholds.r, thresholds.q)
