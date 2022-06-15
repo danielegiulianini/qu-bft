@@ -7,6 +7,7 @@ import qu.stub.client.AsyncClientStub
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.collection.mutable.{Map => MutableMap}
 
 class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId, AsyncClientStub[Transportable]],
                                                           private val thresholds: QuorumSystemThresholds,
@@ -26,5 +27,7 @@ class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId,
     ).map(_.values.head.answer.getOrElse(throw new Exception(" inconsistent...")))
   }
 
-  override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId, ResponseT]], exceptionsByServerId: Map[ConcreteQuModel.ServerId, Throwable]): Unit = inspectExceptions(completionPromise, exceptionsByServerId, thresholds)
+  override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId, ResponseT]],
+                                                      exceptionsByServerId: MutableMap[ConcreteQuModel.ServerId, Throwable])
+  : Unit = inspectExceptions(completionPromise, exceptionsByServerId, thresholds)
 }

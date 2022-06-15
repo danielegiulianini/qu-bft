@@ -9,7 +9,4 @@ trait View {
   def start():Unit
   def setObserver(controller: Controller)
   def result(result: Try[SmrEventResult])
-  //todo relly needed?
-
-  //def quit():Unit
 }

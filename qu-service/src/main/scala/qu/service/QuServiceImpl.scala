@@ -29,13 +29,14 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
                                                          override val privateKey: String,
                                                          override val obj: ObjectT,
                                                          override val thresholds: QuorumSystemThresholds,
-                                                         private var storage: Storage[ObjectT] = ImmutableStorage[ObjectT]())(implicit executor: ExecutionContext)
+                                                         private var storage: Storage[ObjectT])
+                                                       (implicit executor: ExecutionContext)
   extends AbstractQuService[Transportable, ObjectT](methodDescriptorFactory, policyFactory, thresholds, ip, port, privateKey, obj) {
 
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
 
   //must be protected from concurrent access
-  storage = storage.store(emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
+  storage = storage.store[ObjectT](emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
 
   val clientId: Context.Key[Key] = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
 

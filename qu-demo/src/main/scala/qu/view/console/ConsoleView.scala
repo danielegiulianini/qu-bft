@@ -23,15 +23,14 @@ class ConsoleView extends View {
     println(title)
     println(generalPrompt)
 
-    while (myScanner.hasNextLine && !stop) {
+    while (!stop && myScanner.hasNextLine) {
       ConsoleView.parse(myScanner.nextLine()) match {
-        case Exit => println("quitting")
+        case Exit => println("quitting...")
           stop = true
           observer.quit()
         case Help => println(generalPrompt)
         case KillServer(id) => observer.killServer(id)
         case Increment => observer.increment()
-        case Decrement => observer.reset()
         case Reset => observer.reset()
         case Value => observer.value()
         case InvalidInput => result(Failure(UnrecognizedCommand()))

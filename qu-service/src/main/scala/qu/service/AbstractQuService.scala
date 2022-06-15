@@ -7,9 +7,10 @@ import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu.RecipientInfo.id
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.ServerInfo
-import qu.service.quorum.ServerQuorumPolicy.{ServerQuorumPolicyFactory}
+import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.{AbstractRecipientInfo, CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory, RecipientInfo, Shutdownable}
 import qu.service.quorum.{JacksonSimpleBroadcastServerPolicy, ServerQuorumPolicy}
+import qu.storage.ImmutableStorage
 
 import java.util.Objects
 import scala.concurrent.{ExecutionContext, Future}
@@ -107,7 +108,9 @@ object AbstractQuService {
       port = serverInfo.port,
       privateKey = serverInfo.keySharedWithMe,
       obj = obj,
-      thresholds = quorumSystemThresholds)
+      thresholds = quorumSystemThresholds,
+      storage = ImmutableStorage[U]()
+    )
   }
 
 
@@ -122,7 +125,9 @@ object AbstractQuService {
         port = serverInfo.port,
         privateKey = serverInfo.keySharedWithMe,
         obj = obj,
-        thresholds = quorumSystemThresholds)
+        thresholds = quorumSystemThresholds,
+        storage = ImmutableStorage[U]()
+      )
 
 
 }
