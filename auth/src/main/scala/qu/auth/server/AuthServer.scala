@@ -5,7 +5,7 @@ import qu.auth.AuthGrpc
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthServer(ip: String, port: Int) {
+class AuthServer(ip: String, port: Int) /*extends Shutdownable*/ {
 
   self =>
   private[this] var server: Server = null

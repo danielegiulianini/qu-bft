@@ -18,12 +18,14 @@ class ServiceException(cause: Throwable) extends Exception(cause: Throwable)
 class AuthClient private(
                           private val channel: ManagedChannel,
                           private val futureStub: AuthStub
-                        )(implicit ec: ExecutionContext) {
+                        )(implicit ec: ExecutionContext) /*extends Shutdownable*/ {
   private[this] val logger = Logger.getLogger(classOf[AuthClient].getName)
 
-  def shutdown(): Unit = {
+  def shutdown(): Future[Unit] = Future {
     channel.shutdown.awaitTermination(5, TimeUnit.SECONDS)
   }
+
+  def isShutdown: Boolean = channel.isShutdown
 
   def register(name: String, password: String): Future[RegisterResponse] = {
     logger.info("Will try to register " + name + " ...")
