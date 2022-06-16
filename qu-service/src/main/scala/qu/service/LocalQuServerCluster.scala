@@ -6,9 +6,11 @@ import qu.model.ConcreteQuModel.{Key, ServerId}
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
 import qu.{RecipientInfo, Shutdownable, Startable}
 
+import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, Future}
 
 trait LocalQuServerCluster extends Startable with Shutdownable {
+
   def killServer(si: ServerId): Future[Unit]
 
   def serversStatuses(): Map[ServerId, Boolean]
@@ -18,9 +20,20 @@ class LocalQuServerClusterImpl(servers: Map[ServerId, QuServer])
                               (implicit ec: ExecutionContext)
   extends LocalQuServerCluster {
 
-  override def start(): Unit = servers.values.foreach(_.start())
+  private val logger = Logger.getLogger(classOf[LocalQuServerClusterImpl].getName)
 
-  override def shutdown(): Future[Unit] = Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ()) //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())
+  private def log(level: Level = Level.INFO, msg: String) =
+    logger.log(Level.INFO, msg)
+
+  override def start(): Unit = {
+    log(msg = "local cluster starting...")
+    servers.values.foreach(_.start())
+  }
+
+  override def shutdown(): Future[Unit] = {
+    Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ()).map(_ => log(msg = "local cluster shut down.")
+    )
+  } //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())
 
   override def isShutdown: Boolean = servers.values.forall(_.isShutdown)
 
@@ -33,13 +46,24 @@ class LocalQuServerClusterImpl(servers: Map[ServerId, QuServer])
 object LocalQuServerCluster {
 
   //public factory methods
-  def apply(servers: Map[ServerId, QuServer])(implicit ec: ExecutionContext) = new LocalQuServerClusterImpl(servers)
+  def apply(servers: Map[ServerId, QuServer])(implicit ec: ExecutionContext) =
+    new LocalQuServerClusterImpl(servers)
 
   def apply[T](quServerIpPorts: Set[RecipientInfo],
                keysByServer: Map[ServerId, Map[ServerId, Key]],
                thresholds: QuorumSystemThresholds,
-               bl: ServerBuildingLogic[T], initialObj: T)(implicit ec: ExecutionContext) =
-    buildServersFromRecipientInfoAndKeys(quServerIpPorts, keysByServer, thresholds, bl, initialObj)
+               bl: ServerBuildingLogic[T],
+               initialObj: T)(implicit ec: ExecutionContext): LocalQuServerClusterImpl = {
+    println("l'ip ports: " + quServerIpPorts)
+    println("le keys are: " + keysByServer)
+    println("l'init obj is:  " + initialObj)
+
+    LocalQuServerCluster(buildServersFromRecipientInfoAndKeys(quServerIpPorts,
+      keysByServer,
+      thresholds,
+      bl,
+      initialObj))
+  }
 
   type ServerBuildingLogic[T] = (RecipientInfo, Key, QuorumSystemThresholds, T) => QuServerBuilder[JavaTypeable, T]
 
@@ -47,7 +71,8 @@ object LocalQuServerCluster {
   def buildServersFromRecipientInfoAndKeys[T](quServerIpPorts: Set[RecipientInfo],
                                               keysByServer: Map[ServerId, Map[ServerId, Key]],
                                               thresholds: QuorumSystemThresholds,
-                                              bl: ServerBuildingLogic[T], initialObj: T)(implicit ec: ExecutionContext) = {
+                                              bl: ServerBuildingLogic[T],
+                                              initialObj: T)(implicit ec: ExecutionContext) = {
     def addServersToServer(ipPort: RecipientInfo) = {
       val serverBuilder = bl(ipPort, keysByServer(id(ipPort))(id(ipPort)), thresholds, initialObj)
       for {
@@ -57,6 +82,6 @@ object LocalQuServerCluster {
     }
 
     val servers = quServerIpPorts.map(ipPort => id(ipPort) -> addServersToServer(ipPort)).toMap
-    new LocalQuServerClusterImpl(servers)
+    servers //new LocalQuServerClusterImpl(servers)
   }
 }

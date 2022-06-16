@@ -1,11 +1,10 @@
 package qu
 
-import io.grpc.{Status, StatusRuntimeException}
-import qu.auth.common.FutureUtilities.mapThrowable
 import qu.model.ConcreteQuModel.ServerId
 import qu.model.ValidationUtils
 import qu.stub.client.AsyncClientStub
 
+import java.util.logging.{Level, Logger}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
@@ -18,6 +17,14 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
   extends Shutdownable {
 
   //  ValidationUtils.requireNonNullAsInvalid(servers)
+  private val logger = Logger.getLogger(classOf[ResponsesGatherer[Transportable]].getName)
+
+  private def logA(level: Level = Level.INFO, msg: String, param1: Int = 2)(implicit ec: ExecutionContext) = Future {
+    logger.log(Level.INFO, msg)
+  }
+
+  private def log(level: Level = Level.INFO, msg: String, param1: Int = 2) =
+    logger.log(level, msg)
 
   private val scheduler = new OneShotAsyncScheduler(1)
 
@@ -39,12 +46,15 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
       var currentResponseSet = responseSet
 
       //not requires lock here as 1. cancelable val is not shared at this moment and 2. scheduler scheduleOnceAsCallback being thread-safe
-      val cancelable = scheduler.scheduleOnceAsCallback(retryingTime)(gatherResponsesImpl(request,
-        completionPromise,
-        responseSet,
-        exceptionsByServerId,
-        responsesQuorum,
-        successResponseFilter))
+      val cancelable = scheduler.scheduleOnceAsCallback(retryingTime)({
+        log(msg = "timeout is over, some server responses missing, so re-broadcasting. ")
+        gatherResponsesImpl(request,
+          completionPromise,
+          responseSet,
+          exceptionsByServerId,
+          responsesQuorum,
+          successResponseFilter)
+      })
 
       (servers -- responseSet.keySet)
         .map { case (serverId, stubToServer) => (serverId,
@@ -55,20 +65,23 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
             this.synchronized { //mutex needed because of possible multithreaded ex context (user provided)
               currentResponseSet = currentResponseSet + (serverId -> response)
               if (currentResponseSet.size == responsesQuorum) {
+                log(msg = "quorum obtained, so completing promise.")
                 cancelable.cancel()
                 completionPromise success currentResponseSet
               }
             }
           case Failure(ex) =>
+            log(msg = "received exception by " + serverId + ".")
             this.synchronized(
               inspectExceptions[ResponseT](completionPromise, {
                 exceptionsByServerId.put(serverId, ex);
                 exceptionsByServerId
-              }) //exceptionsByServerId + (serverId -> ex))
+              })
             )
           case _ => //ignored since not interested in this situation
         })
         }
+      completionPromise.future
     }
 
     gatherResponsesImpl(request,

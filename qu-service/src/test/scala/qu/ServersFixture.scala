@@ -12,10 +12,10 @@ trait ServersFixture {
 
   self: OHSFixture =>
 
-  val quServer1 = RecipientInfo(ip = "ciao2", port = 1)
-  val quServer2 = RecipientInfo(ip = "localhost", port = 2)
-  val quServer3 = RecipientInfo(ip = "localhost2", port = 3)
-  val quServer4 = RecipientInfo(ip = "localhost3", port = 4)
+  val quServer1 = RecipientInfo(ip = "localhost", port = 1000)
+  val quServer2 = RecipientInfo(ip = "localhost", port = 1001)
+  val quServer3 = RecipientInfo(ip = "localhost", port = 1002)
+  val quServer4 = RecipientInfo(ip = "localhost", port = 1003)
 
   val keysByServer: Map[ServerId, Map[ServerId, Key]] = Map(
     id(quServer1) -> Map(id(quServer1) -> "ks1s1",

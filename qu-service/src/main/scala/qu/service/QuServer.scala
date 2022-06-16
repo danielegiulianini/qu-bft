@@ -9,6 +9,7 @@ import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.{ServerInfo, ServiceFactory, jacksonSimpleQuorumServiceFactory}
 import qu.service.QuServerBuilder.jacksonSimpleServerBuilder
 
+import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
 
@@ -29,9 +30,14 @@ object QuServer {
 }
 
 
-class QuServerImpl[Transportable[_], U](authorizationInterceptor: ServerInterceptor,
-                                        quService: AbstractQuService[Transportable, U],
-                                        port: Int)(implicit executor: ExecutionContext) extends QuServer {
+class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerInterceptor,
+                                              quService: AbstractQuService[Transportable, ObjectT],
+                                              port: Int)(implicit executor: ExecutionContext) extends QuServer {
+
+  private val logger = Logger.getLogger(classOf[QuServerImpl[Transportable, ObjectT]].getName)
+
+  private def log(level: Level = Level.INFO, msg: String) =
+    logger.log(Level.INFO, msg)
 
   //here can plug creds with tls
   private val grpcServer = ServerBuilder
@@ -40,7 +46,10 @@ class QuServerImpl[Transportable[_], U](authorizationInterceptor: ServerIntercep
     .addService(quService)
     .build
 
-  override def start(): Unit = grpcServer.start
+  override def start(): Unit = {
+    grpcServer.start
+    log(msg = "server listening at port " + port + " started.")
+  }
 
   override def shutdown(): Future[Unit] = Future {
     //grpcServer.shutdown
@@ -50,6 +59,7 @@ class QuServerImpl[Transportable[_], U](authorizationInterceptor: ServerIntercep
     Future {
       grpcServer.shutdown
       grpcServer.awaitTermination()
+      log(msg = "server shut down.")
     }
   }
 

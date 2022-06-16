@@ -12,6 +12,7 @@ import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.jacksonSimpleQuorumServiceFactory
 import qu.service.quorum.{JacksonSimpleBroadcastServerPolicy, ServerQuorumPolicy, SimpleServerQuorumPolicy}
 import qu.service.{AbstractQuService, QuServiceImpl}
+import qu.storage.ImmutableStorage
 
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
@@ -29,7 +30,6 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
   //using constructor (instead of builder) for wiring SUT with stubbed dependencies
   def freshService(): AbstractQuService[JavaTypeable, Int] = {
 
-
     val service = new QuServiceImpl[JavaTypeable, Int](
       methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
       policyFactory = (_, _) => mockedQuorumPolicy,
@@ -37,7 +37,8 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
       port = quServer1WithKey.port,
       privateKey = quServer1WithKey.keySharedWithMe,
       obj = InitialObject,
-      thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount))
+      thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount),
+      storage = ImmutableStorage[Int]())
 
     //todo could use QuServer construsctor too... (but it would not be in-process...)
     //so simulating here una InprocessQuServer (could reify in (fixture) class)
