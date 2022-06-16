@@ -14,7 +14,7 @@ trait ExceptionsInspector[Transportable[_]] {
                                              exceptionsByServerId: MutableMap[ServerId, Throwable],
                                              thresholds: QuorumSystemThresholds): Unit = {
     //se ricevo exception da più di t server allora c'è un problema serio(o problema settaggio client o almeno un server malevolo)
-    if (exceptionsByServerId.size > thresholds.t) {
+    if (exceptionsByServerId.size > thresholds.t  && !completionPromise.isCompleted) {
       getMostFrequentElement(exceptionsByServerId.values).map(completionPromise.failure(_))
     }
   }

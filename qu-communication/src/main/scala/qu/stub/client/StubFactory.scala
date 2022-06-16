@@ -55,8 +55,10 @@ class JacksonStubFactory extends StubFactory3[JavaTypeable] {
 
   override def unencryptedDistributedStub(recInfo: AbstractRecipientInfo)
                                          (implicit ec: ExecutionContext): AsyncClientStub[JavaTypeable] =
+  /*new UnauthenticatedJacksonAsyncClientStub(Grpc.newChannelBuilder(id(recInfo),
+    TlsChannelCredentials.create()).build)*/
     new UnauthenticatedJacksonAsyncClientStub(Grpc.newChannelBuilder(id(recInfo),
-      TlsChannelCredentials.create()).build)
+      InsecureChannelCredentials.create()).build)
 }
 
 class JacksonAuthenticatedStubFactory extends AuthenticatedStubFactory3[JavaTypeable] {
@@ -75,7 +77,7 @@ class JacksonAuthenticatedStubFactory extends AuthenticatedStubFactory3[JavaType
   override def unencryptedDistributedJwtStub(token: Token, recInfo: AbstractRecipientInfo)
                                             (implicit ec: ExecutionContext): JwtAsyncClientStub[JavaTypeable] =
     new JwtJacksonAsyncClientStub(Grpc.newChannelBuilder(id(recInfo),
-      TlsChannelCredentials.create()).build, token)
+      InsecureChannelCredentials.create()).build, token) //TlsChannelCredentials.create()).build, token)
 }
 
 /*

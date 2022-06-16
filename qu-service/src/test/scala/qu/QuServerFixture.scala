@@ -65,7 +65,7 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
     } lastly {
       // Perform cleanup here
       server.shutdown()
-      server.shutdown.awaitTermination
+      server.awaitTermination()//before it was:       server.shutdown.awaitTermination
     }
   }
 }

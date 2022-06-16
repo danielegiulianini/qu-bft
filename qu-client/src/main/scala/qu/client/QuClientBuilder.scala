@@ -28,22 +28,25 @@ case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
     addServer(RecipientInfo(ip, port))
   }
 
-  def addServer(serverInfo: RecipientInfo) : QuClientBuilder[ObjectT, Transportable] = {
+  def addServer(serverInfo: RecipientInfo): QuClientBuilder[ObjectT, Transportable] = {
     //todo validation with inetsocketaddress??
     this.copy(serversInfo = serversInfo + serverInfo)
   }
 
-  def addServers(serversInfos: Set[RecipientInfo]) : QuClientBuilder[ObjectT, Transportable] = {
+  def addServers(serversInfos: Set[RecipientInfo]): QuClientBuilder[ObjectT, Transportable] = {
     //todo validation with inetsocketaddress??
     this.copy(serversInfo = serversInfo ++ serversInfos)
   }
+
   def withThresholds(thresholds: QuorumSystemThresholds): QuClientBuilder[ObjectT, Transportable] = {
     Objects.requireNonNull(thresholds)
     this.copy(thresholds = Some(thresholds))
   }
 
   def build: QuClientImpl[ObjectT, Transportable] = {
-    new QuClientImpl[ObjectT, Transportable](policyFactory(serversInfo, thresholds.get),
+    require(thresholds.isDefined, "thresholds set for a client must be defined before constructing a client.")
+    new QuClientImpl[ObjectT, Transportable](policyFactory(serversInfo,
+      thresholds.get),
       backOffPolicy,
       serversInfo.map(id(_)),
       thresholds.get)
@@ -55,7 +58,7 @@ object QuClientBuilder {
 
   //choosing an implementation as the default
   def builder[U](token: Token)(implicit ec: ExecutionContext): QuClientBuilder[U, JavaTypeable] =
-    simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
+    simpleJacksonQuClientBuilder[U](token)
 
   private def empty[U, Transferable[_]](policyFactory: ClientQuorumPolicy.ClientQuorumPolicyFactory[U, Transferable],
                                         policy: BackOffPolicy):
@@ -66,7 +69,7 @@ object QuClientBuilder {
       Option.empty)
 
   //builder implementations
-  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: Token)(implicit ec: ExecutionContext):
+  def simpleJacksonQuClientBuilder[U](token: Token)(implicit ec: ExecutionContext):
   QuClientBuilder[U, JavaTypeable] =
     QuClientBuilder.empty[U, JavaTypeable](
       JacksonSimpleBroadcastClientPolicy[U](token)(_, _), //simpleJacksonPolicyFactoryUnencrypted(token) //JacksonBroadcastClientPolicy[U](token).simplePolicy(_,_)

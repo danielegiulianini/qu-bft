@@ -2,11 +2,14 @@ import io.grpc.inprocess.InProcessServerBuilder
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 import qu.RecipientInfo.id
 import qu.{RecipientInfo, ServersFixture}
 import qu.auth.server.JwtAuthorizationServerInterceptor
 import qu.service.LocalQuServerCluster
 import qu.service.datastructures.RemoteCounterServer
+
+import scala.concurrent.Await
 
 trait HealthyClusterFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
@@ -19,6 +22,7 @@ trait HealthyClusterFixture extends AsyncTestSuiteMixin with Matchers with Async
   var healthyCluster : LocalQuServerCluster = _
 
   override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
+
     quServerIpPorts = quServerIpPorts + quServer1
     quServerIpPorts = quServerIpPorts + quServer2
     quServerIpPorts = quServerIpPorts + quServer3
@@ -35,7 +39,10 @@ trait HealthyClusterFixture extends AsyncTestSuiteMixin with Matchers with Async
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
+
+      //healthyCluster.shutdown()
       healthyCluster.shutdown()
+
     }
   }
 

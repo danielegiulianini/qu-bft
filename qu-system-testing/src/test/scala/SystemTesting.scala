@@ -20,15 +20,28 @@ class SystemTesting extends AsyncFunSpec with Matchers
           authServerInfo.port,
           "username",
           "password")
-
         for {
           quClient <- for {
             _ <- client.register()
             builder <- client.authorize()
-          } yield builder.addServers(quServerIpPorts).build
+          } yield builder
+            .addServers(quServerIpPorts)
+            .withThresholds(thresholds).build
           _ <- quClient.submit[Unit](Increment())
           value <- quClient.submit[Int](GetObj())
         } yield value should be(Future.successful(InitialObject + 1))
+        /*
+         for {
+           quClient <- for {
+             _ <- client.register()
+             builder <- client.authorize()
+           } yield builder
+             .addServers(quServerIpPorts)
+             .withThresholds(thresholds).build
+           _ <- quClient.submit[Unit](Increment())
+           value <- quClient.submit[Int](GetObj())
+         } yield value should be(Future.successful(InitialObject + 1))
+*/
       }
     }
 
