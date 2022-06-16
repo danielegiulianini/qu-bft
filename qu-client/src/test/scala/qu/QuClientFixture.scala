@@ -27,7 +27,7 @@ trait QuClientFixture extends TestSuiteMixin with Matchers with MockFactory {
     _: JavaTypeable[Response[Option[Unit]]])
   val queryQuorum: MockFunction4[Option[Operation[Int, Int]], OHS, JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[(Option[Int], Int, OHS)]] = mockedQuorumPolicy.quorum[Int](_: Option[Operation[Int, Int]], _: OHS)(_: JavaTypeable[Request[Int, Int]],
     _: JavaTypeable[Response[Option[Int]]])
-  
+
   abstract override def withFixture(test: NoArgTest) = {
     // Perform setup
     println("setting up  clientFixture...")
@@ -39,6 +39,6 @@ trait QuClientFixture extends TestSuiteMixin with Matchers with MockFactory {
       serversIds = serversIds.toSet,
       thresholds = thresholds)
     try super.withFixture(test) // To be stackable, must call super.withFixture
-
+    finally {}
   }
 }

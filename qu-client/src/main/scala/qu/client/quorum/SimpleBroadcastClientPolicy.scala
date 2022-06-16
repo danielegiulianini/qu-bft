@@ -39,8 +39,9 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
         responses <- mapThrowable(gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
           request = Request[AnswerT, ObjectT](operation, ohs),
           responsesQuorum = thresholds.q,
-          successResponseFilter = _.responseCode == StatusCode.SUCCESS), ex => ex match {
-          case ex: StatusRuntimeException if ex.getStatus.getCode == Status.UNIMPLEMENTED => OperationOutputNotRegisteredException()
+          successResponseFilter = _.responseCode == StatusCode.SUCCESS), {
+              //mapping exception to more readable one
+          case ex: StatusRuntimeException if ex.getStatus.getCode == Status.UNIMPLEMENTED.getCode => OperationOutputNotRegisteredException()
         })
       } yield (responses.values.toSet, extractOhsFromResponses(responses))
     }

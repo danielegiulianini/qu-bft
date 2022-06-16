@@ -18,6 +18,7 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
                                               private val serversIds: Set[ServerId],
                                               private val thresholds: QuorumSystemThresholds)
   extends QuClient[ObjectT, Transportable] {
+  
   private val logger = Logger.getLogger(classOf[QuClientImpl[ObjectT, Transportable]].getName)
 
   var lastOperation: Future[_] = Future.unit
