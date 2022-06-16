@@ -1,6 +1,7 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
+import qu.Shutdownable
 import qu.auth.client.AuthClient
 
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -16,7 +17,7 @@ import java.util.Objects
 case class AuthenticatingClient[U](ip: String,
                                    port: Int,
                                    username: String,
-                                   password: String) {
+                                   password: String) extends Shutdownable {
   requireNonNullAsInvalid(username)
   requireNonNullAsInvalid(password)
 
@@ -34,4 +35,8 @@ case class AuthenticatingClient[U](ip: String,
       token <- authClient.authorize(username, password)
     } yield simpleJacksonQuClientBuilderInFunctionalStyle[U](token = token)
   }
+
+  override def shutdown(): Future[Unit] = authClient.shutdown()
+
+  override def isShutdown: Boolean = authClient.isShutdown
 }

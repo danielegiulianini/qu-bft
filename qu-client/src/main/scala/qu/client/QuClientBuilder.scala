@@ -33,9 +33,9 @@ case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
     this.copy(serversInfo = serversInfo + serverInfo)
   }
 
-  def addServers(serversInfos: RecipientInfo) : QuClientBuilder[ObjectT, Transportable] = {
+  def addServers(serversInfos: Set[RecipientInfo]) : QuClientBuilder[ObjectT, Transportable] = {
     //todo validation with inetsocketaddress??
-    this.copy(serversInfo = serversInfo + serversInfos)
+    this.copy(serversInfo = serversInfo ++ serversInfos)
   }
   def withThresholds(thresholds: QuorumSystemThresholds): QuClientBuilder[ObjectT, Transportable] = {
     Objects.requireNonNull(thresholds)

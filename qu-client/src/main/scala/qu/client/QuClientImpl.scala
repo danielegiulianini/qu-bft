@@ -9,7 +9,7 @@ import qu.model.ConcreteQuModel.ConcreteOperationTypes._
 import qu.model.QuorumSystemThresholds
 import qu.{OneShotAsyncScheduler, Shutdownable}
 
-import java.util.logging.Logger
+import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
@@ -18,8 +18,16 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
                                               private val serversIds: Set[ServerId],
                                               private val thresholds: QuorumSystemThresholds)
   extends QuClient[ObjectT, Transportable] {
-  
+
   private val logger = Logger.getLogger(classOf[QuClientImpl[ObjectT, Transportable]].getName)
+
+  private def logA(level: Level = Level.INFO, msg: String, param1: Int = 2)(implicit ec: ExecutionContext) = Future {
+    logger.log(Level.INFO, msg)
+  }
+
+  private def log(level: Level = Level.INFO, msg: String, param1: Int = 2) =
+    logger.log(Level.INFO, msg)
+
 
   var lastOperation: Future[_] = Future.unit
 
@@ -36,17 +44,19 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
         (answer, order, updatedOhs) <- policy.quorum(Some(op), ohs)
         answer <- if (order < thresholds.q) for {
           (opType, _, _) <- classifyAsync(updatedOhs)
-          optimisticAnswer <- if (opType == METHOD) Future(
-            answer.getOrElse(
-              throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None answer")))
-          else for {
+          optimisticAnswer <- if (opType == METHOD) for {
+            _ <- logA(msg = "returning value of query executed optimistically")
+            optimisticAnswer <- Future(
+              answer.getOrElse(
+                throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None answer")))
+          } yield optimisticAnswer else for {
+            _ <- logA(msg = "opType: " + opType + ", so repairing.")
             repairedOhs <- repair(updatedOhs)
             newAnswer <- submitWithOhs(repairedOhs)
           } yield newAnswer
         } yield optimisticAnswer else Future(answer.getOrElse(
           throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None answer")))
       } yield answer
-
     }
 
     this.synchronized {
@@ -67,31 +77,26 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
     //utilities
     def backOffAndRetry(): Future[OHS] = for {
       _ <- backoffPolicy.backOff()
-      _ <- Future {
-        println("after backing off")
-      }
       //perform a barrier or a copy
-      (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, ObjectT]],
-        ohs) //here Object is fundamental as server could return other than T (could use Any too??)
+      (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, ObjectT]], ohs) //here Object is fundamental as server could return other than T (could use Any too??)
       (operationType, _, _) <- classifyAsync(ohs)
       ohs <- backOffAndRetryUntilMethod(operationType, ohs)
     } yield ohs
 
 
     def backOffAndRetryUntilMethod(operationType: ConcreteOperationTypes, ohs: OHS): Future[OHS] =
-      if (operationType != METHOD) backOffAndRetry() else Future {
+      if (operationType != METHOD) for {
+        _ <- logA(msg = "operation type: " + operationType + ", so: backing off.")
+        ohs <- backOffAndRetry()
+      } yield ohs
+      else Future {
         ohs
       }
 
     //actual logic
     for {
-      _ <- Future {
-        println("so, starting to repair...")
-      }
       (operationType, _, _) <- classifyAsync(ohs) //todo could use futureSuccessful here
-      _ <- Future {
-        println("after classifying, resulting type is: " + operationType)
-      }
+      _ <- logA(msg = "classification reports type " + operationType + ".")
       ohs <- backOffAndRetryUntilMethod(operationType, ohs)
     } yield ohs
   }
