@@ -17,7 +17,7 @@ trait Hashing {
     import java.security.MessageDigest
     val digest = MessageDigest.getInstance("SHA-256")
     val hash = digest.digest(obj.toString.getBytes(StandardCharsets.UTF_8))
-    hash.map(_.toString).mkString(",")
+    hash.map(_.toString).mkString("")
   }
 
 }

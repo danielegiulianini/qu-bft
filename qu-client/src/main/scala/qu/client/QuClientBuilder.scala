@@ -58,7 +58,7 @@ object QuClientBuilder {
 
   //choosing an implementation as the default
   def builder[U](token: Token)(implicit ec: ExecutionContext): QuClientBuilder[U, JavaTypeable] =
-    simpleJacksonQuClientBuilder[U](token)
+    simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 
   private def empty[U, Transferable[_]](policyFactory: ClientQuorumPolicy.ClientQuorumPolicyFactory[U, Transferable],
                                         policy: BackOffPolicy):
@@ -69,7 +69,7 @@ object QuClientBuilder {
       Option.empty)
 
   //builder implementations
-  def simpleJacksonQuClientBuilder[U](token: Token)(implicit ec: ExecutionContext):
+  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: Token)(implicit ec: ExecutionContext):
   QuClientBuilder[U, JavaTypeable] =
     QuClientBuilder.empty[U, JavaTypeable](
       JacksonSimpleBroadcastClientPolicy[U](token)(_, _), //simpleJacksonPolicyFactoryUnencrypted(token) //JacksonBroadcastClientPolicy[U](token).simplePolicy(_,_)

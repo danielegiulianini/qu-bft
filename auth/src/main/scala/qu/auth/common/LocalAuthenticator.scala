@@ -18,7 +18,6 @@ class LocalAuthenticator {
       val toBeAdded = user.copy() // defensive copy
       usersByUsername = usersByUsername + (user.username -> toBeAdded)
     }
-    println("gli username all'auth service sono:  " + usersByUsername)
   }
 
   @throws[BadContentException]

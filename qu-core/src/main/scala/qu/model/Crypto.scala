@@ -22,7 +22,7 @@ trait CryptoMd5Authenticator {
     val secret_key = new SecretKeySpec(key.getBytes("UTF-8"), "HmacSHA256")
     sha256_HMAC.init(secret_key)
 
-    sha256_HMAC.doFinal(data.getBytes("UTF-8")).map(_.toString).mkString(",")
+    sha256_HMAC.doFinal(data.getBytes("UTF-8")).map(_.toString).mkString("")
   }
 
   def authenticateRh(rh: ReplicaHistory, keys: Map[ServerId, Key]): authenticator =

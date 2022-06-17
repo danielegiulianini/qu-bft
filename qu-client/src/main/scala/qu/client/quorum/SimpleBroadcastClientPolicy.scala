@@ -1,10 +1,10 @@
 package qu.client.quorum
 
 import io.grpc.{Status, StatusRuntimeException}
-import qu.model.ConcreteQuModel.{OHS, Operation, Request, Response, ServerId}
+import qu.model.ConcreteQuModel.{OHS, Operation, ReplicaHistory, Request, Response, ServerId}
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 import qu.{ExceptionsInspector, ResponsesGatherer}
-import qu.ListUtils.getMostFrequentElement
+import qu.ListUtils.{getMostFrequentElement, getMostFrequentElementWithOccurrences}
 import qu.auth.common.FutureUtilities.mapThrowable
 import qu.client.OperationOutputNotRegisteredException
 import qu.stub.client.JwtAsyncClientStub
@@ -34,34 +34,63 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
     def extractOhsFromResponses(responses: Map[ServerId, Response[Option[AnswerT]]]): OHS =
       responses.view.mapValues(_.authenticatedRh).toMap
 
-    def gatherResponsesAndOhs(): Future[(Set[Response[Option[AnswerT]]], OHS)] = {
+    def gatherResponsesAndOhs(): Future[(Seq[Response[Option[AnswerT]]], OHS)] = {
       for {
         responses <- mapThrowable(gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
           request = Request[AnswerT, ObjectT](operation, ohs),
           responsesQuorum = thresholds.q,
           successResponseFilter = _.responseCode == StatusCode.SUCCESS), {
-              //mapping exception to more readable one
+          //mapping exception to more readable one
           case ex: StatusRuntimeException if ex.getStatus.getCode == Status.UNIMPLEMENTED.getCode => OperationOutputNotRegisteredException()
         })
-      } yield (responses.values.toSet, extractOhsFromResponses(responses))
+      } yield (responses.values.toSeq, extractOhsFromResponses(responses))
     }
 
-    def scrutinize(responses: Set[Response[Option[AnswerT]]])
-    : Future[(ConcreteQuModel.Response[Option[AnswerT]], Int)] = Future {
-      responses
-        .groupMapReduce(identity)(_ => 1)(_ + _)
-        .maxByOption(_._2)
+
+    def scrutinize2(responses: Seq[Response[Option[AnswerT]]])
+    : Future[(Option[AnswerT], Int)] = Future {
+
+      getMostFrequentElementWithOccurrences(responses
+        .map(response => (response.answer, {
+          val (rh, _) = response.authenticatedRh
+          rh
+        })))
+        .map { case ((answer, _), order) => (answer, order) }
         .getOrElse(throw new Error("inconsistent client protocol state"))
     }
 
     //actual logic
-    for {
+    /*for {
       (responses, ohs) <- gatherResponsesAndOhs()
       (response, voteCount) <- scrutinize(responses)
-    } yield (response.answer, voteCount, ohs)
+    } yield (response.answer, voteCount, ohs)*/
+
+    for {
+      (responses, ohs) <- gatherResponsesAndOhs()
+      (answer, voteCount) <- scrutinize2(responses)
+    } yield (answer, voteCount, ohs)
   }
+
 
   override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId,
     ResponseT]], exceptionsByServerId: MutableMap[ConcreteQuModel.ServerId, Throwable])
   : Unit = inspectExceptions(completionPromise, exceptionsByServerId, thresholds)
+}
+
+
+object TT extends App {
+
+  println("la list: " + List(1, 3, 4, 4, 2, 3))
+
+  println("list: " +
+    List(1, 3, 4, 4, 2, 3)
+      .groupMapReduce(identity)(_ => 1)(_ + _))
+
+  println("list: " +
+    List(1, 3, 4, 4, 2, 3)
+      .groupMapReduce(identity)(_ => 1)(_ + _).maxByOption(_._2))
+
+  println("list: " +
+    List(1, 3, 4, 4, 2, 3)
+      .groupMapReduce(identity)(_ => 1)(_ + _).maxByOption(_._2).map(_._1))
 }

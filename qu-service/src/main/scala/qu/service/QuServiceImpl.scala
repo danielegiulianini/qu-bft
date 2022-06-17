@@ -58,6 +58,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
 
     def replyWith(response: Response[Option[AnswerT]]): Unit = {
+      logger.log(Level.INFO, "sendingw response" + response, 2)
       responseObserver.onNext(response)
       responseObserver.onCompleted()
     }
@@ -79,14 +80,14 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
       ohs. //todo map access like this (to authenticator) could raise exception
         //if there's not the authenticator or if it is invalid the corresponding rh is culled
         map { case (serverId, (rh, authenticator)) =>
-          println("ATTENTION: l'authenticator del server " + serverId + " is: \n" + authenticator)
+          println("ATTENTION: l'authenticator del server " + serverId + " is: " + authenticator)
           println("l'authenticator contiene l'id? " + authenticator.contains(id(RecipientInfo(ip, port))))
           if (authenticator.contains(id(RecipientInfo(ip, port))))
             println("l'hmac è corretto? " + (authenticator(id(RecipientInfo(ip, port))) == hmac(keysSharedWithMe(serverId), rh)))
 
 
-          if (!authenticator.contains(id(RecipientInfo(ip, port))) ||
-            authenticator(id(RecipientInfo(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) {
+          if ((!authenticator.contains(id(RecipientInfo(ip, port))) ||
+            authenticator(id(RecipientInfo(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) && replicaHistory != emptyRh) {
             println("CULLLLLEDDDD")
             (serverId, (emptyRh, authenticator))
           }
@@ -105,9 +106,10 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
     //repeated request
     if (contains(replicaHistory, (lt, ltCo))) {
-      logger.log(Level.INFO, "repeated request detected! sending SUCCESS", 2)
       val (_, answer) = storage.retrieve[AnswerT](lt).getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
-      replyWith(Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory))
+      val response = Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory)
+      replyWith(response)
+      logger.log(Level.INFO, "repeated request detected! sending response" + response, 2)
       return //todo put attention if it's possible to express this with a chain of if e.se and only one return
     }
 

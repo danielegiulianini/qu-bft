@@ -11,19 +11,19 @@ import scala.util.{Failure, Success}
 import scala.collection.mutable.{Map => MutableMap}
 
 
-abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncClientStub[Transportable]],
+abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AsyncClientStub[Transportable]],
                                                    private val retryingTime: FiniteDuration = 1.seconds)
                                                   (implicit ec: ExecutionContext)
   extends Shutdownable {
 
-  //  ValidationUtils.requireNonNullAsInvalid(servers)
+  //  ValidationUtils.requireNonNullAsInvalid(servers) breaks scalamock
   private val logger = Logger.getLogger(classOf[ResponsesGatherer[Transportable]].getName)
+  /*
+    private def logA(level: Level = Level.INFO, msg: String, param1: Int = 2)(implicit ec: ExecutionContext) = Future {
+      logger.log(Level.INFO, msg)
+    }*/
 
-  private def logA(level: Level = Level.INFO, msg: String, param1: Int = 2)(implicit ec: ExecutionContext) = Future {
-    logger.log(Level.INFO, msg)
-  }
-
-  private def log(level: Level = Level.INFO, msg: String, param1: Int = 2) =
+  private def log(level: Level = Level.WARNING, msg: String, param1: Int = 2) =
     logger.log(level, msg)
 
   private val scheduler = new OneShotAsyncScheduler(1)
@@ -62,6 +62,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, AsyncCli
         }
         .foreach { case (serverId, stubToServer) => stubToServer.onComplete({
           case Success(response) if successResponseFilter(response) =>
+            log(msg = "received response: " + response)
             this.synchronized { //mutex needed because of possible multithreaded ex context (user provided)
               currentResponseSet = currentResponseSet + (serverId -> response)
               if (currentResponseSet.size == responsesQuorum) {
