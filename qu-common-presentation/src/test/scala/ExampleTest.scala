@@ -1,23 +1,19 @@
 import org.scalatest.Assertion
 import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
+import qu.JacksonMarshallerFactory
 
-class Ciao {
-  def ciao() = "ciao"
-}
 
-trait Salve[T]{
-  def salve() : T
-}
+//testing critical class (de)serialization
+class PresentationSpec extends AnyFunSpec with Matchers {
+  describe("a Some(Unit)") {
+    describe("when serialized and deserialized") {
+      it("should return a Some(Unit)") {
 
-class Salve1 extends Salve[Unit]{
-  override def salve(): Unit = "come va"
-}
+        val marshaller = new JacksonMarshallerFactory {}.marshallerFor[Some[Unit]]
+        marshaller.parse(marshaller.stream(Some())) should be(Some(()))
 
-case class Ola(s:Unit, s2:Int)
-
-class ExampleTest extends AnyFunSpec {
-  println("ok" + new Ciao)
-  Ola(3, 2)
-
-  //thrsholds compatibili ( r minore di q)
+      }
+    }
+  }
 }

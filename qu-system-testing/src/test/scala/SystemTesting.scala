@@ -12,6 +12,37 @@ class SystemTesting extends AsyncFunSpec with Matchers
 
   //type information survives network transit
   describe("A Q/U protocol interaction") {
+    describe("when a query is issued") {
+      it("should return to client the expected answer value") {
+
+        //todo maybe to move to fixture (or maybe all the clientFuture?) (to be shutdown  correctly)
+        val client = AuthenticatingClient[Int](authServerInfo.ip,
+          authServerInfo.port,
+          "username",
+          "password")
+        for {
+          quClient <- for {
+            _ <- client.register()
+            builder <- client.authorize()
+          } yield builder
+            .addServers(quServerIpPorts)
+            .withThresholds(thresholds).build
+          value <- quClient.submit[Int](GetObj())
+        } yield value should be(InitialObject)
+        /*
+         for {
+           quClient <- for {
+             _ <- client.register()
+             builder <- client.authorize()
+           } yield builder
+             .addServers(quServerIpPorts)
+             .withThresholds(thresholds).build
+           _ <- quClient.submit[Unit](Increment())
+           value <- quClient.submit[Int](GetObj())
+         } yield value should be(Future.successful(InitialObject + 1))
+*/
+      }
+    }
     describe("when an update is issued") {
       it("should return to client the expected answer value") {
 
@@ -28,7 +59,7 @@ class SystemTesting extends AsyncFunSpec with Matchers
             .addServers(quServerIpPorts)
             .withThresholds(thresholds).build
           value <- quClient.submit[Unit](Increment())
-        } yield value should be(Future.successful(()))
+        } yield value should be(()) //already out of future (no need for Future.successful)
         /*
          for {
            quClient <- for {
