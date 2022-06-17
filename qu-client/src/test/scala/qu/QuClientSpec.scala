@@ -12,8 +12,7 @@ import qu.client.quorum.{JacksonSimpleBroadcastClientPolicy, SimpleBroadcastClie
 import qu.client.QuClientImpl
 import qu.model.examples.Commands.{GetObj, IncrementAsObj}
 import qu.model.ConcreteQuModel.{Key, OHS, Operation, Request, Response, ServerId, emptyOhs}
-import qu.model.examples.OHSFixture
-import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
+import qu.model.{ConcreteQuModel, KeysUtilities, OHSUtilities, QuorumSystemThresholds}
 
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
@@ -22,7 +21,8 @@ import scala.language.postfixOps
 class QuClientSpec extends AnyFunSpec
   with MockFactory
   with FourServersScenario
-  with OHSFixture
+  with KeysUtilities
+  with OHSUtilities
   with ScalaFutures
   with QuClientFixture {
 

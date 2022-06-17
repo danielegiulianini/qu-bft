@@ -4,10 +4,6 @@ ThisBuild / version := "0.1.0-SNAPSHOT"
 
 ThisBuild / scalaVersion := "2.13.8"
 
-/*Compile / PB.targets := Seq(
-  scalapb.gen() -> (Compile / sourceManaged).value / "scalapb"
-)*/
-
 
 lazy val root = (project in file("."))
   .settings(
@@ -21,7 +17,7 @@ lazy val jwtDep = Seq("io.jsonwebtoken" % "jjwt-api" % "0.11.5",
   "io.jsonwebtoken" % "jjwt-jackson" % "0.11.5"
 )
 
-coverageEnabled.in(ThisBuild ,Test, test) := true
+coverageEnabled.in(ThisBuild, Test, test) := true
 
 lazy val commonDependencies = Seq(
   "org.scalamock" %% "scalamock" % "5.2.0" % Test,
@@ -63,7 +59,7 @@ lazy val quPresentation = (project in file("qu-common-presentation"))
       "org.glassfish.jaxb" % "jaxb-runtime" % "2.3.2"
     )
   )
-  .dependsOn(quCore)
+  .dependsOn(quCore % "compile->compile;test->test")
 
 
 lazy val quCommunication = (project in file("qu-communication"))
@@ -73,7 +69,7 @@ lazy val quCommunication = (project in file("qu-communication"))
   )
   .dependsOn(quPresentation)
   .dependsOn(auth)
-  .dependsOn(quCore)
+  .dependsOn(quCore % "compile->compile;test->test")
 
 
 lazy val quClient = (project in file("qu-client"))
@@ -83,7 +79,7 @@ lazy val quClient = (project in file("qu-client"))
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2"
     )
   )
-  .dependsOn(quCore)
+  .dependsOn(quCore % "compile->compile;test->test")
   .dependsOn(auth)
   .dependsOn(quCommunication)
   .dependsOn(quPresentation)
@@ -112,6 +108,7 @@ lazy val quSystemTesting = (project in file("qu-system-testing"))
   .settings(
     libraryDependencies ++= commonDependencies
   )
+  .dependsOn(quCore % "compile->compile;test->test")
   .dependsOn(quClient)
   .dependsOn(quService)
 

@@ -2,20 +2,22 @@ package qu
 
 import qu.RecipientInfo.id
 import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
-import qu.model.QuorumSystemThresholds
-import qu.model.examples.OHSFixture
+import qu.model.{OHSUtilities, QuorumSystemThresholds}
 import qu.service.AbstractQuService.ServerInfo
 
 //"fixture-context objects" pattern from https://www.scalatest.org/user_guide/sharing_fixtures#fixtureContextObjects
 //(as don't need to clean up after.)
 trait ServersFixture {
 
-  self: OHSFixture =>
+  self: OHSUtilities =>
+
 
   val quServer1 = RecipientInfo(ip = "localhost", port = 1000)
   val quServer2 = RecipientInfo(ip = "localhost", port = 1001)
   val quServer3 = RecipientInfo(ip = "localhost", port = 1002)
   val quServer4 = RecipientInfo(ip = "localhost", port = 1003)
+  
+  val authServerInfo = RecipientInfo(ip = "localhost", port = 1004)
 
   val keysByServer: Map[ServerId, Map[ServerId, Key]] = Map(
     id(quServer1) -> Map(id(quServer1) -> "ks1s1",

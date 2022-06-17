@@ -11,15 +11,15 @@ import org.scalatest.matchers.should.Matchers._
 import org.scalatest.matchers.should.Matchers.{a, convertToAnyShouldWrapper}
 import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
 import qu.model.examples.Commands.{GetObj, Increment}
-import qu.model.examples.OHSFixture
 import qu.stub.client.JwtAsyncClientStub
 import qu.model.ConcreteQuModel._
+import qu.model.{KeysUtilities, OHSUtilities}
 import qu.model.StatusCode.{FAIL, SUCCESS}
 
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 
-class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with FourServersScenario with OHSFixture with ScalaFutures {
+class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with KeysUtilities with OHSUtilities with FourServersScenario with ScalaFutures {
 
   val mockedServersStubs: Map[String, JwtAsyncClientStub[JavaTypeable]] =
     serversIds.map(_ -> mock[JwtAsyncClientStub[JavaTypeable]]).toMap

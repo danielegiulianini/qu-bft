@@ -17,23 +17,21 @@ import org.scalatestplus.scalacheck.{Checkers, ScalaCheckPropertyChecks}
 import org.scalatestplus.scalacheck.Checkers.check
 import qu.model.examples.Commands.{GetObj, IncrementAsObj}
 import qu.model.ModelGenerators._
-import qu.model.examples.OHSFixture
-import qu.model.examples.SharedContainer2.keysForServer
 
 import scala.language.postfixOps
 import scala.math.Ordered.orderingToOrdered
 
-class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers with OHSFixture {
+class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers
+  with OHSUtilities
+  with KeysUtilities {
 
-  //todo can be replaced with a nested generator
-  // val aLt2 = ConcreteLogicalTimestamp(10, false, Some("client1"), Some("query"), Some("ohs")) //time: Int, barrierFlag: Boolean, clientId: Option[ClientId],operation: Option[OperationRepresentation],ohs: Option[OHSRepresentation])
   describe("A ConcreteLogicalTimestamp") {
+
     //test ordering
     describe("when initialized with a logical time") {
       it("should be classified as previous to a ConcreteLogicalTimestamp with a greater logical time") {
         forAll(arbitraryLt) { aLt =>
           forAll(logicalTimestampWithGreaterTimeThan(aLt.time)) { lt =>
-            assert(true) // aLt should be < lt //assert(aLt>aLt2)
             lt should be > aLt
           }
         }
@@ -47,32 +45,12 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
         }
       }
 
-      //todo verify if actually it generates them
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, same barrier flag but lexicographically greater clientId") {
         forAll(arbitraryLt) { aLt =>
           forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt =>
             lt should be > aLt //_ < aLt
           }
-          /* check {
-             Prop.forAllNoShrink(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt => {
-               //lt should be > aLt //_ < aLt
-               println("testing " + aLt + " vs " + lt)
-               println("RET: " + (lt > aLt))
-
-               lt > aLt
-             }
-             }
-           }*/
-          /*forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt =>
-            println("tested lt: " + lt)
-            lt should be > aLt //_ < aLt
-          }*/
         }
-        /*println("hello")
-        forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId)) { lt =>
-          println("tested lt: " + lt)
-          lt < aLt2 //_ < aLt
-        }*/
       }
 
 
@@ -82,9 +60,6 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
             _ > aLt
           }
         }
-        /*forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId, aLt2.operation)) {
-          _ < aLt2
-        }*/
       }
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, barrier flag, clientId, OperationRepresentation, but lexicographically greater OHSRepresentation") {
@@ -98,8 +73,6 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
             _ > aLt
           }
         }
-        //forAll(ltWithSameTimeAndBarrierAndClientIdAndOpOfAndOhsGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation, aLt.ohs)){ _ < aLt }
-        //}
 
       }
 

@@ -13,7 +13,6 @@ trait AuthServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMock
 
   self: AsyncTestSuite with ServersFixture =>
 
-  val authServerInfo = RecipientInfo(ip = "localhost", port = 1004) //todo to be put elsewhere the recipient Infos...
 
   var authServer: AuthServer = _
 
