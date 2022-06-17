@@ -3,15 +3,16 @@ package qu.service
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.stub.ServerCalls
 import io.grpc.{BindableService, MethodDescriptor, ServerCallHandler, ServerMethodDefinition, ServerServiceDefinition}
+import presentation.MethodDescriptorFactory
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu.RecipientInfo.id
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.ServerInfo
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
-import qu.{AbstractRecipientInfo, CachingMethodDescriptorFactory, JacksonMethodDescriptorFactory, MethodDescriptorFactory, RecipientInfo, Shutdownable}
+import qu.{AbstractRecipientInfo, JacksonMethodDescriptorFactory, RecipientInfo, Shutdownable}
 import qu.service.quorum.{JacksonSimpleBroadcastServerPolicy, ServerQuorumPolicy}
 import qu.storage.ImmutableStorage
-
+import presentation.CachingMethodDescriptorFactory
 import java.util.Objects
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
@@ -166,7 +167,7 @@ abstract class QuServiceImplBase[Marshallable[_], U] extends BindableService wit
 
 object QuServiceImplBase {
   //builder used to put construction logic for QuService in one place only
-  class QuServiceBuilder[Marshallable[_], U](private val methodDescriptorFactory: MethodDescriptorFactory[Marshallable],
+  class QuServiceBuilder[Marshallable[_], U](private val methodDescriptorFactory: presentation.MethodDescriptorFactory[Marshallable],
                                              private val policyFactory: Set[ServerInfo] => qu.service.quorum.ServerQuorumPolicy[U]) {
 
     val quService: qu.service.QuServiceImpl[Marshallable, U] = null // new qu.service.QuServiceImpl[U, Marshallable]()
@@ -226,7 +227,7 @@ object QuServiceImplBase {
 QuServiceImplBase VERSIONS NOT USING BUILDER FOR QUsERVIce
 //QuServiceImplBase2 reducing dependencies from  4 to 3
 abstract class QuServiceImplBase2[MyMarshallable[_], U](private var obj: U,
-                                                        private val methodDescriptorFactory: MethodDescriptorFactory[MyMarshallable],
+                                                        private val methodDescriptorFactory: presentation.MethodDescriptorFactory[MyMarshallable],
                                                         private var policyFactory: Map[String, String] => qu.service.quorum.ServerQuorumPolicy[U])
   extends BindableService with QuService[U] {
 
@@ -243,7 +244,7 @@ abstract class QuServiceImplBase2[MyMarshallable[_], U](private var obj: U,
 }
 
 //QuServiceImplBase2 using one exceeding dependencies
-abstract class QuServiceImplBase[MyMarshallable[_], U](private val methodDescriptorFactory: MethodDescriptorFactory[MyMarshallable],
+abstract class QuServiceImplBase[MyMarshallable[_], U](private val methodDescriptorFactory: presentation.MethodDescriptorFactory[MyMarshallable],
                                                        private val clientStubFactory: (String) => qu.GrpcClientStub[MyMarshallable],
                                                        private var policyFactory: Map[String, qu.GrpcClientStub[MyMarshallable]] => qu.service.quorum.ServerQuorumPolicy[U])
   extends BindableService with QuService[U] {
@@ -301,7 +302,7 @@ object UserSide {
 
 /* old with QuService...
 class qu.service.QuServiceImpl[U, Marshallable[_]]( //strategy
-                                         private val methodDescriptorFactory: MethodDescriptorFactory[Marshallable],
+                                         private val methodDescriptorFactory: presentation.MethodDescriptorFactory[Marshallable],
                                          //strategy
                                          private val stubFactory: (String) => qu.GrpcClientStub[Marshallable],
                                          //strategy

@@ -2,6 +2,7 @@ package qu.stub.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc._
+import presentation.{MarshallerFactory, MethodDescriptorFactory}
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu._
 import qu.auth.Token

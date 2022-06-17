@@ -2,9 +2,10 @@ package qu.service
 
 import io.grpc.Context
 import io.grpc.stub.StreamObserver
+import presentation.MethodDescriptorFactory
 import qu.RecipientInfo.id
 import qu.auth.common.Constants
-import qu.{MethodDescriptorFactory, RecipientInfo}
+import qu.RecipientInfo
 import qu.model.ConcreteQuModel.hmac
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory

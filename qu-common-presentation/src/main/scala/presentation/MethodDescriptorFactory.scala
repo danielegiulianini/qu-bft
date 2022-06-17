@@ -1,5 +1,4 @@
-package qu
-
+package presentation
 
 import io.grpc.MethodDescriptor
 
@@ -22,7 +21,3 @@ trait MethodDescriptorFactory[Transferable[_]] {
   }
 
 }
-
-
-
-

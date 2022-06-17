@@ -19,7 +19,7 @@ trait HealthyClusterFixture extends AsyncTestSuiteMixin with Matchers with Async
   /*private[this]*/ var quServerIpPorts = Set[RecipientInfo]()
 
 
-  var healthyCluster : LocalQuServerCluster = _
+  var healthyCluster: LocalQuServerCluster = _
 
   override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
 
@@ -32,15 +32,13 @@ trait HealthyClusterFixture extends AsyncTestSuiteMixin with Matchers with Async
       keysByServer,
       thresholds,
       RemoteCounterServer.builder,
-      0)
+      InitialObject)
 
     complete {
       healthyCluster.start()
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
-
-      //healthyCluster.shutdown()
       healthyCluster.shutdown()
 
     }

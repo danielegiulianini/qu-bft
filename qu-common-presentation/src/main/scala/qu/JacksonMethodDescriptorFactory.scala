@@ -2,6 +2,7 @@ package qu
 
 import com.fasterxml.jackson.databind.`type`.TypeFactory
 import com.fasterxml.jackson.module.scala.JavaTypeable
+import presentation.MethodDescriptorFactory
 
 //family polymorphism:
 trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory[JavaTypeable] with JacksonMarshallerFactory {

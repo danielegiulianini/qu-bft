@@ -2,6 +2,7 @@ package qu
 
 import io.grpc.MethodDescriptor
 import play.api.libs.json.{Format, Json}
+import presentation.MarshallerFactory
 
 import java.io.{ByteArrayInputStream, InputStream}
 import java.nio.charset.StandardCharsets
