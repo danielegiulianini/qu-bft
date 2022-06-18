@@ -13,7 +13,9 @@ class JwtAuthorizationServerInterceptor extends ServerInterceptor {
   def interceptCall[ReqT, RespT](serverCall: ServerCall[ReqT, RespT],
                                  metadata: Metadata,
                                  serverCallHandler: ServerCallHandler[ReqT, RespT]): ServerCall.Listener[ReqT] = {
-    if (Objects.equals(serverCall.getMethodDescriptor().getServiceName(), QuServiceDescriptors.SERVICE_NAME))
+
+    //disabling server-to-server authentication
+    if (Objects.equals(serverCall.getMethodDescriptor().getServiceName(), QuServiceDescriptors.OBJECT_REQUEST_METHOD_NAME))
       return serverCallHandler.startCall(serverCall, metadata);
 
     val value = metadata.get(Constants.AUTHORIZATION_METADATA_KEY)

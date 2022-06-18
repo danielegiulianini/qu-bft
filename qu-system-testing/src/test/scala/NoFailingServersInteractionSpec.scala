@@ -50,7 +50,9 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
     }
     describe("when multiple updates are issued") {
       it("should return to client the correct answer") {
-        val operations = List.fill(3)(Increment())
+        val nIncrements = 3
+
+        val operations = List.fill(nIncrements)(Increment())
         for {
           authenticatedQuClient <- quClient
           value <- operations.foldLeft(Future.unit)((fut, operation) => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
