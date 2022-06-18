@@ -264,7 +264,9 @@ object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticat
                                       barrierFlag: Boolean,
                                       clientId: Option[ClientId],
                                       operation: Option[OperationRepresentation],
-                                      ohs: Option[OHSRepresentation])
+                                      ohs: Option[OHSRepresentation]) {
+    //override def productPrefix = "LT"//for pretty printing
+  }
 
 }
 

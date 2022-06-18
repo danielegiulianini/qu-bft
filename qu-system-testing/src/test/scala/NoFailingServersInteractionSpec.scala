@@ -10,11 +10,6 @@ import scala.concurrent.Future
 class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with ServersFixture with OHSUtilities
   with HealthyClusterFixture with AuthServerFixture with AuthenticatingClientFixture  {
 
-  /* //todo maybe to move to fixture (or maybe all the clientFuture?) (to be shutdown  correctly)
-   val client = AuthenticatingClient[Int](authServerInfo.ip,
-     authServerInfo.port,
-     "username",
-     "password")*/
 
   //type information survives network transit
   describe("A Q/U protocol interaction with a quorum without failing servers") {
@@ -69,7 +64,9 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
         val operations = List.fill(nOperations)(Increment())
         for {
           authenticatedQuClient <- quClient
-          _ <- operations.foldLeft(Future.unit)((fut, operation) => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
+          //_ <- operations.foldLeft(Future.unit)((fut, operation) => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
+          _ <- authenticatedQuClient.submit[Unit](Increment())
+          _ <- authenticatedQuClient.submit[Unit](Increment())
           queryResult <- authenticatedQuClient.submit[Int](GetObj())
         } yield queryResult should be(InitialObject + nOperations)
       }
@@ -77,3 +74,11 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
   }
 }
 
+
+
+
+/* //todo maybe to move to fixture (or maybe all the clientFuture?) (to be shutdown  correctly)
+ val client = AuthenticatingClient[Int](authServerInfo.ip,
+   authServerInfo.port,
+   "username",
+   "password")*/

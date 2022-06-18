@@ -20,7 +20,7 @@ trait AuthenticatingClientFixture extends AsyncTestSuiteMixin with Matchers with
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
-      client.shutdown()
+      //client.shutdown()
     }
   }
 
