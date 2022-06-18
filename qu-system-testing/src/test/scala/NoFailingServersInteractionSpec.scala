@@ -60,15 +60,15 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
 
     describe("when multiple updates are issued followed by a query") {
       it("should return to client the correct answer") {
-        val nOperations = 5
-        val operations = List.fill(nOperations)(Increment())
+        val nIncrements = 1
+        val operations = List.fill(nIncrements)(Increment())
         for {
           authenticatedQuClient <- quClient
-          //_ <- operations.foldLeft(Future.unit)((fut, operation) => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
-          _ <- authenticatedQuClient.submit[Unit](Increment())
-          _ <- authenticatedQuClient.submit[Unit](Increment())
+          _ <- operations.foldLeft(Future.unit)((fut, operation) => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
+          //_ <- authenticatedQuClient.submit[Unit](Increment())
+          //_ <- authenticatedQuClient.submit[Unit](Increment())
           queryResult <- authenticatedQuClient.submit[Int](GetObj())
-        } yield queryResult should be(InitialObject + nOperations)
+        } yield queryResult should be(InitialObject + nIncrements)
       }
     }
   }

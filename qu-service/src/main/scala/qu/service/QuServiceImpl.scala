@@ -51,13 +51,17 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
   var authenticatedReplicaHistory: AuthenticatedReplicaHistory = emptyAuthenticatedRh
   var counter: Int = 0
 
+
+  private def log(msg: String) = {
+    logger.log(Level.INFO, "serv-" + id(RecipientInfo(ip, port)) + " " + msg)
+  }
+
   override def sRequest[AnswerT: TypeTag](request: Request[AnswerT, ObjectT],
                                           responseObserver: StreamObserver[Response[Option[AnswerT]]])(implicit objectSyncResponseTransportable: Transportable[ObjectSyncResponse[ObjectT]],
                                                                                                        logicalTimestampTransportable: Transportable[LogicalTimestamp])
   : Unit = {
-    logger.log(Level.INFO, "++++++++++++++++++++++++++++++++++++ server " +id(RecipientInfo(ip, port)) + " starts " +counter + "th call\n request received from " + clientId.get + ":" + request, 2) //: " + clientId.get, 2)
-    //logger.log(Level.INFO, "la operation is: " + request.operation, 2) //: " + clientId.get, 2)
 
+    logger.log(Level.INFO, "++++++++++++++++++++++++++++++++++++ server " + id(RecipientInfo(ip, port)) + " starts " + counter + "th call\n request received from " + clientId.get + ":" + request, 2) //: " + clientId.get, 2)
 
     def replyWith(response: Response[Option[AnswerT]]): Unit = {
       logger.log(Level.INFO, "server " + id(RecipientInfo(ip, port)) + " sendingw response" + response + "\n>>>>>>>>>>>>>>>>> server " + id(RecipientInfo(ip, port)) + "returns " + counter + "th call >>>>>>>>>>>>>>>>>> ", 2
@@ -67,7 +71,6 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
       }
       responseObserver.onNext(response)
       responseObserver.onCompleted()
-
     }
 
     //todo not need to pass request if nested def
@@ -94,7 +97,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
 
           if ((!authenticator.contains(id(RecipientInfo(ip, port))) ||
-            authenticator(id(RecipientInfo(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) && rh != emptyRh) {//mut use rh here! (not replicahistory)
+            authenticator(id(RecipientInfo(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) && rh != emptyRh) { //mut use rh here! (not replicahistory)
             println("CULLLLLEDDDD, reason: not contained? " + (!authenticator.contains(id(RecipientInfo(ip, port)))) + "(rh is: " + rh + ").")
             if (authenticator.contains(id(RecipientInfo(ip, port))))
               println("or auth differs? " + (authenticator(id(RecipientInfo(ip, port))) != hmac(keysSharedWithMe(serverId), rh)))
@@ -110,13 +113,24 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
     logger.log(Level.INFO, "SEEEEEEEEERVERRRRRRRRRRR la ohs updated is: " + updatedOhs, 2)
     val (opType, (lt, ltCo), ltCurrent) = setup(request.operation, updatedOhs, thresholds.q, thresholds.r, clientId.get())
+    log("(lt, ltCo) got by request " + request + " is: " + (lt, ltCo))
+
     logger.log(Level.INFO, "SEEEEEEEEERVERRRRRRRRRRR ltCo ritornato da setup is: " + ltCo, 2)
 
     //repeated request
     if (contains(myReplicaHistory, (lt, ltCo))) {
-      val (_, answer) = storage.retrieve[AnswerT](lt).getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
+
+      //log("444444444RETRIEIVINg of type" + typeOf[AnswerT])
+      log("repeated request detected! from request: " + request + " (opType:  " + opType + "), operation: " + request.operation)
+
+      val answer = if (opType != ConcreteOperationTypes.BARRIER && opType != ConcreteOperationTypes.INLINE_BARRIER ) {
+        val (_, answer) = storage.retrieve[AnswerT](lt).getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
+        answer
+      } else None
+
       val response = Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory)
       replyWith(response)
+
       logger.log(Level.INFO, "repeated request detected! sending response" + response, 2)
       return //todo put attention if it's possible to express this with a chain of if e.se and only one return
     }
@@ -161,7 +175,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
         quorumPolicy.objectSync(ltCo).onComplete({
           case Success(obj) => onObjectRetrieved(obj) //here I know that a quorum is found...
           case Failure(thr) => throw thr //what can actually happen here? (malformed json, bad url) those must be notified to server user!
-        })(ec)
+        })
       } else {
         objToWorkOn = retrievedObj.getOrElse(throw new Exception("just checked if it was not none!"))
         logger.log(Level.INFO, "object with lt " + ltCo + "(" + obj + ") available here", 2)
@@ -199,7 +213,9 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
         if (opType == ConcreteOperationTypes.METHOD
           || opType == ConcreteOperationTypes.INLINE_METHOD
           || opType == ConcreteOperationTypes.COPY) {
-          logger.log(Level.INFO, "Storing updated (object, answer): (" + objToWorkOn + ", " + answerToReturn + ") with lt " + lt.time, 2)
+          //logger.log(Level.INFO, "Storing updated (object, answer): (" + objToWorkOn + ", " + answerToReturn + ") with lt " + lt.time, 2)
+
+          log("Storing updated (object, answer): (" + objToWorkOn + ", " + answerToReturn + ") with lt " + lt.time + " for request: " + request)
           storage = storage.store[AnswerT](lt, (objToWorkOn, answerToReturn))
         }
 

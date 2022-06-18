@@ -265,7 +265,7 @@ object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticat
                                       clientId: Option[ClientId],
                                       operation: Option[OperationRepresentation],
                                       ohs: Option[OHSRepresentation]) {
-    //override def productPrefix = "LT"//for pretty printing
+    override def productPrefix = "LT"//for pretty printing
   }
 
 }

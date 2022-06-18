@@ -37,7 +37,7 @@ class ImmutableStorage[U: TypeTag] private(private var storage:
   }
 
   override def retrieve[T: TypeTag](logicalTimestamp: LogicalTimestamp): Option[(U, Option[T])] = {
-    println("from storage, retrieving with lt: " + logicalTimestamp)
+    println("from storage, retrieving with lt: " + logicalTimestamp + "storage content is:  " + storage)
 
     val tmp = storage.get(implicitly[TypeTag[T]])
 
