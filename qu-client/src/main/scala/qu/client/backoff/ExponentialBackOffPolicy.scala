@@ -11,6 +11,7 @@ class ExponentialBackOffPolicy(private var initialBackOffTime: FiniteDuration = 
   // todo (could use functional object)
   def backOff()(implicit ec: ExecutionContext): Future[Unit] = {
     initialBackOffTime *= 2
+    println("backing off for: " + initialBackOffTime)
     scheduler.scheduleOnceAsPromise(initialBackOffTime)
   }
 }

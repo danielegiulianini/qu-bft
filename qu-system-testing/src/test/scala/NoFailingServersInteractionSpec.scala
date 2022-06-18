@@ -2,14 +2,14 @@ import org.scalatest.funspec.{AnyFunSpec, AsyncFunSpec}
 import org.scalatest.matchers.should.Matchers
 import qu.ServersFixture
 import qu.client.{AuthenticatingClient, QuClient}
+import qu.model.ConcreteQuModel.Operation
 import qu.model.OHSUtilities
 import qu.model.examples.Commands.{GetObj, Increment}
 
 import scala.concurrent.Future
 
 class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with ServersFixture with OHSUtilities
-  with HealthyClusterFixture with AuthServerFixture with AuthenticatingClientFixture  {
-
+  with HealthyClusterFixture with AuthServerFixture with AuthenticatingClientFixture {
 
   //type information survives network transit
   describe("A Q/U protocol interaction with a quorum without failing servers") {
@@ -59,16 +59,22 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
 
 
     describe("when multiple updates are issued followed by a query") {
+
       it("should return to client the correct answer") {
+
+
         val nIncrements = 1
         val operations = List.fill(nIncrements)(Increment())
+        /*for {
+          authenticatedQuClient <- quClient
+          queryResult <- operations.foldLeft[Future[_]](Future.successful(()))((fut, operation) => fut.map(_ => authenticatedQuClient.submit(operation)))
+        } yield queryResult should be(InitialObject + nIncrements)*/
         for {
           authenticatedQuClient <- quClient
-          _ <- operations.foldLeft(Future.unit)((fut, operation) => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
-          //_ <- authenticatedQuClient.submit[Unit](Increment())
-          //_ <- authenticatedQuClient.submit[Unit](Increment())
-          queryResult <- authenticatedQuClient.submit[Int](GetObj())
+          _ <- seqFutures(operations)(op => authenticatedQuClient.submit(op)) //operations.foldLeft[Future[_]](Future.successful(()))((fut, operation) => fut.map(_ => authenticatedQuClient.submit(operation)))
+          queryResult <- authenticatedQuClient.submit(GetObj())
         } yield queryResult should be(InitialObject + nIncrements)
+
       }
     }
   }
