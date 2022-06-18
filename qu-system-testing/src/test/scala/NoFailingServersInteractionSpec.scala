@@ -1,3 +1,4 @@
+import FutureUtils.seqFutures
 import org.scalatest.funspec.{AnyFunSpec, AsyncFunSpec}
 import org.scalatest.matchers.should.Matchers
 import qu.ServersFixture
@@ -61,17 +62,11 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
     describe("when multiple updates are issued followed by a query") {
 
       it("should return to client the correct answer") {
-
-
-        val nIncrements = 1
+        val nIncrements = 3
         val operations = List.fill(nIncrements)(Increment())
-        /*for {
-          authenticatedQuClient <- quClient
-          queryResult <- operations.foldLeft[Future[_]](Future.successful(()))((fut, operation) => fut.map(_ => authenticatedQuClient.submit(operation)))
-        } yield queryResult should be(InitialObject + nIncrements)*/
         for {
           authenticatedQuClient <- quClient
-          _ <- seqFutures(operations)(op => authenticatedQuClient.submit(op)) //operations.foldLeft[Future[_]](Future.successful(()))((fut, operation) => fut.map(_ => authenticatedQuClient.submit(operation)))
+          _ <- seqFutures(operations)(op => authenticatedQuClient.submit(op))
           queryResult <- authenticatedQuClient.submit(GetObj())
         } yield queryResult should be(InitialObject + nIncrements)
 

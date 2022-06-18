@@ -12,11 +12,11 @@ trait CLusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers 
   self: AsyncTestSuite with ServersFixture =>
 
   // Perform setup
-  private[this] var quServerIpPorts = Set[RecipientInfo]()
+ /* private[this] var quServerIpPorts = Set[RecipientInfo]()
   quServerIpPorts = quServerIpPorts + quServer1
   quServerIpPorts = quServerIpPorts + quServer2
   quServerIpPorts = quServerIpPorts + quServer3
-  quServerIpPorts = quServerIpPorts + quServer4
+  quServerIpPorts = quServerIpPorts + quServer4*/
 
   var clusterWithFailingServer: LocalQuServerCluster = _
 
@@ -25,11 +25,13 @@ trait CLusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers 
       keysByServer,
       thresholds,
       RemoteCounterServer.builder,
-      0)
-    clusterWithFailingServer.killServer(id(quServer1))
+      InitialObject)
+   // clusterWithFailingServer.killServer(id(quServer1))
 
     complete {
       clusterWithFailingServer.start()
+      //clusterWithFailingServer.killServer(id(quServer1))
+
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here

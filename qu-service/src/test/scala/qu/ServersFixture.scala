@@ -16,7 +16,13 @@ trait ServersFixture {
   val quServer2 = RecipientInfo(ip = "localhost", port = 1001)
   val quServer3 = RecipientInfo(ip = "localhost", port = 1002)
   val quServer4 = RecipientInfo(ip = "localhost", port = 1003)
-  
+
+  var quServerIpPorts = Set[RecipientInfo]()
+  quServerIpPorts = quServerIpPorts + quServer1
+  quServerIpPorts = quServerIpPorts + quServer2
+  quServerIpPorts = quServerIpPorts + quServer3
+  quServerIpPorts = quServerIpPorts + quServer4
+
   val authServerInfo = RecipientInfo(ip = "localhost", port = 1004)
 
   val keysByServer: Map[ServerId, Map[ServerId, Key]] = Map(
@@ -56,7 +62,6 @@ trait ServersFixture {
   val aOhsWithInlineBarrier: OHS = ohsWithInlineBarrierFor(keysByServer, thresholds.r)
   val aOhsWithBarrier: OHS = ohsWithBarrierFor(keysByServer)
   val aOhsWithCopy: OHS = ohsWithCopyFor(serverKeys = keysByServer)
-
 
   val InitialObject = 2022
 

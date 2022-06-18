@@ -31,9 +31,10 @@ class LocalAuthenticator {
     this.synchronized {
       val user = usersByUsername.get(userId).orElse(throw WrongCredentialsException("No such a user: " + userId))
       if (!credentials.password.equals(user.get.password)) throw WrongCredentialsException("Wrong credentials for user: " + userId)
-      //assigning "client" role to all clients
       val encryptedUserId = Jwts.builder.setSubject(userId).signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact
-      new Token(encryptedUserId, Role.CLIENT)
+      val role = user.role
+      new Token(encryptedUserId, role.getOrElse(Role.CLIENT))
+
     }
   }
 }

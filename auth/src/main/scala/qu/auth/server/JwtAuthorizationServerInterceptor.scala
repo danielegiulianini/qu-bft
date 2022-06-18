@@ -7,7 +7,9 @@ import qu.auth.common.Constants
 class JwtAuthorizationServerInterceptor extends ServerInterceptor {
   private val parser = Jwts.parser.setSigningKey(Constants.JWT_SIGNING_KEY)
 
-  def interceptCall[ReqT, RespT](serverCall: ServerCall[ReqT, RespT], metadata: Metadata, serverCallHandler: ServerCallHandler[ReqT, RespT]): ServerCall.Listener[ReqT] = {
+  def interceptCall[ReqT, RespT](serverCall: ServerCall[ReqT, RespT],
+                                 metadata: Metadata,
+                                 serverCallHandler: ServerCallHandler[ReqT, RespT]): ServerCall.Listener[ReqT] = {
     val value = metadata.get(Constants.AUTHORIZATION_METADATA_KEY)
     var status: Status = null
     if (value == null) status = Status.UNAUTHENTICATED.withDescription("Authorization token is missing")

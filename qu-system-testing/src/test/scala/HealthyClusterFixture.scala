@@ -16,17 +16,17 @@ trait HealthyClusterFixture extends AsyncTestSuiteMixin with Matchers with Async
   self: AsyncTestSuite with ServersFixture =>
 
   // Perform setup
-  /*private[this]*/ var quServerIpPorts = Set[RecipientInfo]()
+  /*private[this]*/ //var quServerIpPorts = Set[RecipientInfo]()
 
 
   var healthyCluster: LocalQuServerCluster = _
 
   override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
 
-    quServerIpPorts = quServerIpPorts + quServer1
+   /* quServerIpPorts = quServerIpPorts + quServer1
     quServerIpPorts = quServerIpPorts + quServer2
     quServerIpPorts = quServerIpPorts + quServer3
-    quServerIpPorts = quServerIpPorts + quServer4
+    quServerIpPorts = quServerIpPorts + quServer4*/
 
     healthyCluster = LocalQuServerCluster[Int](quServerIpPorts,
       keysByServer,
