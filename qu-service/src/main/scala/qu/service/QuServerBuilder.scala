@@ -2,7 +2,6 @@ package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.ServerInterceptor
-import qu.auth.server.JwtAuthorizationServerInterceptor
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, Request, Response}
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.{ServerInfo, ServiceFactory, jacksonSimpleQuorumServiceFactory}

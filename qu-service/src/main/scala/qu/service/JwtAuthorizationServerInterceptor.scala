@@ -1,8 +1,11 @@
-package qu.auth.server
+package qu.service
 
 import io.grpc._
 import io.jsonwebtoken.Jwts
+import qu.QuServiceDescriptors
 import qu.auth.common.Constants
+
+import java.util.Objects
 
 class JwtAuthorizationServerInterceptor extends ServerInterceptor {
   private val parser = Jwts.parser.setSigningKey(Constants.JWT_SIGNING_KEY)
@@ -10,6 +13,9 @@ class JwtAuthorizationServerInterceptor extends ServerInterceptor {
   def interceptCall[ReqT, RespT](serverCall: ServerCall[ReqT, RespT],
                                  metadata: Metadata,
                                  serverCallHandler: ServerCallHandler[ReqT, RespT]): ServerCall.Listener[ReqT] = {
+    if (Objects.equals(serverCall.getMethodDescriptor().getServiceName(), QuServiceDescriptors.SERVICE_NAME))
+      return serverCallHandler.startCall(serverCall, metadata);
+
     val value = metadata.get(Constants.AUTHORIZATION_METADATA_KEY)
     var status: Status = null
     if (value == null) status = Status.UNAUTHENTICATED.withDescription("Authorization token is missing")

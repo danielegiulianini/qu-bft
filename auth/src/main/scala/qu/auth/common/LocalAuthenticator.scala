@@ -26,14 +26,15 @@ class LocalAuthenticator {
     //I assume credentials can't be null, so I omit: if (user == null ||...
     if (credentials.username.isBlank) throw BadContentException("Missing user ID: " + credentials.username)
     if (credentials.password.isBlank) throw BadContentException("Missing password: " + credentials.password)
+
     val userId = credentials.username
     //todo should use key shared with quServer to create token
     this.synchronized {
-      val user = usersByUsername.get(userId).orElse(throw WrongCredentialsException("No such a user: " + userId))
-      if (!credentials.password.equals(user.get.password)) throw WrongCredentialsException("Wrong credentials for user: " + userId)
+      val user: User = usersByUsername.get(userId).getOrElse(throw WrongCredentialsException("No such a user: " + userId))
+      if (!credentials.password.equals(user.password)) throw WrongCredentialsException("Wrong credentials for user: " + userId)
       val encryptedUserId = Jwts.builder.setSubject(userId).signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact
       val role = user.role
-      new Token(encryptedUserId, role.getOrElse(Role.CLIENT))
+      new Token(encryptedUserId, if (role!=null) role else Role.CLIENT)
 
     }
   }

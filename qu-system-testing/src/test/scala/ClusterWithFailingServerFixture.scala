@@ -7,7 +7,7 @@ import qu.{FourServersScenario, RecipientInfo, ServersFixture}
 import qu.service.LocalQuServerCluster
 import qu.service.datastructures.RemoteCounterServer
 
-trait CLusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
+trait ClusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
   self: AsyncTestSuite with ServersFixture =>
 

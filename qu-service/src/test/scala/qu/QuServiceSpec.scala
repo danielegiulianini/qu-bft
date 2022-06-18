@@ -11,6 +11,8 @@ import org.scalatest.matchers.should.Matchers
 import qu.RecipientInfo.id
 import qu.model.examples.Commands.{GetObj, Increment, IncrementAsObj}
 import qu.model.ConcreteQuModel._
+import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT}
+
 import qu.model.{OHSUtilities, QuorumSystemThresholds, StatusCode}
 import qu.model.StatusCode.{FAIL, SUCCESS}
 import qu.stub.client.JacksonStubFactory
@@ -41,9 +43,9 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
 
       it("should respond with a empty Option") {
         storedObjResponse.map(_.answer should be(Option.empty))
-
       }
     }
+
     describe("when contacted by another service requesting a object it does store") {
       val storeObjLt = emptyLT
 

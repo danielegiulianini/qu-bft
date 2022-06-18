@@ -7,12 +7,11 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome, Outcome, Suite, SuiteMixin}
 import presentation.CachingMethodDescriptorFactory
 import qu.RecipientInfo.id
-import qu.auth.server.JwtAuthorizationServerInterceptor
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, latestCandidate}
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.jacksonSimpleQuorumServiceFactory
 import qu.service.quorum.{JacksonSimpleBroadcastServerPolicy, ServerQuorumPolicy, SimpleServerQuorumPolicy}
-import qu.service.{AbstractQuService, QuServiceImpl}
+import qu.service.{AbstractQuService, JwtAuthorizationServerInterceptor, QuServiceImpl}
 import qu.storage.ImmutableStorage
 
 import java.util.concurrent.TimeUnit

@@ -5,8 +5,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 import qu.RecipientInfo.id
 import qu.{RecipientInfo, ServersFixture}
-import qu.auth.server.JwtAuthorizationServerInterceptor
-import qu.service.LocalQuServerCluster
+import qu.service.{JwtAuthorizationServerInterceptor, LocalQuServerCluster}
 import qu.service.datastructures.RemoteCounterServer
 
 import scala.concurrent.Await

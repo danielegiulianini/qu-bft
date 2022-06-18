@@ -120,7 +120,6 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
     //repeated request
     if (contains(myReplicaHistory, (lt, ltCo))) {
 
-      //log("444444444RETRIEIVINg of type" + typeOf[AnswerT])
       log("repeated request detected! from request: " + request + " (opType:  " + opType + "), operation: " + request.operation)
 
       val answer = if (opType != ConcreteOperationTypes.BARRIER && opType != ConcreteOperationTypes.INLINE_BARRIER ) {

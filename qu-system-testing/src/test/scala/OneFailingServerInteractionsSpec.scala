@@ -8,7 +8,7 @@ import qu.model.examples.Commands.{GetObj, Increment}
 import scala.concurrent.Future
 
 class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers with ServersFixture with OHSUtilities
-  with CLusterWithFailingServerFixture with AuthServerFixture with AuthenticatingClientFixture {
+  with ClusterWithFailingServerFixture with AuthServerFixture with AuthenticatingClientFixture {
 
   //type information survives network transit
   describe("A Q/U protocol interaction with a quorum without failing servers") {

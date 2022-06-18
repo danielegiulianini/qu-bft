@@ -19,7 +19,10 @@ import qu.model.StatusCode.{FAIL, SUCCESS}
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
 
-class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with KeysUtilities with OHSUtilities with FourServersScenario with ScalaFutures {
+class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with ScalaFutures
+  with KeysUtilities
+  with OHSUtilities
+  with FourServersScenario {
 
   val mockedServersStubs: Map[String, JwtAsyncClientStub[JavaTypeable]] =
     serversIds.map(_ -> mock[JwtAsyncClientStub[JavaTypeable]]).toMap
@@ -31,27 +34,11 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Keys
     mockedServersStubs
   )
 
-  //1. def send[InputT: Transferable, OutputT: Transferable](toBeSent: InputT):Future[OutputT]
-  //    a. ed invio la request contennte request:
-  //      case class Request[ReturnValueT, ObjectT](operation: Option[Operation[ReturnValueT, ObjectT]],
-  //                                            ohs: OHS)
-  //    b. e mi aspetto che ritorni la response:
-  //      case class Response[ReturnValueT](responseCode: StatusCode,
-  //                                    answer: ReturnValueT,
-  //                                    authenticatedRh: AuthenticatedReplicaHistory)
-
-  //2. def quorum[AnswerT](operation: Option[Operation[AnswerT, ObjectT]],
-  //                               ohs: OHS)
-  //                              (implicit
-  //                               transportableRequest: Transportable[Request[AnswerT, ObjectT]],
-  //                               transportableResponse: Transportable[Response[Option[AnswerT]]])
-  // : Future[(Option[AnswerT], Int, OHS)] = {
   def sendIncrementRequest(mockedStub: JwtAsyncClientStub[JavaTypeable]):
   MockFunction3[Request[Unit, Int], JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Unit]], Future[Response[Unit]]] = (mockedStub.send[Request[Unit, Int], Response[Unit]](_: Request[Unit, Int])(_: JavaTypeable[Request[Unit, Int]], _: JavaTypeable[Response[Unit]]))
 
   def sendGetObjRequest(mockedStub: JwtAsyncClientStub[JavaTypeable]):
   MockFunction3[Request[Int, Int], JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Int]], Future[Response[Int]]] = (mockedStub.send[Request[Int, Int], Response[Int]](_: Request[Int, Int])(_: JavaTypeable[Request[Int, Int]], _: JavaTypeable[Response[Int]]))
-
 
   //sends to all servers
   describe("a Simple quorum policy") {
