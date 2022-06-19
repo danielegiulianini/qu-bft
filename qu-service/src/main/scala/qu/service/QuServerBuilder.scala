@@ -41,7 +41,7 @@ class QuServerBuilder[Transportable[_], ObjectT](private val serviceFactory: Ser
 
   def build(): QuServer = {
     //todo validation missing
-    new QuServerImpl(authorizationInterceptor, quService, port)
+    new QuServerImpl(authorizationInterceptor, quService = quService, port = port)
   } //this or: 1. factory of QUServer, 2. factory of QuServerImpl
 }
 

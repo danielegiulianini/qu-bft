@@ -46,7 +46,7 @@ class AuthenticatedQuClient[ObjectT](username: String,
 
   //todo: fix delay,
   //todo: if not present (due to network problems) now throwing unchecked exception, (could return option.empty)
-  protected def await[T](future: Future[T]): T = Await.result(future, 100.millis)
+  protected def await[T](future: Future[T]): T = Await.result(future, 5.seconds)
 
   protected def submit[ReturnValueT](operation: Operation[ReturnValueT, ObjectT]): Future[ReturnValueT] =
     clientFuture().flatMap(_.submit(operation))

@@ -19,6 +19,10 @@ import scala.util.{Failure, Success, Try}
 
 class SyncSmrSystemImpl extends SyncSmrSystem {
 
+  //dependencies: authServerInfo, quServerIpPorts, keys, thresholds
+  case class Model()
+
+
   val authServerInfo = RecipientInfo(ip = "localhost", port = 1)
   val quServer1 = RecipientInfo(ip = "localhost", port = 1)
   val quServer2 = RecipientInfo(ip = "localhost", port = 2)
@@ -63,7 +67,11 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
       RemoteCounterServer.builder,
       0)
 
-  //todo must be started...
+
+  //todo must be started... (in def or nor?)
+  //authServer.start()
+  //cluster.start()
+
 
   val distributedClient = new DistributedCounter(
     "username",

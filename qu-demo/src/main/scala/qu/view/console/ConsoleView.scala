@@ -62,7 +62,7 @@ class ConsoleView extends View {
       case Failure(ThresholdsExceededException(msg)) => msg
       case Failure(ServerAlreadyKilledException(msg)) => msg
       case Failure(UnrecognizedCommand()) => "command not recognized. Please attain to the syntax, digit " + Help.command + " to display commands."
-      case Failure(_) => "a problem raised up."
+      case Failure(ex) => "a problem raised up.("+ ex  //todo remove
       case _ => operationOk
     }
   })

@@ -1,7 +1,7 @@
 package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.grpc.{Server, ServerBuilder, ServerInterceptor}
+import io.grpc.{Grpc, InsecureChannelCredentials, InsecureServerCredentials, Server, ServerBuilder, ServerCredentials, ServerInterceptor}
 import qu.{Shutdownable, Startable}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
@@ -29,7 +29,8 @@ object QuServer {
 }
 
 
-class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerInterceptor,
+class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerInterceptor, //this makes it pluggable a different auth technology (possibly not JWT-based)
+                                              credentials : ServerCredentials = InsecureServerCredentials.create(),
                                               quService: AbstractQuService[Transportable, ObjectT],
                                               port: Int)(implicit executor: ExecutionContext) extends QuServer {
 
@@ -39,8 +40,8 @@ class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerIn
     logger.log(Level.INFO, msg)
 
   //here can plug creds with tls
-  private val grpcServer = ServerBuilder
-    .forPort(port)
+  private val grpcServer =
+    Grpc.newServerBuilderForPort(port, InsecureServerCredentials.create()) //ServerBuilder.forPort(port)
     .intercept(authorizationInterceptor)
     .addService(quService)
     .build
@@ -51,10 +52,6 @@ class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerIn
   }
 
   override def shutdown(): Future[Unit] = Future {
-    //grpcServer.shutdown
-    //val promise = Promise()
-    //grpcServer.awaitTermination()
-    //promise.future
     Future {
       grpcServer.shutdown
       grpcServer.awaitTermination()

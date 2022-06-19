@@ -3,11 +3,10 @@ package qu
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{Status, StatusRuntimeException}
 import org.scalamock.function.MockFunction3
-import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
+import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.Futures.whenReady
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.funspec.{AnyFunSpec, AsyncFunSpec}
-import org.scalatest.matchers.must.Matchers.{be, convertToAnyMustWrapper}
+import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.matchers.should.Matchers.{a, convertToAnyShouldWrapper}
 import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
@@ -19,20 +18,18 @@ import qu.model.StatusCode.{FAIL, SUCCESS}
 
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, Future}
-import scala.util.Failure
 
-
-//not used async traits for leveraging (possibly in the future) inSequence
-class SimpleClientQuorumPolicySpec extends AsyncFunSpec with AsyncMockFactory //with ScalaFutures
+class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with ScalaFutures
   with FourServersScenario
   with OHSUtilities
-  with KeysUtilities {
+  with KeysUtilities
+  {
 
   val mockedServersStubs: Map[String, JwtAsyncClientStub[JavaTypeable]] =
     serversIds.map(_ -> mock[JwtAsyncClientStub[JavaTypeable]]).toMap
 
   //determinism in tests
-  //implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
+  implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
   val policy = new JacksonSimpleBroadcastClientPolicy[Int](thresholds,
     mockedServersStubs
@@ -47,7 +44,7 @@ class SimpleClientQuorumPolicySpec extends AsyncFunSpec with AsyncMockFactory //
   //sends to all servers
   describe("a Simple quorum policy") {
     describe("when asked for finding a quorum") {
-      /*describe("and receiving it") {
+      describe("and receiving it") {
         it("should not ask servers any more") {
           mockedServersStubs.values.foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce().returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
@@ -55,9 +52,9 @@ class SimpleClientQuorumPolicySpec extends AsyncFunSpec with AsyncMockFactory //
 
           policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
         }
-      }*/
+      }
       //behaviour testing
-      /*it("should broadcast to all servers") {
+      it("should broadcast to all servers") {
         mockedServersStubs.values.foreach(mockedStub => {
           sendGetObjRequest(mockedStub).expects(*, *, *).returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
         })
@@ -71,11 +68,11 @@ class SimpleClientQuorumPolicySpec extends AsyncFunSpec with AsyncMockFactory //
         })
 
         policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
-      }*/
+      }
 
       //todo solo da rifattorizzare meglio (future con lazy val)
-      /*//continuous
-      it("should keep broadcasting to all servers while any server is not responding until receiving SUCCESS responses by all the servers") {
+      //continuous with fail
+      /*it("should keep broadcasting to all servers while any server is not responding until receiving SUCCESS responses by all the servers") {
         val notSuccessfulResponse = Response[Int](FAIL, 1, emptyAuthenticatedRh)
         val successfulResponse = Response[Int](SUCCESS, 1, emptyAuthenticatedRh)
 
@@ -102,8 +99,8 @@ class SimpleClientQuorumPolicySpec extends AsyncFunSpec with AsyncMockFactory //
 
             policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
           }
-        }
-
+        }*/
+/*
  it("should keep broadcasting to all servers while any server is responding with FAIL until receiving SUCCESS responses by all the servers") {
 }
 
@@ -149,15 +146,13 @@ class SimpleClientQuorumPolicySpec extends AsyncFunSpec with AsyncMockFactory //
         }
       }*/
 
+      //continuous with fail
+
       //checking exceptions launched match servers thrown exceptions...
       describe("when asked for finding a quorum with max t faulty servers " +
         "and receiving more than t exceptions") {
         it("should throw the corresponding exception to the caller") {
           //get o inc è uguale...
-
-          /*println("t is " + thresholds.t + ", n is : " + thresholds.n)
-          mockedServersStubs.values.take(thresholds.t + 1).foreach(e => println("(1o step)invio a : " + e))
-          mockedServersStubs.values.takeRight(thresholds.n - thresholds.t - 1).foreach(e => println("(2o step)invio a : " + e))*/
 
           //cannot control over the order quorumPolicy stubs are called
           mockedServersStubs.values.take(thresholds.t + 1).foreach(mockedStub => {
@@ -165,21 +160,14 @@ class SimpleClientQuorumPolicySpec extends AsyncFunSpec with AsyncMockFactory //
               .returning(Future.failed(new StatusRuntimeException(Status.UNAUTHENTICATED))) //fsuccessful(Response[Int](SUCCESS, initialValue, emptyAuthenticatedRh)))
           })
 
-          //queste non dovrebbero essere chiamate (=> noMoreThanOnce)... (perché l'interceptor si ferma a t+1 e poi ritorna l'exception
+          //queste non dovrebbero essere chiamate... (perché l'interceptor si ferma a t+1 e poi ritorna l'exception
           mockedServersStubs.values.takeRight(thresholds.n - thresholds.t - 1).foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
               .returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh))) //fsuccessful(Response[Int](SUCCESS, initialValue, emptyAuthenticatedRh)))
           })
-          //policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
-          /*whenReady(policy.quorum[Int](Some(GetObj()).failed) { e =>
+          whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet)).failed) { e =>
             e shouldBe a[StatusRuntimeException]
-          }*/
-          /*ScalaFutures.whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))) { s =>
-            // run assertions against the object returned in the future
-          }*/
-          recoverToExceptionIf[StatusRuntimeException] {
-            policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
-          }.map(_.getStatus.getCode must be(Status.UNAUTHENTICATED.getCode))
+          }
         }
       }
     }
