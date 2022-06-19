@@ -1,8 +1,11 @@
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 import qu.ServersFixture
 import qu.client.AuthenticatingClient
+
+import scala.concurrent.Await
 
 trait AuthenticatingClientFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory{
   self: AsyncTestSuite with ServersFixture =>
@@ -20,7 +23,10 @@ trait AuthenticatingClientFixture extends AsyncTestSuiteMixin with Matchers with
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
+
+      //todo not shutdown properly (maybe because must shutdown the quCLientchannel too?)
       //client.shutdown()
+      //Await.ready(client.shutdown(), 10.seconds)
     }
   }
 

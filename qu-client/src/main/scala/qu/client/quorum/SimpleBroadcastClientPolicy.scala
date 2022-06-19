@@ -42,6 +42,7 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
           successResponseFilter = _.responseCode == StatusCode.SUCCESS), {
           //mapping exception to more readable one
           case ex: StatusRuntimeException if ex.getStatus.getCode == Status.UNIMPLEMENTED.getCode => OperationOutputNotRegisteredException()
+          case thr => thr
         })
       } yield (responses.values.toSeq, extractOhsFromResponses(responses))
     }

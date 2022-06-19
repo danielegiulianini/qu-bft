@@ -2,27 +2,6 @@ import qu.auth.client.AuthClient
 
 object AuthSpec extends App {
 
-  //val a = HelloWorldClient()
-
-  //todo decide if using scalatest or junit (rule) see the cluttering replacing grpccleanup rule
-
-  //fixtures
-
-  //start inprocess server...
-
-  //create client inprocesschannel
-
-  //create client passing in process channel
-
-  //test 1: funzionamento corretto (risposta attesa)
-
-  //test 2: tutte le exception
-
-  //shutdown inprocess server
-
-  //shutdown inprocess channel
-
-
   //prof' spec:
   /*
   import auth.ConflictException

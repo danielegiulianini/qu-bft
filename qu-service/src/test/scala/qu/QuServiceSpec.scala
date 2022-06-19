@@ -31,13 +31,17 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
   describe("A Service") {
 
     describe("when contacted by another service requesting a object it doesn't store") {
-      val unStoredObjLt = ConcreteLogicalTimestamp(
+      val unStoredObjLt = LT(
         time = 1,
-        barrierFlag = true, clientId = emptyLT.clientId, operation = emptyLT.operation, ohs = Some(represent(aOhsWithMethod))
+        barrierFlag = true,
+        clientId = emptyLT.clientId,
+        operation = emptyLT.operation,
+        ohs = Some(represent(aOhsWithMethod))
       )
+      //laziness needed for correct initialization dependency needed for a reuse reason (for performance reason)
       lazy val storedObjResponse = authStub.send[LogicalTimestamp, ObjectSyncResponse[Int]](unStoredObjLt)
 
-      it("should succeed") {
+      it("should succeed anyway") {
         storedObjResponse.map(_.responseCode should be(SUCCESS))
       }
 
@@ -47,9 +51,10 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
     }
 
     describe("when contacted by another service requesting a object it does store") {
-      val storeObjLt = emptyLT
+      val storedObjLt = emptyLT
 
-      lazy val unStoredObjResponse = authStub.send[LogicalTimestamp, ObjectSyncResponse[Int]](storeObjLt)
+      lazy val unStoredObjResponse = authStub.send[LogicalTimestamp, ObjectSyncResponse[Int]](storedObjLt)
+
       it("should succeed") {
         unStoredObjResponse.map(_.responseCode should be(SUCCESS))
       }
@@ -68,16 +73,18 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
       }
 
       describe("when OHS contains all valid authenticators") {
-        //laziness needed for correct initialization dependency and for performance reason
-        lazy val responseForUpdateWithOutdatedOhs = for {
-          _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-            Request(operation = Some(IncrementAsObj),
-              ohs = emptyOhs(serverIds)))
-          response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
-            Request(operation = Some(IncrementAsObj), //sending an UPDATE operation
-              ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
-        } yield response
+
         describe("and OHS is not current and the requested operation is an update") {
+
+          lazy val responseForUpdateWithOutdatedOhs = for {
+            _ <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+              Request(operation = Some(IncrementAsObj),
+                ohs = emptyOhs(serverIds)))
+            response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
+              Request(operation = Some(IncrementAsObj), //sending an UPDATE operation
+                ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
+          } yield response
+
           it("should fail") {
             responseForUpdateWithOutdatedOhs.map(response => assert(response.responseCode == StatusCode.FAIL))
           }
@@ -107,6 +114,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               Request(operation = Some(GetObj()), //sending a QUERY operation
                 ohs = emptyOhs(serverIds))) //resending empty (outdated) ohs
           } yield response
+
           it("should fail") {
             responseForQueryWithOutdatedOhs.map(_.responseCode should be(StatusCode.FAIL))
           }
