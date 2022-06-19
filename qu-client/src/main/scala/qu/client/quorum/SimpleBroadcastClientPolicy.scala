@@ -41,7 +41,8 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
           responsesQuorum = thresholds.q,
           successResponseFilter = _.responseCode == StatusCode.SUCCESS), {
           //mapping exception to more readable one
-          case ex: StatusRuntimeException if ex.getStatus.getCode == Status.UNIMPLEMENTED.getCode => OperationOutputNotRegisteredException()
+          case ex: StatusRuntimeException if ex.getStatus.getCode == Status.UNIMPLEMENTED.getCode =>
+            OperationOutputNotRegisteredException()
           case thr => thr
         })
       } yield (responses.values.toSeq, extractOhsFromResponses(responses))
@@ -52,9 +53,24 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
 
       getMostFrequentElementWithOccurrences(responses
         .map(response => (response.answer, {
+          println("AAA la aswer: " + response.answer)
           val (rh, _) = response.authenticatedRh
           rh
         })))
+        .map { e => {
+          println("oooo, la e: " + e);
+          val a = e match {
+            case ((answer, _), order) => {
+              System.exit(1)
+              println("beccatooooo!!!")
+              (answer, order)
+            }
+            case a => System.exit(1);println("ciao"); a
+          }
+          println("il case returns : " + a)
+          e
+        }
+        }
         .map { case ((answer, _), order) => (answer, order) }
         .getOrElse(throw new Error("inconsistent client protocol state"))
     }

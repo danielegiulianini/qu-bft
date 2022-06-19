@@ -7,7 +7,6 @@ import qu.client.quorum.ClientQuorumPolicy
 import qu.model.ConcreteQuModel._
 import qu.model.ConcreteQuModel.ConcreteOperationTypes._
 import qu.model.QuorumSystemThresholds
-import qu.{OneShotAsyncScheduler, Shutdownable}
 
 import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, Future}

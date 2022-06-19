@@ -248,6 +248,7 @@ trait AbstractAbstractQuModel extends QuModel {
 
 //maybe more implementations (that with compact authenticators...)
 object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator with Operations with Hashing {
+
   //final keyword removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
   case class Request[ReturnValueT, ObjectT](operation: Option[Operation[ReturnValueT, ObjectT]],
                                             ohs: OHS)
@@ -255,7 +256,6 @@ object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticat
   case class Response[ReturnValueT](responseCode: StatusCode,
                                     answer: ReturnValueT,
                                     authenticatedRh: AuthenticatedReplicaHistory)
-
 
   case class ObjectSyncResponse[ObjectT](responseCode: StatusCode,
                                          answer: Option[ObjectT])
@@ -265,7 +265,7 @@ object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticat
                                       clientId: Option[ClientId],
                                       operation: Option[OperationRepresentation],
                                       ohs: Option[OHSRepresentation]) {
-    override def productPrefix = "LT"//for pretty printing
+    override def productPrefix = "LT" //for pretty printing
   }
 
 }
