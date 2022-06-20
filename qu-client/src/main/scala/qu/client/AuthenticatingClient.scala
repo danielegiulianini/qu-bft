@@ -25,14 +25,14 @@ case class AuthenticatingClient[U](ip: String,
 
   def register(): Future[Unit] = {
     for {
-      _ <- authClient.register(username, password)
+      _ <- authClient.registerAsync(username, password)
     } yield ()
   }
 
   def authorize():
   Future[QuClientBuilder[U, JavaTypeable]] = {
     for {
-      token <- authClient.authorize(username, password)
+      token <- authClient.authorizeAsync(username, password)
     } yield simpleJacksonQuClientBuilderInFunctionalStyle[U](token = token)
   }
 

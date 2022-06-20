@@ -4,7 +4,7 @@ import qu.auth.common.Authenticator
 
 import java.io.IOException
 
-trait WithAuthenticatorFix extends BeforeAndAfterEach {
+trait AbstractAuthenticatorFixture extends BeforeAndAfterEach {
 
   self: Suite =>
 

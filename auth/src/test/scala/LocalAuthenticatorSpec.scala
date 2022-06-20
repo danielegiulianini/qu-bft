@@ -1,4 +1,4 @@
 import org.scalatest.funspec.AnyFunSpec
 
-class LocalAuthenticatorSpec extends AnyFunSpec with LocalAuthenticatorFix with AuthenticatorAbstractSpec
+class LocalAuthenticatorSpec extends AnyFunSpec with LocalAuthenticatorFixture with AuthenticatorAbstractSpec
 

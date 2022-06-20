@@ -5,7 +5,7 @@ import qu.auth.common.{Authenticator, LocalAuthenticator}
 import java.io.IOException
 
 
-trait LocalAuthenticatorFix extends WithAuthenticatorFix {
+trait LocalAuthenticatorFixture extends AbstractAuthenticatorFixture {
   self: Suite =>
 
   override var authenticator: Authenticator = new LocalAuthenticator()

@@ -8,7 +8,7 @@ import java.util.concurrent.Executors
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 
-trait RemoteAuthenticatorFix extends WithAuthenticatorFix {
+trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
 
   self: Suite =>
 

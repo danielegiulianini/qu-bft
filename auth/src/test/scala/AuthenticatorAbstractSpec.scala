@@ -9,7 +9,7 @@ import org.scalatest.matchers.must.Matchers.{an, be}
 
 trait AuthenticatorAbstractSpec extends AnyFunSpec {
 
-  self: Suite with WithAuthenticatorFix =>
+  self: Suite with AbstractAuthenticatorFixture =>
 
   describe("An authenticator") {
     describe("when registering and something go wrong") {
