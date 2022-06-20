@@ -91,7 +91,7 @@ lazy val quService = (project in file("qu-service"))
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2"
     )
   )
-  .dependsOn(quCore)
+  .dependsOn(quCore% "compile->compile;test->test")
   .dependsOn(quCommunication)
   .dependsOn(quPresentation)
   .dependsOn(quStorage)
@@ -110,7 +110,7 @@ lazy val quSystemTesting = (project in file("qu-system-testing"))
   )
   .dependsOn(quCore % "compile->compile;test->test")
   .dependsOn(quClient)
-  .dependsOn(quService)
+  .dependsOn(quService % "compile->compile;test->test")
 
 
 lazy val quDemo = (project in file("qu-demo"))
