@@ -6,20 +6,21 @@ import io.grpc.Status._
 import qu.auth.AuthGrpc.AuthStub
 import qu.auth.common.FutureUtilities.mapThrowable
 import qu.auth._
-import qu.auth.common.{BadContentException, ConflictException, WrongCredentialsException}
+import qu.auth.common.{AsyncAuthenticator, Authenticator, BadContentException, ConflictException, WrongCredentialsException}
 
 import java.util.concurrent.TimeUnit
 import java.util.logging.{Level, Logger}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.duration.DurationInt
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 
 class ServiceException(cause: Throwable) extends Exception(cause: Throwable)
 
-class AuthClient private(
-                          private val channel: ManagedChannel,
-                          private val futureStub: AuthStub
-                        )(implicit ec: ExecutionContext) /*extends Shutdownable*/ {
-  private[this] val logger = Logger.getLogger(classOf[AuthClient].getName)
+class AuthClient private(private val channel: ManagedChannel,
+                         private val futureStub: AuthStub
+                        )(implicit ec: ExecutionContext) extends Authenticator with AsyncAuthenticator /*extends Shutdownable*/ {
+
+  private[this] val logger = Logger.getLogger(classOf[qu.auth.client.AuthClient].getName)
 
   def shutdown(): Future[Unit] = Future {
     channel.shutdown.awaitTermination(5, TimeUnit.SECONDS)
@@ -27,34 +28,58 @@ class AuthClient private(
 
   def isShutdown: Boolean = channel.isShutdown
 
-  def register(name: String, password: String): Future[RegisterResponse] = {
+  def registerAsync(name: String, password: String): Future[RegisterResponse] = {
     logger.info("Will try to register " + name + " ...")
     val request = User(username = name, password = password)
-    mapThrowable(futureStub.register(request), {
+    mapThrowable(futureStub.registerAsync(request), {
       case error: StatusRuntimeException => error.getStatus match {
         case INVALID_ARGUMENT =>
           //logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
-          throw BadContentException(error.getMessage)
+          BadContentException(error.getMessage)
         case ALREADY_EXISTS =>
           logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
-          throw ConflictException(error.getMessage)
+          println("arrivato al client il ALREADY_EXISTS ")
+          ConflictException(error.getMessage)
+        case _ if error.getCause.isInstanceOf[NullPointerException] =>
+          BadContentException(error.getMessage)
+        case _ => error
       }
+      case th => th
     })
   }
 
-  def authorize(username: String, password: String): Future[Token] = {
+
+  def authorizeAsync(username: String, password: String): Future[Token] = {
     logger.info("Will try to authirize " + username + " ...")
-    mapThrowable(futureStub.authorize(Credentials(username, password)),
-      { case error: StatusRuntimeException => error.getStatus match {
-        case INVALID_ARGUMENT =>
-          //logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
-          throw BadContentException(error.getMessage)
-        case NOT_FOUND =>
-          logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
-          throw WrongCredentialsException(error.getMessage)
-      }
+    mapThrowable(futureStub.authorizeAsync(Credentials(username, password)),
+      {
+        case error: StatusRuntimeException => error.getStatus match {
+          case INVALID_ARGUMENT =>
+            logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
+            BadContentException(error.getMessage)
+          case NOT_FOUND =>
+            logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
+            WrongCredentialsException(error.getMessage)
+          case _ if error.getCause.isInstanceOf[NullPointerException] =>
+            BadContentException(error.getMessage)
+          case _ => error
+        }
+        case th => th
       })
   }
+
+  override def register(user: User): Unit =
+    await(registerAsync(user.username, user.password))
+
+  override def authorize(credentials: Credentials): Token =
+    await(authorizeAsync(credentials.username, credentials.password))
+
+  //todo timeout
+  protected def await[T](future: Future[T]): T = Await.result(future, 100.seconds)
+
+  override def registerAsync(request: User): Future[RegisterResponse] = registerAsync(request.username, request.password)
+
+  override def authorizeAsync(request: Credentials): Future[Token] = authorizeAsync(request.username, request.password)
 }
 
 

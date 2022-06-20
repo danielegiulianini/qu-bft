@@ -2,10 +2,11 @@ package qu.auth.server
 
 import io.grpc.{Server, ServerBuilder}
 import qu.auth.AuthGrpc
+import qu.auth.client.AuthClient
 
 import scala.concurrent.{ExecutionContext, Future}
 
-class AuthServer(ip: String, port: Int) /*extends Shutdownable*/ {
+class AuthServer(port: Int) /*extends Shutdownable*/ {
 
   self =>
   private[this] var server: Server = _
@@ -37,4 +38,8 @@ class AuthServer(ip: String, port: Int) /*extends Shutdownable*/ {
       server.shutdown().awaitTermination()
     }
   }
+}
+
+object AuthServer {
+  def apply(port: Int)(implicit ec: ExecutionContext): AuthServer = new AuthServer(port)
 }

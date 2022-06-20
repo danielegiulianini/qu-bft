@@ -9,8 +9,8 @@ package qu;
 
 // The auth service definition.
 service Auth {
-  rpc register (User) returns (RegisterResponse) {}
-  rpc authorize (Credentials) returns (Token) {}
+  rpc registerAsync (User) returns (RegisterResponse) {}
+  rpc authorizeAsync (Credentials) returns (Token) {}
 }
 
 message RegisterResponse {
