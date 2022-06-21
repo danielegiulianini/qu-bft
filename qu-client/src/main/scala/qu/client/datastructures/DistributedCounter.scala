@@ -33,15 +33,15 @@ trait ResettableCounter extends Counter with Resettable
 
 object Value extends QueryReturningObject[Int]
 
-object Increment extends UpdateReturningUnit[Int] {
+case class Increment() extends UpdateReturningUnit[Int] {
   override def updateObject(obj: Int): Int = obj + 1
 }
 
-object Decrement extends UpdateReturningUnit[Int] {
+case class Decrement() extends UpdateReturningUnit[Int] {
   override def updateObject(obj: Int): Int = obj - 1
 }
 
-object Reset extends UpdateReturningUnit[Int] {
+case class Reset() extends UpdateReturningUnit[Int] {
   override def updateObject(obj: Int): Int = 0
 }
 
@@ -78,10 +78,10 @@ class DistributedCounter(username: String,
   }
 
   /** Increment this counter. */
-  def incrementAsync(): Future[Unit] = submit[Unit](Increment)
+  def incrementAsync(): Future[Unit] = submit[Unit](Increment())
 
   /** Decrement this counter. */
-  protected def decrementAsync(): Future[Unit] = submit[Unit](Decrement)
+  protected def decrementAsync(): Future[Unit] = submit[Unit](Decrement())
 
-  def resetAsync(): Future[Unit] = submit[Unit](Reset)
+  def resetAsync(): Future[Unit] = submit[Unit](Reset())
 }

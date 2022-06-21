@@ -8,6 +8,7 @@ object Commands {
     override def updateObject(obj: Int): Int = obj + 1
   }
 
+  //not working
   object IncrementAsObj extends UpdateReturningUnit[Int] {
     override def updateObject(obj: Int): Int = obj + 1
   }

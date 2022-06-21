@@ -16,8 +16,8 @@ class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers with S
   describe("A Q/U protocol interaction with a quorum without failing servers") {
 
     lazy val quClient = for {
-      _ <- client.register()
-      builder <- client.authorize()
+      _ <- authClient.register()
+      builder <- authClient.authorize()
     } yield builder
       .addServers(quServerIpPorts)
       .withThresholds(thresholds).build
@@ -25,7 +25,10 @@ class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers with S
     describe("when a query is issued") {
       it("should return to client the expected answer value") {
         for {
-          authenticatedQuClient <- quClient
+          authenticatedQuClient <- {
+            println("il quClient is: " + quClient)
+            quClient
+          }
           value <- authenticatedQuClient.submit[Int](GetObj())
         } yield value should be(InitialObject)
       }
@@ -42,7 +45,11 @@ class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers with S
     describe("when an update is issued followed by a query") {
       it("should return to client the updated value") {
         for {
-          authenticatedQuClient <- quClient
+          authenticatedQuClient <- {
+            println("il quClient is: " + quClient)
+
+            quClient
+          }
           _ <- authenticatedQuClient.submit[Unit](Increment())
           value <- authenticatedQuClient.submit[Int](GetObj())
         } yield value should be(InitialObject + 1)

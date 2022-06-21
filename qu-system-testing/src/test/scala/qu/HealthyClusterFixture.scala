@@ -6,6 +6,9 @@ import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import qu.service.{LocalQuServerCluster, ServersFixture}
 import qu.service.datastructures.RemoteCounterServer
 
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+
 trait HealthyClusterFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
   self: AsyncTestSuite with ServersFixture =>
@@ -25,7 +28,7 @@ trait HealthyClusterFixture extends AsyncTestSuiteMixin with Matchers with Async
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
-      healthyCluster.shutdown()
+      Await.ready(healthyCluster.shutdown(), 5.seconds)
 
     }
   }

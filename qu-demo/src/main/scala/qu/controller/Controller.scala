@@ -16,7 +16,7 @@ trait Controller extends ViewObserver {
   //or perform(Operation)
   def increment(): Unit
 
-  //def decrement(): Unit
+  def decrement(): Unit
 
   def value(): Unit
 

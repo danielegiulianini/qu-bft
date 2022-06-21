@@ -23,7 +23,8 @@ class AuthClient private(private val channel: ManagedChannel,
   private[this] val logger = Logger.getLogger(classOf[qu.auth.client.AuthClient].getName)
 
   def shutdown(): Future[Unit] = Future {
-    channel.shutdown.awaitTermination(5, TimeUnit.SECONDS)
+    channel.shutdown
+    channel.awaitTermination(5, TimeUnit.SECONDS)
   }
 
   def isShutdown: Boolean = channel.isShutdown

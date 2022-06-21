@@ -19,10 +19,12 @@ case class AuthenticatingClient[U](ip: String,
                                    password: String) extends Shutdownable {
   requireNonNullAsInvalid(username)
   requireNonNullAsInvalid(password)
+  println("new AuthenticatingClient (so new AuthClient)...")
 
   val authClient = AuthClient(ip, port)
 
   def register(): Future[Unit] = {
+    println("registering...")
     for {
       _ <- authClient.registerAsync(username, password)
       _ <- Future(println("(AuthenticatingClient) adter registering!"))

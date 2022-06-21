@@ -38,9 +38,9 @@ object AbstractCliCmd {
     def getParamFromInputLine(inputLine: String) = inputLine.substring(KillServer.cmd.length + 1)
   }
 
-  object Increment extends CliCmdWithoutArg("exit", "", "shutdown the SMR system.")
+  object Decrement extends CliCmdWithoutArg("dec", "", "decrement the value of the distributed counter.")
 
-  object Decrement extends CliCmdWithoutArg("dec", "", "shutdown the SMR system.")
+  object Increment extends CliCmdWithoutArg("inc", "", "increment the value of the distributed counter.")
 
   object Reset extends CliCmdWithoutArg("reset", "", "reset the distributed counter.")
 

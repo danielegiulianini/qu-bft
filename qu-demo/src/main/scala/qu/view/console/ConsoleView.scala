@@ -32,6 +32,7 @@ class ConsoleView extends View {
         case Help => println(generalPrompt)
         case KillServer(id) => observer.killServer(id)
         case Increment => observer.increment()
+        case Decrement => observer.decrement()
         case Reset => observer.reset()
         case Value => observer.value()
         case InvalidInput => result(Failure(UnrecognizedCommand()))

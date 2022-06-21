@@ -15,9 +15,9 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
   //type information survives network transit
   describe("A Q/U protocol interaction with a quorum without failing servers") {
 
-    lazy val quClient = for {
-      _ <- client.register()
-      builder <- client.authorize()
+    def freshQuClient() = for {
+      _ <- authClient.register()
+      builder <- authClient.authorize()
     } yield builder
       .addServers(quServerIpPorts)
       .withThresholds(thresholds).build
@@ -25,7 +25,7 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
     describe("when a query is issued") {
       it("should return to client the expected answer value") {
         for {
-          authenticatedQuClient <- quClient
+          authenticatedQuClient <- freshQuClient
           value <- authenticatedQuClient.submit[Int](GetObj())
         } yield value should be(InitialObject)
       }
@@ -34,7 +34,7 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
       it("should return to client the expected answer value") {
 
         for {
-          authenticatedQuClient <- quClient
+          authenticatedQuClient <- freshQuClient
           value <- authenticatedQuClient.submit[Unit](Increment())
         } yield value should be(()) //already out of future (no need for Future.successful)
       }
@@ -42,7 +42,7 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
     describe("when an update is issued followed by a query") {
       it("should return to client the updated value") {
         for {
-          authenticatedQuClient <- quClient
+          authenticatedQuClient <- freshQuClient
           _ <- authenticatedQuClient.submit[Unit](Increment())
           value <- authenticatedQuClient.submit[Int](GetObj())
         } yield value should be(InitialObject + 1)
@@ -54,7 +54,7 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
 
         val operations = List.fill(nIncrements)(Increment())
         for {
-          authenticatedQuClient <- quClient
+          authenticatedQuClient <- freshQuClient
           value <- operations.foldLeft(Future.unit)((fut, operation) => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
         } yield value should be(())
       }
@@ -67,7 +67,7 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
         val nIncrements = 3
         val operations = List.fill(nIncrements)(Increment())
         for {
-          authenticatedQuClient <- quClient
+          authenticatedQuClient <- freshQuClient
           _ <- seqFutures(operations)(op => authenticatedQuClient.submit(op))
           queryResult <- authenticatedQuClient.submit(GetObj())
         } yield queryResult should be(InitialObject + nIncrements)
@@ -76,8 +76,6 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
     }
   }
 }
-
-
 
 
 /* //todo maybe to move to fixture (or maybe all the clientFuture?) (to be shutdown  correctly)

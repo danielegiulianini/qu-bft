@@ -6,6 +6,9 @@ import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import qu.auth.server.AuthServer
 import qu.service.ServersFixture
 
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+
 trait AuthServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
   self: AsyncTestSuite with ServersFixture =>
@@ -23,8 +26,7 @@ trait AuthServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMock
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
-
-      authServer.shutdown()
+      Await.ready(authServer.shutdown(), 10.seconds)
     }
   }
 }

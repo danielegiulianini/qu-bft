@@ -41,6 +41,9 @@ class ControllerImpl extends Controller {
   override def increment(): Unit = {
     view.result(model.increment())
   }
+  override def decrement(): Unit = {
+    view.result(model.decrement())
+  }
 
   override def value(): Unit = {
     view.result(model.value())
