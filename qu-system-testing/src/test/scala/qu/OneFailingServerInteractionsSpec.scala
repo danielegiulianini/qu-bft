@@ -1,9 +1,11 @@
-import FutureUtils.seqFutures
+package qu
+
 import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should.Matchers
-import qu.ServersFixture
+import qu.FutureUtils.seqFutures
 import qu.model.OHSUtilities
 import qu.model.examples.Commands.{GetObj, Increment}
+import qu.service.ServersFixture
 
 import scala.concurrent.Future
 

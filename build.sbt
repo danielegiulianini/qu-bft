@@ -119,7 +119,7 @@ lazy val quDemo = (project in file("qu-demo"))
   )
   .dependsOn(quPresentation)
   .dependsOn(quClient)
-  .dependsOn(quService)
+  .dependsOn(quService % "compile->compile;test->test")
 
 
 

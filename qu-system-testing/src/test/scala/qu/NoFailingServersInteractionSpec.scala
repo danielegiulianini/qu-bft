@@ -1,11 +1,11 @@
-import FutureUtils.seqFutures
-import org.scalatest.funspec.{AnyFunSpec, AsyncFunSpec}
+package qu
+
+import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.should.Matchers
-import qu.ServersFixture
-import qu.client.{AuthenticatingClient, QuClient}
-import qu.model.ConcreteQuModel.Operation
+import qu.FutureUtils.seqFutures
 import qu.model.OHSUtilities
 import qu.model.examples.Commands.{GetObj, Increment}
+import qu.service.ServersFixture
 
 import scala.concurrent.Future
 

@@ -1,10 +1,11 @@
-package qu
+package qu.service
 
 import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.scalatest._
+import qu.RecipientInfo
 import qu.auth.Token
 import qu.auth.common.Constants
-import qu.stub.client.{JacksonAuthenticatedStubFactory, JacksonStubFactory, JwtAsyncClientStub}
+import qu.stub.client.{JacksonAuthenticatedStubFactory, JacksonStubFactory}
 
 
 trait AuthStubFixture extends BeforeAndAfterAll {
@@ -24,9 +25,8 @@ trait AuthStubFixture extends BeforeAndAfterAll {
   protected val serverInfo: RecipientInfo
   protected val clientId: String
 
-  private def getJwt: Token = {
+  private def getJwt: Token =
     Token(Jwts.builder.setSubject(clientId).signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact)
-  }
 }
 
 

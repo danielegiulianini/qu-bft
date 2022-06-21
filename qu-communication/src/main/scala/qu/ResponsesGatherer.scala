@@ -42,12 +42,12 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AsyncC
                             successResponseFilter: ResponseT => Boolean)(implicit transportableRequest: Transportable[RequestT],
                                                                          transportableResponse: Transportable[ResponseT]):
     Future[Map[ServerId, ResponseT]] = {
-
+      log(msg = "broadcasting to: " + servers + ".")
       var currentResponseSet = responseSet
 
       //not requires lock here as 1. cancelable val is not shared at this moment and 2. scheduler scheduleOnceAsCallback being thread-safe
       val cancelable = scheduler.scheduleOnceAsCallback(retryingTime)({
-        log(msg = "timeout is over, some server responses missing, so re-broadcasting. ")
+        log(msg = "timeout is over, some server responses missing (or unsuccessful), so re-broadcasting. ")
         gatherResponsesImpl(request,
           completionPromise,
           responseSet,

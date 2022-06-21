@@ -1,12 +1,9 @@
 package qu.client.datastructures
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
-import qu.auth.Token
-import qu.auth.common.Constants
 import qu.{RecipientInfo, Shutdownable}
 import qu.client.datastructures.Mode.{ALREADY_REGISTERED, NOT_REGISTERED}
-import qu.client.{AuthenticatingClient, QuClientBuilder, QuClientImpl}
+import qu.client.{AuthenticatingClient, QuClientImpl}
 import qu.model.ConcreteQuModel.{Operation, Request, Response}
 import qu.model.QuorumSystemThresholds
 
@@ -34,32 +31,19 @@ class AuthenticatedQuClient[ObjectT](username: String,
 
   private lazy val authClient = new AuthenticatingClient[ObjectT](authServerIp, authServerPort, username, password)
 
-  private def getJwt: Token =
-    Token(Jwts.builder.setSubject("ciao").signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact)
-
   protected lazy val clientFuture: Future[QuClientImpl[ObjectT, JavaTypeable]] = {
-    println("in client future i servers are: " + serversInfo)
     for {
-      /*<- Future {
-        mode match {
-          case NOT_REGISTERED =>
-            println("la mode is NOT_REGISTERED, so registering...")
-            authClient.register()
-          case _ => println("la mode is ALREADY REGISTERED")
-        }
-      }*/
-      _ <- authClient.register()
-
-      _ <- Future {
-      println ("now after registering, authorizing...")
-    }
-    //builder <- Future(QuClientBuilder.builder[ObjectT](getJwt))
+      _ <- mode match {
+        case NOT_REGISTERED =>
+          authClient.register()
+        case _ =>
+          Future.unit
+      }
       builder <- authClient.authorize()
     } yield builder.addServers(serversInfo).withThresholds(thresholds).build
   }
 
-
-  //todo: fix delay (could be very long...)
+  //todo: fix delay (could be very long... (due to backoffs etc...)
   //todo: if not present (due to network problems) now throwing unchecked exception, (could return option.empty)
   protected def await[T](future: Future[T]): T = Await.result(future, 100.seconds)
 
@@ -69,11 +53,7 @@ class AuthenticatedQuClient[ObjectT](username: String,
                                                                                   transportableRequestObj: JavaTypeable[Request[Object, ObjectT]],
                                                                                   transportableResponseObj: JavaTypeable[Response[Option[Object]]]): Future[ReturnValueT] = {
 
-    clientFuture.flatMap(i => {
-      println("sussmbitting" + operation + "  inside AuthenticatedQuClient");
-      i.submit[ReturnValueT](operation)
-    }
-    ) //flatMap(_.submit(operation))
+    clientFuture.flatMap(_.submit(operation))
   }
 
   override def shutdown(): Future[Unit] = clientFuture.map(_.shutdown())

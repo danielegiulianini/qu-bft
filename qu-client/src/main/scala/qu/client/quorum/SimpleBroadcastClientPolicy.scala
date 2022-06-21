@@ -36,7 +36,7 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
 
     def gatherResponsesAndOhs(): Future[(Seq[Response[Option[AnswerT]]], OHS)] = {
       for {
-        responses <- mapThrowable(gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
+        responses <- mapThrowable[Map[ServerId, Response[Option[AnswerT]]]](gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
           request = Request[AnswerT, ObjectT](operation, ohs),
           responsesQuorum = thresholds.q,
           successResponseFilter = _.responseCode == StatusCode.SUCCESS), {
@@ -74,18 +74,18 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
         .map(kv => (kv._1._1, kv._2)) //case ((answer, _), order) => (answer, order) }
         //.map { case ((answer, _), order) => (answer, order) }
         .getOrElse(throw new Error("inconsistent client protocol state"))
-        //.getOrE
+      //.getOrE
     }
 
     for {
       (responses, ohs) <- gatherResponsesAndOhs()
       (answer, voteCount) <- scrutinize(responses)
-      _ <- Future.successful( println("la answer is: " +answer + "il votecount: " + voteCount))
+      _ <- Future.successful(println("la answer is: " + answer + "il votecount: " + voteCount))
     } yield (answer, voteCount, ohs)
   }
 
 
   override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId,
     ResponseT]], exceptionsByServerId: MutableMap[ConcreteQuModel.ServerId, Throwable])
-  : Unit = inspectExceptions(completionPromise, exceptionsByServerId, thresholds)
+  : Unit = inspectExceptions[ResponseT](completionPromise, exceptionsByServerId, thresholds)
 }

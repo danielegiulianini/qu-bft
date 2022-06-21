@@ -16,9 +16,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
+//import qu.service.ServersFixture
 
-
-class SmrSystemImpl extends SmrSystem {
+class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
 
   //dependencies: authServerInfo, quServerIpPorts, keys, thresholds
   case class Model()

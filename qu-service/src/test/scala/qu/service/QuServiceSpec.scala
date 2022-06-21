@@ -1,21 +1,17 @@
-package qu
+package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{Status, StatusRuntimeException}
-import io.grpc.inprocess.InProcessServerBuilder
-import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
-import org.scalatest.FutureOutcome
+import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
 import org.scalatest.matchers.should.Matchers
+import qu.RecipientInfo
 import qu.RecipientInfo.id
-import qu.model.examples.Commands.{GetObj, Increment, IncrementAsObj}
-import qu.model.ConcreteQuModel._
-import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT}
-
-import qu.model.{OHSUtilities, QuorumSystemThresholds, StatusCode}
+import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT, _}
 import qu.model.StatusCode.{FAIL, SUCCESS}
-import qu.stub.client.JacksonStubFactory
+import qu.model.examples.Commands.{GetObj, Increment, IncrementAsObj}
+import qu.model.{OHSUtilities, StatusCode}
 
 import scala.concurrent.Future
 

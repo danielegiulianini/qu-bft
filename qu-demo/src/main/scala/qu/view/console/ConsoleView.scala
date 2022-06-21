@@ -1,5 +1,6 @@
 package qu.view.console
 
+import qu.auth.common.WrongCredentialsException
 import qu.controller.Controller
 import qu.model._
 import qu.view.View
@@ -62,20 +63,26 @@ class ConsoleView extends View {
       case Failure(ThresholdsExceededException(msg)) => msg
       case Failure(ServerAlreadyKilledException(msg)) => msg
       case Failure(UnrecognizedCommand()) => "command not recognized. Please attain to the syntax, digit " + Help.command + " to display commands."
-      case Failure(ex) => "a problem raised up.("+ ex  //todo remove
+      // case Failure(ex) => "a problem raised up.("+ ex + ")" + ex.getMessage //todo remove
+      case Failure(ex) => {
+        println("a problem (" + ex + ")")
+        ex match {
+          case e: WrongCredentialsException => println("con msg: " + e.asInstanceOf[WrongCredentialsException].message)
+          case e => e
+        }
+      }
       case _ => operationOk
     }
   })
 }
 
 
-
 object ConsoleView {
 
   def parse(inputLine: String): AbstractCliCmd = {
     commands.find(cmd => inputLine.startsWith(cmd.command)) match {
-      case Some(KillServer(_)) if getParamFromInputLine(inputLine).toIntOption.isEmpty => InvalidInput
-      case Some(KillServer(_)) if getParamFromInputLine(inputLine).toIntOption.isDefined => KillServer(getParamFromInputLine(inputLine))
+      case Some(KillServer(_)) if getParamFromInputLine(inputLine) /*.toIntOption*/ .isEmpty => InvalidInput
+      case Some(KillServer(_)) /*if getParamFromInputLine(inputLine).toIntOption.isDefined*/ => KillServer(getParamFromInputLine(inputLine))
       case Some(cmd) => cmd
       case _ => InvalidInput
     }

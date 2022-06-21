@@ -10,7 +10,6 @@ class LocalAuthenticator extends Authenticator {
   @throws[BadContentException]
   @throws[ConflictException]
   def register(user: User): Unit = {
-    println("al local arriva " + user)
     if (user == null) throw BadContentException("User can't be null")
     if (user.username.isBlank) throw BadContentException("Invalid username: " + user.username)
     if (user.password.isBlank) throw BadContentException("No password provided for user: " + user.username)
@@ -28,12 +27,9 @@ class LocalAuthenticator extends Authenticator {
   @throws[BadContentException]
   @throws[WrongCredentialsException]
   def authorize(credentials: Credentials): Token = {
-    println("al local (authorize) arriva " + credentials)
-
     if (credentials == null) throw BadContentException("Credentials can't be null")
     if (credentials.username.isBlank) throw BadContentException("Missing user ID: " + credentials.username)
     if (credentials.password.isBlank) throw BadContentException("Missing password: " + credentials.password)
-
     val userId = credentials.username
     //todo should use key shared with quServer to create token
     this.synchronized {

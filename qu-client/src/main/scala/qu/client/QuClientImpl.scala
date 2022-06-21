@@ -38,11 +38,12 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
                                                     transportableRequestObj: Transportable[Request[Object, ObjectT]],
                                                     transportableResponseObj: Transportable[Response[Option[Object]]]):
   Future[T] = {
+    println("sumbitting inside QuClientImpl ");
 
     //var lastOperation: Future[_] = Future.unit
     def submitWithOhs(ohs: OHS): Future[T] = {
       for {
-        (answer, order, updatedOhs) <- policy.quorum(Some(op), ohs)
+        (answer, order, updatedOhs) <- policy.quorum[T](Some(op), ohs)
         _ <- updateCachedOhs(updatedOhs)
         answer <- if (order < thresholds.q) for {
           (opType, _, _) <- classifyAsync(updatedOhs)

@@ -73,13 +73,15 @@ class DistributedCounter(username: String,
   override def reset(): Unit = await(resetAsync())
 
   /** Current value of this counter. */
-  def valueAsync: Future[Int] = submit(Value)
+  def valueAsync: Future[Int] = {
+    submit[Int](Value)
+  }
 
   /** Increment this counter. */
-  def incrementAsync(): Future[Unit] = submit(Increment)
+  def incrementAsync(): Future[Unit] = submit[Unit](Increment)
 
   /** Decrement this counter. */
-  protected def decrementAsync(): Future[Unit] = submit(Decrement)
+  protected def decrementAsync(): Future[Unit] = submit[Unit](Decrement)
 
-  def resetAsync(): Future[Unit] = submit(Reset)
+  def resetAsync(): Future[Unit] = submit[Unit](Reset)
 }

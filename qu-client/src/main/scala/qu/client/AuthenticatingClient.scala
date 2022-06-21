@@ -7,7 +7,6 @@ import qu.auth.client.AuthClient
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import qu.client.QuClientBuilder.simpleJacksonQuClientBuilderInFunctionalStyle
-import qu.model.QuorumSystemThresholds
 import qu.model.ValidationUtils.requireNonNullAsInvalid
 
 import java.util.Objects
@@ -26,6 +25,7 @@ case class AuthenticatingClient[U](ip: String,
   def register(): Future[Unit] = {
     for {
       _ <- authClient.registerAsync(username, password)
+      _ <- Future(println("(AuthenticatingClient) adter registering!"))
     } yield ()
   }
 
