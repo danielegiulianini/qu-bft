@@ -28,6 +28,8 @@ class LocalAuthenticator extends Authenticator {
   @throws[BadContentException]
   @throws[WrongCredentialsException]
   def authorize(credentials: Credentials): Token = {
+    println("al local (authorize) arriva " + credentials)
+
     if (credentials == null) throw BadContentException("Credentials can't be null")
     if (credentials.username.isBlank) throw BadContentException("Missing user ID: " + credentials.username)
     if (credentials.password.isBlank) throw BadContentException("Missing password: " + credentials.password)

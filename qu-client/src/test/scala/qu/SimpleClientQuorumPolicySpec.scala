@@ -30,7 +30,7 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
   with OHSUtilities
   with KeysUtilities {
 
-val patienceConfig2 =
+  val patienceConfig2 =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
   val mockedServersStubs: Map[String, JwtAsyncClientStub[JavaTypeable]] =
@@ -93,8 +93,10 @@ val patienceConfig2 =
           val successfulIncResponse = Response[Int](SUCCESS, 1, emptyAuthenticatedRh)
 
 
-          def expectRequestAndReturnResponse[T, U, Z <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable], req: Request[T, U],
-                                                                         respo: Future[Response[T]]): CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[T]], Future[Response[T]]] =
+          def expectRequestAndReturnResponse[T, U, Z <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable],
+                                                                         req: Request[T, U],
+                                                                         respo: Future[Response[T]])
+          : CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[T]], Future[Response[T]]] =
             sendReq[T, U, Z](mockedStub).expects(req, *, *).returning(respo)
 
           def expect2RequestAndReturnResponse[T, U, Z <: Operation[T, U]](req: Request[T, U],
@@ -119,16 +121,16 @@ val patienceConfig2 =
           //perché con questo non succede nulla? e con whenready (che fa la stesa cosa si spacca??!)
           //Await.ready(myFut, Duration.fromNanos(config.timeout.totalNanos)).eitherValue.get
 
-          /*whenReady(myFut, patienceConfig.timeout, interval(500.millis)) {
+          whenReady(myFut, timeout(100.seconds), interval(500.millis)) {
             //s => s._3 should be(emptyOhs(serversIds.toSet))
             s => s._3 should be(emptyOhs(serversIds.toSet))
-          }*/
+          }
 
-/*
-          whenReady(myFut, timeout = config.timeout, interval= config.interval){
-            //s => s._3 should be(emptyOhs(serversIds.toSet))
-            s => s._3 should be(emptyOhs(serversIds.toSet))
-          }*/
+          /*
+                    whenReady(myFut, timeout = config.timeout, interval= config.interval){
+                      //s => s._3 should be(emptyOhs(serversIds.toSet))
+                      s => s._3 should be(emptyOhs(serversIds.toSet))
+                    }*/
           /*
                     // PatienceConfig =
                     val myFut: Future[(Option[Int], Int, OHS)] = policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet))

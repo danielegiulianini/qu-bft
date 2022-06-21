@@ -2,7 +2,7 @@ package qu.client.datastructures
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.{RecipientInfo, Shutdownable}
-import qu.client.datastructures.Mode.{ALREADY_REGISTERED, NOT_REGISTER}
+import qu.client.datastructures.Mode.{ALREADY_REGISTERED, NOT_REGISTERED}
 import qu.client.{AuthenticatingClient, QuClientImpl}
 import qu.model.ConcreteQuModel.Operation
 import qu.model.QuorumSystemThresholds
@@ -14,7 +14,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 sealed trait Mode
 
 case object Mode {
-  object NOT_REGISTER extends Mode
+  object NOT_REGISTERED extends Mode
 
   object ALREADY_REGISTERED extends Mode
 }
@@ -33,20 +33,20 @@ class AuthenticatedQuClient[ObjectT](username: String,
     for {
       _ <- Future {
         mode match {
-          case NOT_REGISTER => authClient.register()
+          case NOT_REGISTERED => authClient.register()
           case _ =>
         }
       }
       builder <- authClient.authorize()
     } yield {
       serversInfo.foreach { serverInfo => builder.addServer(serverInfo.ip, serverInfo.port) }
-      builder.build
+      builder.withThresholds(thresholds).build
     }
   }
 
   //todo: fix delay,
   //todo: if not present (due to network problems) now throwing unchecked exception, (could return option.empty)
-  protected def await[T](future: Future[T]): T = Await.result(future, 5.seconds)
+  protected def await[T](future: Future[T]): T = Await.result(future, 10.seconds)
 
   protected def submit[ReturnValueT](operation: Operation[ReturnValueT, ObjectT]): Future[ReturnValueT] =
     clientFuture().flatMap(_.submit(operation))

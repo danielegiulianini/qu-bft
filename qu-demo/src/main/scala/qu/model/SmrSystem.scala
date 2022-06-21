@@ -5,7 +5,7 @@ import qu.model.ConcreteQuModel.ServerId
 import scala.concurrent.Future
 import scala.util.Try
 
-trait SyncSmrSystem {
+trait SmrSystem {
 
   def killServer(sid: ServerId): Try[ServerEventResult]
 

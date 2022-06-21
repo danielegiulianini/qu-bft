@@ -5,6 +5,7 @@ import qu.RecipientInfo
 import qu.RecipientInfo.id
 import qu.auth.server.AuthServer
 import qu.client.datastructures.DistributedCounter
+import qu.client.datastructures.Mode.NOT_REGISTERED
 import qu.model.ConcreteQuModel.{Key, ServerId}
 import qu.model.ServerStatus._
 import qu.service.LocalQuServerCluster.buildServersFromRecipientInfoAndKeys
@@ -17,17 +18,17 @@ import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success, Try}
 
 
-class SyncSmrSystemImpl extends SyncSmrSystem {
+class SmrSystemImpl extends SmrSystem {
 
   //dependencies: authServerInfo, quServerIpPorts, keys, thresholds
   case class Model()
 
 
-  val authServerInfo = RecipientInfo(ip = "localhost", port = 1)
-  val quServer1 = RecipientInfo(ip = "localhost", port = 1)
-  val quServer2 = RecipientInfo(ip = "localhost", port = 2)
-  val quServer3 = RecipientInfo(ip = "localhost", port = 3)
-  val quServer4 = RecipientInfo(ip = "localhost", port = 4)
+  val authServerInfo = RecipientInfo(ip = "localhost", port = 1000)
+  val quServer1 = RecipientInfo(ip = "localhost", port = 1001)
+  val quServer2 = RecipientInfo(ip = "localhost", port = 1002)
+  val quServer3 = RecipientInfo(ip = "localhost", port = 1003)
+  val quServer4 = RecipientInfo(ip = "localhost", port = 1004)
 
   var quServerIpPorts = Set[RecipientInfo]()
   quServerIpPorts = quServerIpPorts + quServer1
@@ -58,7 +59,7 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
   val MalevolentServersCount = 0
   val thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount)
 
-  val authServer = new AuthServer(authServerInfo.ip, authServerInfo.port)
+  val authServer = new AuthServer(authServerInfo.port)
 
   val cluster =
     LocalQuServerCluster[Int](quServerIpPorts,
@@ -69,8 +70,8 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
 
 
   //todo must be started... (in def or nor?)
-  //authServer.start()
-  //cluster.start()
+  authServer.start()
+  cluster.start()
 
 
   val distributedClient = new DistributedCounter(
@@ -79,10 +80,11 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
     authServerInfo.ip,
     authServerInfo.port,
     quServerIpPorts,
-    thresholds)
+    thresholds,
+    NOT_REGISTERED)
 
   override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = Try {
-    Await.ready(cluster.killServer(sid), atMost = 1.seconds)
+    Await.ready(cluster.killServer(sid), atMost = 5.seconds)
     ServerKilled(sid, cluster.serversStatuses().view.mapValues(server => if (server) SHUTDOWN else ACTIVE).toMap)
   }
 
@@ -112,31 +114,3 @@ class SyncSmrSystemImpl extends SyncSmrSystem {
     DecResult
   }
 }
-
-
-
-//creating servers automatically from keys
-/*private def buildServersFromRecipientInfoAndKeys(quServerIpPorts: Set[RecipientInfo], keysByServer: Map[ServerId, Map[ServerId, Key]]) = {
-  val servers = quServerIpPorts.map(ipPort => id(ipPort) -> {
-    val server = RemoteCounterServer.builder(ipPort.ip,
-      ipPort.port,
-      keysByServer(id(ipPort))(id(ipPort)),
-      thresholds = thresholds) //ipPorts.filterNot(_==ipPort)
-    for {
-      ipPort2 <- quServerIpPorts if ipPort2 != ipPort
-    } server.addServer(ipPort2.ip, ipPort2.port, keysByServer(id(ipPort))(id(ipPort2)))
-    server.build()
-  }).toMap
-  servers
-}*/
-
-
-/*var lastOperation: Future[_] = ???
-def value2(): Future[Unit] = {
-    this.synchronized {
-  var lastOperation2: Future[Unit] = lastOperation.map(op => distributedClient.valueAsync)
-  }
-  lastOperation = lastOperation2
-  distributedClient.value()
-  lastOperation2
-}*/

@@ -31,7 +31,7 @@ trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
     println("shutdownAuthenticator")
 
     authenticator match {
-      case a: AuthClient => println("shutdown .. client"); a.shutdown()
+      case a: AuthClient => println("shutdown .. client"); Await.ready(a.shutdown(), 5.seconds)
     }
     println("shutdown .. server...")
     Await.ready(authServer.shutdown(), 3.seconds)

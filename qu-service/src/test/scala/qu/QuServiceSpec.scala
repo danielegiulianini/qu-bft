@@ -119,7 +119,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
             responseForQueryWithOutdatedOhs.map(_.responseCode should be(StatusCode.FAIL))
           }
           it("should return the updated answer (optimistic query execution)") {
-            responseForQueryWithOutdatedOhs.map(response => assert(response.answer.contains(2023)))
+            responseForQueryWithOutdatedOhs.map(response => assert(response.answer.contains(InitialObject + 1)))
           }
           it("should return its updated replica history (optimistic query execution)") {
             for {
@@ -154,7 +154,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                   clientId)
                 (mockedQuorumPolicy.objectSync(_: LogicalTimestamp)(_: JavaTypeable[LogicalTimestamp],
                   _: JavaTypeable[ObjectSyncResponse[Int]]))
-                  .expects(ltCo, *, *).returning(Future.successful(InitialObject + 1)) //returing right value for service safety
+                  .expects(ltCo, *, *).returning(Future.successful(InitialObject + 1)) //returning right value for safety
 
                 for {
                   response <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
@@ -185,11 +185,11 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                     secondResponse <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
                       Request(operation = op,
                         ohs = aOhsWithMethod))
-                    unprunedRhAfterSecondResponse <- for {
+                    unPrunedRhAfterSecondResponse <- for {
                       (_, (lt, ltCo), _) <- Future.successful(setup(op, aOhsWithMethod, thresholds.q, thresholds.r, clientId))
                     } yield serverRhAfterFirstRequest.appended(lt -> ltCo)
                   }
-                  yield secondResponse.authenticatedRh._1 should be(prune(unprunedRhAfterSecondResponse,
+                  yield secondResponse.authenticatedRh._1 should be(prune(unPrunedRhAfterSecondResponse,
                     {
                       val (_, (_, ltCo), _) = setup(op, aOhsWithMethod, thresholds.q, thresholds.r, clientId)
                       ltCo
@@ -255,7 +255,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                 } yield responseToFirstUpdate.authenticatedRh._1
                 responseForSecondUpdate <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
                   Request(operation = op,
-                    ohs = aOhsWithInlineMethod)) //generateOhsFromRHsAndKeys(, keysByServer)))
+                    ohs = aOhsWithInlineMethod))
               } yield (serverRhAfterFirstUpdate, responseForSecondUpdate)
 
               it("should not object sync") {
@@ -278,7 +278,6 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                   r2.authenticatedRh._2 should be(updatedAuthenticator)
                 }
               }
-              //should return correct answer
               it("should return success") {
                 for {
                   (_, r2) <- responseForUpdate
@@ -288,7 +287,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
               }
             }
             describe("and operation class is query and conditioned-on object is stored at service side") {
-              println("la ohs inline is: " + aOhsWithInlineMethod)
+
               lazy val responseForInlineQuery = for {
                 serverRhAfterFirstUpdate <- for {
                   responseToFirstUpdate <- authStub.send[Request[Unit, Int], Response[Option[Unit]]](
@@ -303,7 +302,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                       id(quServer3) -> List(aCandidate(emptyLT.time + 1, emptyLT.time, serverIds), emptyCandidate),
                       id(quServer4) -> List(aCandidate(emptyLT.time + 2, emptyLT.time, serverIds), emptyCandidate),
                     ), keysByServer))
-                  //ohs = aOhsWithInlineMethod)
+
                 )
               } yield (serverRhAfterFirstUpdate, responseForQuery)
 
@@ -424,19 +423,3 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
 
 }
 
-
-/*  //utility for more readability (not working...) (not used...)
-def sendRequest[AnswerT, ObjectT](grpcClientStub: GrpcClientStub[JavaTypeable],
-                        operation: Option[Operation[AnswerT, ObjectT]],
-                        ohs: OHS):
-Future[Response[Option[AnswerT]]] =
-grpcClientStub.send[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](Request[AnswerT, ObjectT](operation,
-ohs))*/
-
-/*
-override type ReplicaHistory = List[Candidate] //SortedSet[Candidate] for avoid hitting bug https://github.com/FasterXML/jackson-module-scala/issues/410
-type HMAC
-override type α = Map[ServerId, HMAC]
-type AuthenticatedReplicaHistory = (ReplicaHistory, α)
-override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
-*/
