@@ -1,0 +1,3 @@
+package qu trait AuthServerFixture {
+
+}
