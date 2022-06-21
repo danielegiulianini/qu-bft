@@ -4,6 +4,7 @@ import io.grpc.{Server, ServerBuilder}
 import qu.auth.AuthGrpc
 import qu.auth.client.AuthClient
 
+import scala.concurrent.duration.{DurationInt, MILLISECONDS, SECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 
 class AuthServer(port: Int) /*extends Shutdownable*/ {
@@ -37,6 +38,9 @@ class AuthServer(port: Int) /*extends Shutdownable*/ {
     Future {
       server.shutdown().awaitTermination()
     }
+
+    /*server.shutdown().awaitTermination(3, SECONDS)
+    Future.unit*/
   }
 }
 

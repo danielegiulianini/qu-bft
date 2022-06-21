@@ -1,7 +1,7 @@
 package qu.auth.client
 
 import io.grpc.inprocess.InProcessChannelBuilder
-import io.grpc.{ManagedChannel, ManagedChannelBuilder, StatusRuntimeException}
+import io.grpc.{CallOptions, ManagedChannel, ManagedChannelBuilder, StatusRuntimeException}
 import io.grpc.Status._
 import qu.auth.AuthGrpc.AuthStub
 import qu.auth.common.FutureUtilities.mapThrowable
@@ -87,7 +87,7 @@ class AuthClient private(private val channel: ManagedChannel,
 object AuthClient {
   def apply(host: String, port: Int)(implicit ec: ExecutionContext): AuthClient = {
     val channel = ManagedChannelBuilder.forAddress(host, port).usePlaintext().build
-    val asyncStub = AuthGrpc.stub(channel)
+    val asyncStub = AuthGrpc.stub(channel).withWaitForReady()
     new AuthClient(channel, asyncStub)
   }
 
@@ -95,7 +95,7 @@ object AuthClient {
   //for easing in process construction too), as I want to instantiate it for testing but constructor is private...
   def apply(name: String)(implicit ec: ExecutionContext): AuthClient = {
     val channel = InProcessChannelBuilder.forName(name).usePlaintext().build
-    val asyncStub = AuthGrpc.stub(channel)
+    val asyncStub = AuthGrpc.stub(channel).withWaitForReady()
     new AuthClient(channel, asyncStub)
   }
 }
