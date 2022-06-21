@@ -1,10 +1,13 @@
 package qu.client.datastructures
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
+import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
+import qu.auth.Token
+import qu.auth.common.Constants
 import qu.{RecipientInfo, Shutdownable}
 import qu.client.datastructures.Mode.{ALREADY_REGISTERED, NOT_REGISTERED}
-import qu.client.{AuthenticatingClient, QuClientImpl}
-import qu.model.ConcreteQuModel.Operation
+import qu.client.{AuthenticatingClient, QuClientBuilder, QuClientImpl}
+import qu.model.ConcreteQuModel.{Operation, Request, Response}
 import qu.model.QuorumSystemThresholds
 
 import scala.concurrent.duration.DurationInt
@@ -22,36 +25,59 @@ case object Mode {
 //come utilities for refactoring behaviour common to datastructures
 class AuthenticatedQuClient[ObjectT](username: String,
                                      password: String,
-                                     authServerIp: String, authServerPort: Int,
+                                     authServerIp: String,
+                                     authServerPort: Int,
                                      serversInfo: Set[RecipientInfo],
                                      thresholds: QuorumSystemThresholds,
                                      mode: Mode = ALREADY_REGISTERED)(implicit executionContext: ExecutionContext)
   extends Shutdownable {
 
-  protected def clientFuture(): Future[QuClientImpl[ObjectT, JavaTypeable]] = {
-    val authClient = new AuthenticatingClient[ObjectT](authServerIp, authServerPort, username, password)
+  private lazy val authClient = new AuthenticatingClient[ObjectT](authServerIp, authServerPort, username, password)
+
+  private def getJwt: Token =
+    Token(Jwts.builder.setSubject("ciao").signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact)
+
+  protected lazy val clientFuture: Future[QuClientImpl[ObjectT, JavaTypeable]] = {
+    println("in client future i servers are: " + serversInfo)
     for {
-      _ <- Future {
+      /*<- Future {
         mode match {
-          case NOT_REGISTERED => authClient.register()
-          case _ =>
+          case NOT_REGISTERED =>
+            println("la mode is NOT_REGISTERED, so registering...")
+            authClient.register()
+          case _ => println("la mode is ALREADY REGISTERED")
         }
-      }
-      builder <- authClient.authorize()
-    } yield {
-      serversInfo.foreach { serverInfo => builder.addServer(serverInfo.ip, serverInfo.port) }
-      builder.withThresholds(thresholds).build
+      }*/
+      _ <- authClient.register()
+
+      _ <- Future {
+      println ("now after registering, authorizing...")
     }
+    //builder <- Future(QuClientBuilder.builder[ObjectT](getJwt))
+      builder <- authClient.authorize()
+    } yield builder.addServers(serversInfo).withThresholds(thresholds).build
   }
 
-  //todo: fix delay,
-  //todo: if not present (due to network problems) now throwing unchecked exception, (could return option.empty)
-  protected def await[T](future: Future[T]): T = Await.result(future, 10.seconds)
 
-  protected def submit[ReturnValueT](operation: Operation[ReturnValueT, ObjectT]): Future[ReturnValueT] =
-    clientFuture().flatMap(_.submit(operation))
+  //todo: fix delay (could be very long...)
+  //todo: if not present (due to network problems) now throwing unchecked exception, (could return option.empty)
+  protected def await[T](future: Future[T]): T = Await.result(future, 100.seconds)
+
+  protected def submit[ReturnValueT](operation: Operation[ReturnValueT, ObjectT])(implicit
+                                                                                  transportableRequest: JavaTypeable[Request[ReturnValueT, ObjectT]],
+                                                                                  transportableResponse: JavaTypeable[Response[Option[ReturnValueT]]],
+                                                                                  transportableRequestObj: JavaTypeable[Request[Object, ObjectT]],
+                                                                                  transportableResponseObj: JavaTypeable[Response[Option[Object]]]): Future[ReturnValueT] = {
+
+    clientFuture.flatMap(i => {
+      println("sussmbitting" + operation + "  inside AuthenticatedQuClient");
+      i.submit[ReturnValueT](operation)
+    }
+    ) //flatMap(_.submit(operation))
+  }
 
   override def shutdown(): Future[Unit] = clientFuture.map(_.shutdown())
 
   override def isShutdown: Boolean = await[Boolean](clientFuture.map(_.isShutdown))
+
 }
