@@ -125,6 +125,6 @@ lazy val quDemo = (project in file("qu-demo"))
 
 Compile / mainClass:= (quDemo / Compile / mainClass).value
 
-run in Compile <<= (run in Compile in quDemo)
+//run in Compile <<= (run in Compile in quDemo)
 
 
