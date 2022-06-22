@@ -1,4 +1,4 @@
-import sbt.Keys.libraryDependencies
+import sbt.Keys.{libraryDependencies, mainClass}
 
 ThisBuild / version := "0.1.0-SNAPSHOT"
 
@@ -9,6 +9,7 @@ lazy val root = (project in file("."))
   .settings(
     name := "ds-project-giulianini-ay1920",
   )
+  .dependsOn(quDemo)
   .aggregate(quCore, quStorage, quCommunication, quPresentation, quClient, quService, quSystemTesting, quDemo, auth)
 
 
@@ -91,7 +92,7 @@ lazy val quService = (project in file("qu-service"))
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2"
     )
   )
-  .dependsOn(quCore% "compile->compile;test->test")
+  .dependsOn(quCore % "compile->compile;test->test")
   .dependsOn(quCommunication)
   .dependsOn(quPresentation)
   .dependsOn(quStorage)
@@ -115,12 +116,15 @@ lazy val quSystemTesting = (project in file("qu-system-testing"))
 
 lazy val quDemo = (project in file("qu-demo"))
   .settings(
-    libraryDependencies ++= commonDependencies
+    libraryDependencies ++= commonDependencies,
+    Compile / mainClass := Some("qu.controller.Demo")
   )
   .dependsOn(quPresentation)
   .dependsOn(quClient)
   .dependsOn(quService % "compile->compile;test->test")
 
+Compile / mainClass:= (quDemo / Compile / mainClass).value
 
+run in Compile <<= (run in Compile in quDemo)
 
 
