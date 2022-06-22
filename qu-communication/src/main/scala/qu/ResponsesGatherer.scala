@@ -65,7 +65,8 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AsyncC
             log(msg = "received response: " + response)
             this.synchronized { //mutex needed because of possible multithreaded ex context (user provided)
               currentResponseSet = currentResponseSet + (serverId -> response)
-              if (currentResponseSet.size == responsesQuorum) {
+              //if a request from the same server arrives 2 times, could complete 2 times if not checking 
+              if (currentResponseSet.size == responsesQuorum && !completionPromise.isCompleted) {
                 log(msg = "quorum obtained, so completing promise.")
                 cancelable.cancel()
                 completionPromise success currentResponseSet
