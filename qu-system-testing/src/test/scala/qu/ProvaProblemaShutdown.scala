@@ -16,6 +16,9 @@ import scala.concurrent.duration.SECONDS
 
 object ProvaProblemaShutdown extends App with OHSUtilities with ServersFixture {
 
+  val miamappa = Map("ciao" -> 23, "ola" -> 24)
+  println("la pmappa pretty print:" + miamappa.view.mapValues(in => "aa" + in).mkString("\n"))
+
   implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
   val quServer = LocalQuServerCluster[Int](quServerIpPorts,
@@ -29,7 +32,7 @@ object ProvaProblemaShutdown extends App with OHSUtilities with ServersFixture {
 
   val mdf = new JacksonMethodDescriptorFactory {}
   val md = mdf.generateMethodDescriptor[Int, String](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME)
-  ClientCalls.asyncUnaryCall(channel, md, CallOptions.DEFAULT, 2).map (e => println(e))
+  ClientCalls.asyncUnaryCall(channel, md, CallOptions.DEFAULT, 2).map(e => println(e))
 
   Future {
     channel.shutdown()
@@ -37,7 +40,7 @@ object ProvaProblemaShutdown extends App with OHSUtilities with ServersFixture {
   }
   println("channel is Shutdown ?" + channel.isShutdown)
   val channel2 = InProcessChannelBuilder.forName(id(quServerInfo)).build
-  ClientCalls.asyncUnaryCall(channel, md, CallOptions.DEFAULT, 2).map (e => println(e))
+  ClientCalls.asyncUnaryCall(channel, md, CallOptions.DEFAULT, 2).map(e => println(e))
 
   channel2.shutdown()
 }

@@ -2,6 +2,8 @@ package qu.view.console
 
 import qu.auth.common.WrongCredentialsException
 import qu.controller.Controller
+import qu.model.ConcreteQuModel.ServerId
+import qu.model.ServerStatus.ACTIVE
 import qu.model._
 import qu.view.View
 import qu.view.console.AbstractCliCmd.KillServer.getParamFromInputLine
@@ -55,14 +57,18 @@ class ConsoleView extends View {
   override def setObserver(controller: Controller): Unit = observer = controller
 
   override def result(result: Try[SmrEventResult]): Unit = println({
+    
     val operationOk = "operation completed correctly. "
+
+    def printStatuses(serversStatuses: Map[ServerId, ServerStatus]): String = "Servers statuses are: \n" +
+      serversStatuses.view.mapValues(status => if (status == ACTIVE) "active" else "shutdown").mkString("\n")
 
     result match {
       case Success(ValueResult(value)) =>
         operationOk + "Updated counter value is: " + value
       case Success(ServerKilled(id, serversStatuses)) =>
-        operationOk + "Servers " + id + "stopped. Servers statuses are: " + serversStatuses
-      case Success(ServersProfiled(serversStatuses)) => operationOk + "Servers statuses are: " + serversStatuses
+        operationOk + "Servers " + id + "stopped. " + printStatuses(serversStatuses)
+      case Success(ServersProfiled(serversStatuses)) => operationOk + printStatuses(serversStatuses)
       case Failure(ThresholdsExceededException(msg)) => msg
       case Failure(ServerAlreadyKilledException(msg)) => msg
       case Failure(UnrecognizedCommand()) => "command not recognized. Please attain to the syntax, digit " + Help.command + " to display commands."
