@@ -11,12 +11,14 @@ import scala.concurrent.{ExecutionContext, Future}
 
 trait LocalQuServerCluster extends Startable with Shutdownable {
 
-  def killServer(si: ServerId): Future[Unit]
+  val servers: Map[ServerId, QuServer]
+
+  def shutdownServer(si: ServerId): Future[Unit]
 
   def serversStatuses(): Map[ServerId, Boolean]
 }
 
-class LocalQuServerClusterImpl(servers: Map[ServerId, QuServer])
+class LocalQuServerClusterImpl(override val servers: Map[ServerId, QuServer])
                               (implicit ec: ExecutionContext)
   extends LocalQuServerCluster {
 
@@ -37,11 +39,11 @@ class LocalQuServerClusterImpl(servers: Map[ServerId, QuServer])
 
   override def isShutdown: Boolean = servers.values.forall(_.isShutdown)
 
-  override def killServer(si: ConcreteQuModel.ServerId): Future[Unit] = servers(si).shutdown()
+  override def shutdownServer(si: ConcreteQuModel.ServerId): Future[Unit] = {
+    servers(si).shutdown()
+  }
 
-  override def serversStatuses(): Map[ConcreteQuModel.ServerId, Boolean] = servers.view.mapValues(s => if (s.isShutdown) ACTIVE else ).toMap
-
-  //def serversStatuses(): Map[ConcreteQuModel.ServerId, Boolean] = servers.view.mapValues(_.isShutdown).toMap
+  override def serversStatuses(): Map[ConcreteQuModel.ServerId, Boolean] = servers.view.mapValues(_.isShutdown).toMap
 
 }
 
@@ -77,6 +79,7 @@ object LocalQuServerCluster {
                                               bl: ServerBuildingLogic[T],
                                               initialObj: T)(implicit ec: ExecutionContext) = {
     println("invoco : buildServersFromRecipientInfoAndKeys")
+
     def addServersToServer(ipPort: RecipientInfo) = {
       val serverBuilder = bl(ipPort, keysByServer(id(ipPort))(id(ipPort)), thresholds, initialObj)
       for {

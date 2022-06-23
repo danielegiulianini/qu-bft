@@ -23,7 +23,6 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
   //dependencies: authServerInfo, quServerIpPorts, keys, thresholds
   case class Model()
 
-
   val authServerInfo = RecipientInfo(ip = "localhost", port = 1000)
   val quServer1 = RecipientInfo(ip = "localhost", port = 1001)
   val quServer2 = RecipientInfo(ip = "localhost", port = 1002)
@@ -69,10 +68,8 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
       0)
 
 
-  //todo must be started... (in def or nor?)
   authServer.start()
   cluster.start()
-
 
   val distributedClient = new DistributedCounter(
     "username",
@@ -83,12 +80,15 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
     thresholds,
     NOT_REGISTERED)
 
-  override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = Try {
-    Await.ready(cluster.killServer(sid), atMost = 5.seconds)
-    ServerKilled(sid, getStatus)
+  override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = {
+    //if the shut down are over the maximum tolerated by the thresholds chosen must notify problem to user
+    if (cluster.servers.values.filterNot(_.isShutdown).size > thresholds.t) Failure(ThresholdsExceededException())
+    else if (cluster.servers.get(sid).isEmpty) Failure(ServerNotExistingException())
+    Try {
+      Await.ready(cluster.shutdownServer(sid), atMost = 5.seconds)
+      ServerKilled(sid, getStatus())
+    }
   }
-
-
 
   override def increment(): Try[CounterEventResult] = Try {
     distributedClient.increment()

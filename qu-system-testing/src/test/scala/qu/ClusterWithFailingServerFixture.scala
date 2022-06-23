@@ -26,7 +26,7 @@ trait ClusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers 
 
     complete {
       clusterWithFailingServer.start()
-      clusterWithFailingServer.killServer(id(quServer1))
+      clusterWithFailingServer.shutdownServer(id(quServer1))
 
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
