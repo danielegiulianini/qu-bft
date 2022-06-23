@@ -5,7 +5,6 @@ import io.grpc.{Grpc, InsecureChannelCredentials, InsecureServerCredentials, Ser
 import qu.{Shutdownable, Startable}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.{ServerInfo, ServiceFactory, jacksonSimpleQuorumServiceFactory}
 import qu.service.QuServerBuilder.jacksonSimpleServerBuilder
 
 import java.util.logging.{Level, Logger}
@@ -30,7 +29,7 @@ object QuServer {
 
 
 class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerInterceptor, //this makes it pluggable a different auth technology (possibly not JWT-based)
-                                              credentials : ServerCredentials = InsecureServerCredentials.create(),
+                                              credentials: ServerCredentials = InsecureServerCredentials.create(),
                                               quService: AbstractQuService[Transportable, ObjectT],
                                               port: Int)(implicit executor: ExecutionContext) extends QuServer {
 
@@ -38,26 +37,40 @@ class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerIn
 
   private def log(level: Level = Level.INFO, msg: String) =
     logger.log(Level.INFO, msg)
-
+println("prima di agtgiungee il service:::: " + quService)
   //here can plug creds with tls
-  private val grpcServer =
-    Grpc.newServerBuilderForPort(port, InsecureServerCredentials.create()) //ServerBuilder.forPort(port)
-    .intercept(authorizationInterceptor)
-    .addService(quService)
-    .build
+  private val grpcServer = {
+    println("jJJJJJJJJJJJJJJJJJJJJJJJJJJ quService is Hutdown?: " + quService.isShutdown)
+    Grpc.newServerBuilderForPort(port,
+      InsecureServerCredentials.create()) //ServerBuilder.forPort(port)
+      .intercept(authorizationInterceptor)
+      .addService(quService)
+      .build
+  }
 
   override def start(): Unit = {
     grpcServer.start
     log(msg = "server listening at port " + port + " started.")
   }
 
-  override def shutdown(): Future[Unit] = Future {
-    Future {
-      grpcServer.shutdown
-      grpcServer.awaitTermination()
-      log(msg = "server shut down.")
-    }
-  }
+  override def shutdown(): Future[Unit] =
+    for {
+      _ <- quService.shutdown()
+      _ <- Future {
+        println("service shutdown!")
+      }
+      _ <- Future {
+        grpcServer.shutdown
+        grpcServer.awaitTermination()
+        log(msg = "server shut down.together with servicd! (service shutdo?) "+ quService.isShutdown)
+      }
+
+      /*Future {
+        grpcServer.shutdown
+        grpcServer.awaitTermination()
+        log(msg = "server shut down.")
+      }.map(_ => quService.shutdown())*/
+    } yield ()
 
   override def isShutdown: Flag = grpcServer.isShutdown
 }

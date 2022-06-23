@@ -31,12 +31,16 @@ object JacksonSimpleBroadcastServerPolicy {
       )
   }*/
 
-  def apply[U](serversSet: Set[AbstractRecipientInfo], thresholds: QuorumSystemThresholds)(implicit executor: ExecutionContext)
-  : ServerQuorumPolicy[JavaTypeable, U] = {
+  def apply[U](sourceSid: ServerId,
+               serversSet: Set[AbstractRecipientInfo],
+               thresholds: QuorumSystemThresholds)
+              (implicit executor: ExecutionContext): ServerQuorumPolicy[JavaTypeable, U] = {
     val jacksonFactory = new JacksonStubFactory
     new SimpleServerQuorumPolicy[JavaTypeable, U](
-      servers = serversSet.map { recipientInfo =>
+      servers = serversSet.map { recipientInfo => {
+        println("creo usata da seerrvice " + sourceSid + ") stub verso  recipientInfo" + recipientInfo)
         id(recipientInfo) -> jacksonFactory.unencryptedDistributedStub(recipientInfo)
+      }
       }.toMap,
       thresholds = thresholds
     )

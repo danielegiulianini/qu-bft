@@ -2,7 +2,7 @@ package qu.stub.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.inprocess.InProcessChannelBuilder
-import io.grpc.{Grpc, InsecureChannelCredentials, TlsChannelCredentials}
+import io.grpc.{Grpc, InsecureChannelCredentials, ManagedChannel, ManagedChannelBuilder, TlsChannelCredentials}
 import qu.{AbstractRecipientInfo, RecipientInfo}
 import qu.RecipientInfo.id
 import qu.auth.Token
@@ -76,8 +76,9 @@ class JacksonAuthenticatedStubFactory extends AuthenticatedStubFactory3[JavaType
 
   override def unencryptedDistributedJwtStub(token: Token, recInfo: AbstractRecipientInfo)
                                             (implicit ec: ExecutionContext): JwtAsyncClientStub[JavaTypeable] =
-    new JwtJacksonAsyncClientStub(Grpc.newChannelBuilder(id(recInfo),
-      InsecureChannelCredentials.create()).build, token) //TlsChannelCredentials.create()).build, token)
+    new JwtJacksonAsyncClientStub(ManagedChannelBuilder.forAddress(recInfo.ip, recInfo.port).usePlaintext().build //Grpc.newChannelBuilder(id(recInfo),InsecureChannelCredentials.create()).build
+  , token
+  ) //TlsChannelCredentials.create()).build, token)
 }
 
 /*

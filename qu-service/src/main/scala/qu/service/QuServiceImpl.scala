@@ -1,18 +1,22 @@
 package qu.service
 
-import io.grpc.Context
-import io.grpc.stub.StreamObserver
+import io.grpc.{BindableService, Context, ServerServiceDefinition}
+import io.grpc.stub.{ServerCalls, StreamObserver}
 import presentation.MethodDescriptorFactory
+import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu.RecipientInfo.id
 import qu.auth.common.Constants
-import qu.RecipientInfo
+import qu.{AbstractRecipientInfo, RecipientInfo, Shutdownable}
 import qu.model.ConcreteQuModel.hmac
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
+import qu.service.AbstractQuService.ServerInfo
+import qu.service.quorum.ServerQuorumPolicy
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.storage.{ImmutableStorage, Storage}
 
+import java.util.Objects
 import java.util.logging.{Level, Logger}
-import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutorService, Future}
 import scala.math.Ordered.orderingToOrdered
 import scala.reflect.runtime.universe._
 import scala.util.{Failure, Success}
@@ -21,18 +25,14 @@ import scala.util.{Failure, Success}
 import qu.model.ConcreteQuModel._
 
 
-class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen by programmer
-                                                         private val methodDescriptorFactory: MethodDescriptorFactory[Transportable],
-                                                         private val policyFactory: ServerQuorumPolicyFactory[Transportable, ObjectT],
-                                                         //dependencies chosen by user
-                                                         override val ip: String,
-                                                         override val port: Int,
-                                                         override val privateKey: String,
-                                                         override val obj: ObjectT,
-                                                         override val thresholds: QuorumSystemThresholds,
-                                                         private var storage: Storage[ObjectT])
+class QuServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String,
+                                                        override val port: Int,
+                                                        override val privateKey: String,
+                                                        override val obj: ObjectT,
+                                                        override val thresholds: QuorumSystemThresholds,
+                                                        private var storage: Storage[ObjectT])
                                                        (implicit executor: ExecutionContext)
-  extends AbstractQuService[Transportable, ObjectT](methodDescriptorFactory, policyFactory, thresholds, ip, port, privateKey, obj) {
+  extends AbstractQuService[Transportable, ObjectT](thresholds, ip, port, privateKey, obj) {
 
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
 
@@ -122,7 +122,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag]( //dependencies chosen b
 
       log("repeated request detected! from request: " + request + " (opType:  " + opType + "), operation: " + request.operation)
 
-      val answer = if (opType != ConcreteOperationTypes.BARRIER && opType != ConcreteOperationTypes.INLINE_BARRIER ) {
+      val answer = if (opType != ConcreteOperationTypes.BARRIER && opType != ConcreteOperationTypes.INLINE_BARRIER) {
         val (_, answer) = storage.retrieve[AnswerT](lt).getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
         answer
       } else None

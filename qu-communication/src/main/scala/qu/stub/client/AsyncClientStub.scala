@@ -26,8 +26,11 @@ abstract class AsyncClientStub[Transferable[_]](val chan: ManagedChannel)(implic
   }
 
   override def shutdown(): Future[Unit] = Future {
+    println("shutting down channel " + this + "... (calling thread:" + Thread.currentThread().getName() + ")")
     chan.shutdown()
-    chan.awaitTermination(1000, TimeUnit.SECONDS)
+    chan.awaitTermination(30, TimeUnit.SECONDS)
+    println("channel " + this + "  shut down !" + chan.isShutdown)
+
   }
 
   override def isShutdown: Boolean = chan.isShutdown

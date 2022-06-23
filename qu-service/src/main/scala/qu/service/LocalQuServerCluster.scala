@@ -73,15 +73,20 @@ object LocalQuServerCluster {
                                               thresholds: QuorumSystemThresholds,
                                               bl: ServerBuildingLogic[T],
                                               initialObj: T)(implicit ec: ExecutionContext) = {
+    println("invoco : buildServersFromRecipientInfoAndKeys")
     def addServersToServer(ipPort: RecipientInfo) = {
       val serverBuilder = bl(ipPort, keysByServer(id(ipPort))(id(ipPort)), thresholds, initialObj)
       for {
         ipPort2 <- quServerIpPorts if ipPort2 != ipPort
       } serverBuilder.addServer(ipPort2.ip, ipPort2.port, keysByServer(id(ipPort))(id(ipPort2)))
+      println("(LocalQuServerCluster) quildo il server" + ipPort)
       serverBuilder.build()
     }
 
-    val servers = quServerIpPorts.map(ipPort => id(ipPort) -> addServersToServer(ipPort)).toMap
+    val servers = quServerIpPorts.map(ipPort => {
+      println("(buildServersFromRecipientInfoAndKeys) aggiungo i servers al server " + id(ipPort))
+      id(ipPort) -> addServersToServer(ipPort)
+    }).toMap
     servers //new LocalQuServerClusterImpl(servers)
   }
 }

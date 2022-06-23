@@ -4,23 +4,27 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.ServerInterceptor
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, Request, Response}
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.{ServerInfo, ServiceFactory, jacksonSimpleQuorumServiceFactory}
-import scala.reflect.runtime.universe._
+import qu.service.AbstractQuService.QuServiceBuilder2.ServiceBuilderFactory
+import qu.service.AbstractQuService.{QuServiceBuilder2, ServerInfo}
 
+import scala.reflect.runtime.universe._
 import scala.concurrent.ExecutionContext
 
 //alternative to QuServer apply in companion object
-class QuServerBuilder[Transportable[_], ObjectT](private val serviceFactory: ServiceFactory[Transportable, ObjectT],
+class QuServerBuilder[Transportable[_], ObjectT:TypeTag](private val serviceBuilderFactory: ServiceBuilderFactory[Transportable],
                                                  private val authorizationInterceptor: ServerInterceptor,
                                                  //user (injected) dependencies:
                                                  private val ip: String,
                                                  private val port: Int,
                                                  private val privateKey: String,
                                                  private val quorumSystemThresholds: QuorumSystemThresholds,
-                                                 private val obj: ObjectT)(implicit executor: ExecutionContext) {
+                                                 private val obj: ObjectT)
+                                                (implicit executor: ExecutionContext) {
 
-  private val quService: AbstractQuService[Transportable, ObjectT] =
-    serviceFactory(ServerInfo(ip, port, privateKey), obj, quorumSystemThresholds)
+  /*private val quService: AbstractQuService2[Transportable, ObjectT] =
+    serviceFactory(ServerInfo(ip, port, privateKey), obj, quorumSystemThresholds)*/
+  private val serviceBuilder: QuServiceBuilder2[Transportable, ObjectT] =
+    serviceBuilderFactory.gen[ObjectT](ServerInfo(ip, port, privateKey), quorumSystemThresholds, obj)
 
   def addOperationOutput[T: TypeTag]()(implicit
                                        transportableRequest: Transportable[Request[T, ObjectT]],
@@ -30,22 +34,32 @@ class QuServerBuilder[Transportable[_], ObjectT](private val serviceFactory: Ser
                                        transportableObjectRequest: Transportable[Request[Object, ObjectT]],
                                        transportableObjectResponse: Transportable[Response[Option[Object]]]):
   QuServerBuilder[Transportable, ObjectT] = {
-    quService.addOperationOutput[T]()
+    serviceBuilder.addOperationOutput[T]()
     this
   }
 
   def addServer(ip: String, port: Int, keySharedWithMe: String): QuServerBuilder[Transportable, ObjectT] = {
-    quService.addServer(ip, port, keySharedWithMe)
+    serviceBuilder.addServer(ip, port, keySharedWithMe)
     this
   }
 
   def build(): QuServer = {
+    //println("UUUUUUUUUUUUUUUUUUUUUU il quService quando faccio build del serverBuider is: " + serviceBuilder.build())
     //todo validation missing
-    new QuServerImpl(authorizationInterceptor, quService = quService, port = port)
+    new QuServerImpl(authorizationInterceptor,
+      quService = serviceBuilder.build(),
+      port = port)
   } //this or: 1. factory of QUServer, 2. factory of QuServerImpl
 }
 
 object QuServerBuilder {
+
+  /*def jacksonSimpleServerBuilder[ObjectT: TypeTag](ip: String,
+                                                   port: Int,
+                                                   privateKey: String,
+                                                   thresholds: QuorumSystemThresholds,
+                                                   obj: ObjectT)(implicit ec: ExecutionContext)*/
+
 
   //hided builder implementations (injecting dependencies)
   def jacksonSimpleServerBuilder[ObjectT: TypeTag](ip: String,
@@ -54,7 +68,7 @@ object QuServerBuilder {
                                                    thresholds: QuorumSystemThresholds,
                                                    obj: ObjectT)(implicit ec: ExecutionContext) =
     new QuServerBuilder[JavaTypeable, ObjectT](
-      jacksonSimpleQuorumServiceFactory(),
+      new AbstractQuService.QuServiceBuilder2.JacksonServiceBuilderFactory(),
       new JwtAuthorizationServerInterceptor(),
       ip,
       port,

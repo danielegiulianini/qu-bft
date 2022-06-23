@@ -13,6 +13,7 @@ class AuthServer(port: Int) /*extends Shutdownable*/ {
   private[this] var server: Server = _
 
   def start()(implicit executionContext: ExecutionContext): Unit = {
+    println("auth server starting !!!!")
     server = ServerBuilder.forPort(port).addService(AuthGrpc.bindService(new MyAuthService, executionContext)).build.start
     /*sys.addShutdownHook {
       System.err.println("*** shutting down auth gRPC server since JVM is shutting down")
@@ -36,7 +37,9 @@ class AuthServer(port: Int) /*extends Shutdownable*/ {
 
   def shutdown()(implicit executionContext: ExecutionContext): Future[Unit] = {
     Future {
-      server.shutdown().awaitTermination()
+      println("shutting down...")
+      println("auth server shutdown")
+      server.shutdown().awaitTermination(3, SECONDS)
     }
 
     /*server.shutdown().awaitTermination(3, SECONDS)

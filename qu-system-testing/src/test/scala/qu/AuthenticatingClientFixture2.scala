@@ -5,11 +5,8 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import qu.client.AuthenticatingClient
 import qu.service.ServersFixture
-
-import scala.concurrent.Await
-import scala.concurrent.duration.DurationInt
-
-trait AuthenticatingClientFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
+/*
+trait AuthenticatingClientFixture2 extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
   self: AsyncTestSuite with ServersFixture =>
 
   //todo maybe to move to fixture (or maybe all the clientFuture?) (to be shutdown  correctly)
@@ -31,8 +28,47 @@ trait AuthenticatingClientFixture extends AsyncTestSuiteMixin with Matchers with
       //Await.ready(authClient.shutdown(), 6.seconds)
       authClient.shutdown()
       Thread.sleep(1000)
-println("AAAAAAAAAAAAAAAAAAAAAAaauthClient è sht down???" + authClient.isShutdown)
+
     }
   }
 
 }
+*/
+/*
+import org.scalatest.{BeforeAndAfterEach, Suite}
+import qu.auth.client.AuthClient
+import qu.auth.common.{Authenticator, LocalAuthenticator}
+import qu.auth.server.AuthServer
+
+import java.util.concurrent.Executors
+import scala.concurrent.ExecutionContext
+
+trait RemoteAuthenticatorFix extends WithAuthenticator with BeforeAndAfterEach {
+
+  self: Suite =>
+
+  implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
+
+  override val authenticator: Authenticator = AuthClient(ip, port)
+  var authServer: AuthServer = _
+
+  val ip = "localhost"
+  val port = 1000
+
+  override def beforeEach(): Unit = {
+    AuthServer(ip, port).start()
+    super.beforeEach()
+  }
+
+  override def afterEach() {
+    try super.afterEach() // To be stackable, must call super.afterEach
+    finally {
+      authenticator match {
+        case a: AuthClient => a.shutdown()
+      }
+      authServer.shutdown()
+    }
+  }
+
+}
+*/

@@ -65,7 +65,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AsyncC
             log(msg = "received response: " + response)
             this.synchronized { //mutex needed because of possible multithreaded ex context (user provided)
               currentResponseSet = currentResponseSet + (serverId -> response)
-              //if a request from the same server arrives 2 times, could complete 2 times if not checking 
+              //if a request from the same server arrives 2 times, could complete 2 times if not checking
               if (currentResponseSet.size == responsesQuorum && !completionPromise.isCompleted) {
                 log(msg = "quorum obtained, so completing promise.")
                 cancelable.cancel()
@@ -97,8 +97,13 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AsyncC
   protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ServerId, ResponseT]],
                                              exceptionsByServerId: MutableMap[ServerId, Throwable]): Unit
 
-  override def shutdown(): Future[Unit] =
-    Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ()).map(_ => scheduler.shutdown()) //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())
+  override def shutdown(): Future[Unit] = {
+    println("in responsegatherer il thread is: " + Thread.currentThread().getName())
+    Future.reduceLeft[Unit, Unit](servers.values.toList.map(s => for {
+      _ <- Future(println("in reduce il thread is: " + Thread.currentThread().getName()))
+      _ <- s.shutdown()    } yield ()
+    ))((_, _) => ()).map(_ => scheduler.shutdown()).map(e =>servers.values.foreach(i => println("stub is shtodwn?" + i.isShutdown)) ) //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())
+  }
 
   override def isShutdown: Boolean = servers.values.forall(_.isShutdown) && scheduler.isShutdown
 }

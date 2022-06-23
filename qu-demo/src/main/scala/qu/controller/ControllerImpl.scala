@@ -6,7 +6,6 @@ import qu.model.{IncResult, QuorumSystemThresholds, ResetResult, SmrEventResult,
 import io.grpc.inprocess.InProcessServerBuilder
 import qu.RecipientInfo
 import qu.model.examples.Commands.Increment
-import qu.service.AbstractQuService.{ServerInfo, jacksonSimpleQuorumServiceFactory}
 import qu.service.datastructures.RemoteCounterServer
 import qu.view.View
 import qu.view.console.ConsoleView

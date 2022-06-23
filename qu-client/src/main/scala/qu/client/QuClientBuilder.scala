@@ -45,8 +45,7 @@ case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
 
   def build: QuClientImpl[ObjectT, Transportable] = {
     require(thresholds.isDefined, "thresholds set for a client must be defined before constructing a client.")
-    new QuClientImpl[ObjectT, Transportable](policyFactory(serversInfo,
-      thresholds.get),
+    new QuClientImpl[ObjectT, Transportable](policyFactory(serversInfo, thresholds.get),
       backOffPolicy,
       serversInfo.map(id(_)),
       thresholds.get)

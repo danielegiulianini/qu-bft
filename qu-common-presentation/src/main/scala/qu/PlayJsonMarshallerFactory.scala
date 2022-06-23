@@ -1,5 +1,5 @@
 package qu
-
+/*
 import io.grpc.MethodDescriptor
 import play.api.libs.json.{Format, Json}
 import presentation.MarshallerFactory
@@ -18,4 +18,4 @@ trait PlayJsonMarshallerFactory extends MarshallerFactory[Format] {
       override def parse(stream: InputStream): T =
         Json.parse(scala.io.Source.fromInputStream(stream).mkString).as[T]
     }
-}
+}*/

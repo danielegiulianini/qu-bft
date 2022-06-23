@@ -28,7 +28,12 @@ trait HealthyClusterFixture extends AsyncTestSuiteMixin with Matchers with Async
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
-      Await.ready(healthyCluster.shutdown(), 5.seconds)
+      //Await.ready(healthyCluster.shutdown(), 5.seconds)
+      healthyCluster.shutdown()
+      //must synchronously wait for the shutdown to be complete!
+      Thread.sleep(10000)
+      println("AAAAAAAAAAAAAAAAAAAAAhealthyCluster Aaè sht down???" + healthyCluster.isShutdown)
+
 
     }
   }

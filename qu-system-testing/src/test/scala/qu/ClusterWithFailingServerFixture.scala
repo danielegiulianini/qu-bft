@@ -7,6 +7,9 @@ import qu.RecipientInfo.id
 import qu.service.{LocalQuServerCluster, ServersFixture}
 import qu.service.datastructures.RemoteCounterServer
 
+import scala.concurrent.Await
+import scala.concurrent.duration.DurationInt
+
 trait ClusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
   self: AsyncTestSuite with ServersFixture =>
@@ -28,7 +31,10 @@ trait ClusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers 
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
+      println("waiting clusterWithFailingServer (in fixture)...")
+      //Await.ready(clusterWithFailingServer.shutdown(), 10.seconds)
       clusterWithFailingServer.shutdown()
+      Thread.sleep(1000)
     }
   }
 }

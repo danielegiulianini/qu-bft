@@ -24,7 +24,7 @@ trait ServersFixture {
   quServerIpPorts = quServerIpPorts + quServer3
   quServerIpPorts = quServerIpPorts + quServer4
 
-  val authServerInfo = RecipientInfo(ip = "localhost", port = 1004)
+  val authServerInfo = RecipientInfo(ip = "localhost", port = 1006)
 
   val keysByServer: Map[ServerId, Map[ServerId, Key]] = Map(
     id(quServer1) -> Map(id(quServer1) -> "ks1s1",
@@ -52,6 +52,12 @@ trait ServersFixture {
   val quServer2WithKey = ServerInfo(ip = quServer2.ip, port = quServer2.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer2)))
   val quServer3WithKey = ServerInfo(ip = quServer3.ip, port = quServer3.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer3)))
   val quServer4WithKey = ServerInfo(ip = quServer4.ip, port = quServer4.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer4)))
+
+  var quServersInfo = Set[ServerInfo]()
+  quServersInfo = quServersInfo + quServer1WithKey
+  quServersInfo = quServersInfo + quServer2WithKey
+  quServersInfo = quServersInfo + quServer3WithKey
+  quServersInfo = quServersInfo + quServer4WithKey
 
   val FaultyServersCount = 1
   val MalevolentServersCount = 0

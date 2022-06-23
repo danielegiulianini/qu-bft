@@ -53,11 +53,11 @@ lazy val quPresentation = (project in file("qu-common-presentation"))
     libraryDependencies ++= commonDependencies ++ Seq("io.grpc" % "grpc-netty" % "1.45.0",
       "org.scala-lang" % "scala-reflect" % "2.13.8",
       "com.thesamet.scalapb" % "scalapb-runtime-grpc_2.13" % "0.11.10",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.3",
-      "com.typesafe.play" %% "play-json" % "2.8.2",
+      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.3"
+     /* "com.typesafe.play" %% "play-json" % "2.8.2",
       "io.leonard" % "play-json-traits_2.13" % "1.5.1",
       "jakarta.xml.bind" % "jakarta.xml.bind-api" % "2.3.2",
-      "org.glassfish.jaxb" % "jaxb-runtime" % "2.3.2"
+      "org.glassfish.jaxb" % "jaxb-runtime" % "2.3.2"*/
     )
   )
   .dependsOn(quCore % "compile->compile;test->test")

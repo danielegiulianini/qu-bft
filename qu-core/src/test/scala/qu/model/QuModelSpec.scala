@@ -48,7 +48,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, same barrier flag but lexicographically greater clientId") {
         forAll(arbitraryLt) { aLt =>
           forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt =>
-            lt should be > aLt //_ < aLt
+            lt should be > aLt
           }
         }
       }
@@ -86,7 +86,8 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
       it("should not be equal to a ConcreteLogicalTimestamp with different time") {
         forAll(arbitraryLtInfo) { case (time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) =>
-          ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) == ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation)
+          ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) ==
+            ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation)
         }
       }
 

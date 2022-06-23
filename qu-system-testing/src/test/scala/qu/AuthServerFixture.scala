@@ -22,11 +22,18 @@ trait AuthServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMock
     authServer = new AuthServer(authServerInfo.port)
 
     complete {
+      println("starting auth server...")
       authServer.start()
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
-      Await.ready(authServer.shutdown(), 10.seconds)
+      /* authServer.shutdown()
+       Thread.sleep(5000)*/
+      println("waiting authServer (in fixture)...")
+      authServer.shutdown()
+      Thread.sleep(1000)
+
+      //Await.ready(authServer.shutdown(), 5.seconds)
     }
   }
 }
