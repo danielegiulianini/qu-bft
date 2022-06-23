@@ -44,13 +44,13 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
   )
 
   def sendIncrementRequest(mockedStub: JwtAsyncClientStub[JavaTypeable]):
-  MockFunction3[Request[Unit, Int], JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Unit]], Future[Response[Unit]]] = sendReq[Unit, Int, Increment](mockedStub)
+  MockFunction3[Request[Unit, Int], JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[Response[Option[Unit]]]] = sendReq[Unit, Int, Increment](mockedStub)
 
   def sendGetObjRequest(mockedStub: JwtAsyncClientStub[JavaTypeable]):
-  MockFunction3[Request[Int, Int], JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Int]], Future[Response[Int]]] = sendReq[Int, Int, GetObj[Int]](mockedStub)
+  MockFunction3[Request[Int, Int], JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[Response[Option[Int]]]] = sendReq[Int, Int, GetObj[Int]](mockedStub)
 
-  def sendReq[T, U, _ <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable]): MockFunction3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[T]], Future[Response[T]]]
-  = mockedStub.send[Request[T, U], Response[T]](_: Request[T, U])(_: JavaTypeable[Request[T, U]], _: JavaTypeable[Response[T]])
+  def sendReq[T, U, _ <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable]): MockFunction3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[Option[T]]], Future[Response[Option[T]]]]
+  = mockedStub.send[Request[T, U], Response[Option[T]]](_: Request[T, U])(_: JavaTypeable[Request[T, U]], _: JavaTypeable[Response[Option[T]]])
 
 
 
@@ -60,7 +60,8 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
       describe("and receiving it") {
         it("should not ask servers any more") {
           mockedServersStubs.values.foreach(mockedStub => {
-            sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce().returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
+            sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
+              .returning(Future.successful(Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)))
           })
 
           policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
@@ -69,7 +70,7 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
       //behaviour testing
       it("should broadcast to all servers") {
         mockedServersStubs.values.foreach(mockedStub => {
-          sendGetObjRequest(mockedStub).expects(*, *, *).returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
+          sendGetObjRequest(mockedStub).expects(*, *, *).returning(Future.successful(Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)))
         })
 
         policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
@@ -77,7 +78,7 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
       it("should broadcast to all servers the ohs and the operation passed to it at the first round") {
         mockedServersStubs.values.foreach(mockedStub => {
           sendGetObjRequest(mockedStub).expects(Request[Int, Int](Some(GetObj()), emptyOhs(serversIds.toSet)), *, *)
-            .returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
+            .returning(Future.successful(Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)))
         })
 
         policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
@@ -87,26 +88,31 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
 
         //continuous with fail
         it("should keep broadcasting to all servers until receiving responses with SUCCESS by all the servers") {
-          val notSuccessfulGetObjResponse = Response[Int](FAIL, 1, emptyAuthenticatedRh)
-          val successfulGetObjResponse = Response[Int](SUCCESS, 1, emptyAuthenticatedRh)
-          val notSuccessfulIncResponse = Response[Int](FAIL, 1, emptyAuthenticatedRh)
-          val successfulIncResponse = Response[Int](SUCCESS, 1, emptyAuthenticatedRh)
+          val notSuccessfulGetObjResponse = Response[Option[Int]](FAIL, Some(1), emptyAuthenticatedRh)
+          val successfulGetObjResponse = Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)
+          val notSuccessfulIncResponse = Response[Option[Unit]](FAIL, Some(()), emptyAuthenticatedRh)
+          val successfulIncResponse = Response[Option[Unit]](SUCCESS, Some(()), emptyAuthenticatedRh)
 
 
           def expectRequestAndReturnResponse[T, U, Z <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable],
                                                                          req: Request[T, U],
-                                                                         respo: Future[Response[T]])
-          : CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[T]], Future[Response[T]]] =
+                                                                         respo: Future[Response[Option[T]]])
+          : CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[Option[T]]], Future[Response[Option[T]]]] =
             sendReq[T, U, Z](mockedStub).expects(req, *, *).returning(respo)
 
           def expect2RequestAndReturnResponse[T, U, Z <: Operation[T, U]](req: Request[T, U],
-                                                                          respo: Future[Response[T]]): JwtAsyncClientStub[JavaTypeable] => CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[T]], Future[Response[T]]] =
+                                                                          respo: Future[Response[Option[T]]]):
+          JwtAsyncClientStub[JavaTypeable] => CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[Option[T]]], Future[Response[Option[T]]]] =
             (mockedStub: JwtAsyncClientStub[JavaTypeable]) => expectRequestAndReturnResponse[T, U, Z](mockedStub, req, respo)
 
           val expectGetObjAndReturnSuccessfulResponse =
-            expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()), emptyOhs(serversIds.toSet)), Future.successful(successfulGetObjResponse))
+            expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
+              emptyOhs(serversIds.toSet)),
+              Future.successful(successfulGetObjResponse))
           val expectGetObjAndReturnUnSuccessfulResponse =
-            expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()), emptyOhs(serversIds.toSet)), Future.successful(notSuccessfulGetObjResponse))
+            expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
+              emptyOhs(serversIds.toSet)),
+              Future.successful(notSuccessfulGetObjResponse))
 
           inSequence {
             mockedServersStubs.values.foreach(expectGetObjAndReturnUnSuccessfulResponse)
@@ -117,15 +123,19 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
 
           //timeout(1000.seconds), interval(500.millis)
           //val config = PatienceConfig(timeout = Span(1000, Seconds), interval = Span(1, Seconds))
-          val myFut: Future[(Option[Int], Int, OHS)] = policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet))
+          val myFut = policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet))
           //perché con questo non succede nulla? e con whenready (che fa la stesa cosa si spacca??!)
           //Await.ready(myFut, Duration.fromNanos(config.timeout.totalNanos)).eitherValue.get
 
-         /* whenReady(myFut, timeout(100.seconds), interval(500.millis)) {
-            //s => s._3 should be(emptyOhs(serversIds.toSet))
+          whenReady(myFut, timeout(100.seconds), interval(500.millis)) {
             s => s._3 should be(emptyOhs(serversIds.toSet))
-          }*/
-          Thread.sleep(2000)
+          }
+
+          /*  whenReady(myFut, timeout(100.seconds), interval(500.millis)) {
+             //s => s._3 should be(emptyOhs(serversIds.toSet))
+             s => s._3 should be(emptyOhs(serversIds.toSet))
+           }*/
+          //Thread.sleep(2000)
 
           /*
                     whenReady(myFut, timeout = config.timeout, interval= config.interval){
@@ -213,7 +223,7 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
           //queste non dovrebbero essere chiamate... (perché l'interceptor si ferma a t+1 e poi ritorna l'exception
           mockedServersStubs.values.takeRight(thresholds.n - thresholds.t - 1).foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
-              .returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
+              .returning(Future.successful(Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)))
           })
           whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet)).failed) { e =>
             e shouldBe a[StatusRuntimeException]
