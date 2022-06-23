@@ -20,9 +20,6 @@ import scala.util.{Failure, Success, Try}
 
 class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
 
-  //dependencies: authServerInfo, quServerIpPorts, keys, thresholds
-  case class Model()
-
   val authServerInfo = RecipientInfo(ip = "localhost", port = 1000)
   val quServer1 = RecipientInfo(ip = "localhost", port = 1001)
   val quServer2 = RecipientInfo(ip = "localhost", port = 1002)
@@ -83,7 +80,7 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
   override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = {
     //if the shut down are over the maximum tolerated by the thresholds chosen must notify problem to user
     if (cluster.servers.values.filterNot(_.isShutdown).size > thresholds.t) Failure(ThresholdsExceededException())
-    else if (cluster.servers.get(sid).isEmpty) Failure(ServerNotExistingException())
+    else if (!cluster.servers.contains(sid)) Failure(ServerNotExistingException())
     Try {
       Await.ready(cluster.shutdownServer(sid), atMost = 5.seconds)
       ServerKilled(sid, getStatus())
@@ -107,8 +104,7 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
   }
 
   override def stop(): Unit = {
-    //Future.reduce(servers.values.map(s => s.shutdown()))((_, _) => ())
-    cluster.shutdown()
+    Await.ready(cluster.shutdown().map(_ => distributedClient.shutdown()), atMost = 5.seconds)
   }
 
   override def decrement(): Try[CounterEventResult] = Try {
