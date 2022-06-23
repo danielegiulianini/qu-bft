@@ -9,6 +9,8 @@ trait SmrSystem {
 
   def killServer(sid: ServerId): Try[ServerEventResult]
 
+  def getServersStatus(): Try[ServerEventResult]
+
   def increment(): Try[CounterEventResult]
 
   def decrement(): Try[CounterEventResult]

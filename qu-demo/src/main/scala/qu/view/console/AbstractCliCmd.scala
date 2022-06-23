@@ -32,6 +32,8 @@ object AbstractCliCmd {
     override def descriptions: ServerId = "shutdown a single server replica for simulating fault."
   }
 
+  object ProfileServers extends CliCmdWithoutArg("prof", "", "show servers statuses.")
+
   object KillServer {
     val cmd = "kill"
 
@@ -48,5 +50,5 @@ object AbstractCliCmd {
 
   object InvalidInput extends CliCmdWithoutArg("-", "-", "unrecognized command.")
 
-  val commands = Set(Exit, Help, KillServer("exampleId"), Increment, Decrement, Reset, Value, InvalidInput)
+  val commands = Set(Exit, Help, KillServer("exampleId"), ProfileServers, Increment, Decrement, Reset, Value, InvalidInput)
 }

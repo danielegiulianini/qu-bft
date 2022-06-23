@@ -39,7 +39,10 @@ class LocalQuServerClusterImpl(servers: Map[ServerId, QuServer])
 
   override def killServer(si: ConcreteQuModel.ServerId): Future[Unit] = servers(si).shutdown()
 
-  override def serversStatuses(): Map[ConcreteQuModel.ServerId, Boolean] = servers.view.mapValues(_.isShutdown).toMap
+  override def serversStatuses(): Map[ConcreteQuModel.ServerId, Boolean] = servers.view.mapValues(s => if (s.isShutdown) ACTIVE else ).toMap
+
+  //def serversStatuses(): Map[ConcreteQuModel.ServerId, Boolean] = servers.view.mapValues(_.isShutdown).toMap
+
 }
 
 

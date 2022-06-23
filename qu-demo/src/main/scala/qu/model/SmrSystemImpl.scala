@@ -85,8 +85,10 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
 
   override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = Try {
     Await.ready(cluster.killServer(sid), atMost = 5.seconds)
-    ServerKilled(sid, cluster.serversStatuses().view.mapValues(server => if (server) SHUTDOWN else ACTIVE).toMap)
+    ServerKilled(sid, getStatus)
   }
+
+
 
   override def increment(): Try[CounterEventResult] = Try {
     distributedClient.increment()
@@ -113,4 +115,19 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
     distributedClient.decrement()
     DecResult
   }
+
+  override def getServersStatus(): Try[ServerEventResult] = Try {
+    ServersProfiled(getStatus())
+  }
+
+  private def getStatus(): Map[ConcreteQuModel.ServerId, ServerStatus] =
+    cluster.serversStatuses().view.mapValues(serverStatus => if (serverStatus) SHUTDOWN else ACTIVE).toMap
 }
+
+
+/*if model returning booleans instead of directly statuses:
+override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = Try {
+    Await.ready(cluster.killServer(sid), atMost = 5.seconds)
+    ServerKilled(sid, cluster.serversStatuses().view.mapValues(server => if (server) SHUTDOWN else ACTIVE).toMap)
+  }
+* */

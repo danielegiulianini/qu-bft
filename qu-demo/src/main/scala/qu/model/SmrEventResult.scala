@@ -21,6 +21,9 @@ sealed trait ServerEventResult extends SmrEventResult
 
 case class ServerKilled(id: ServerId, serversStatuses: Map[ServerId, ServerStatus]) extends ServerEventResult
 
+case class ServersProfiled(serversStatuses: Map[ServerId, ServerStatus]) extends ServerEventResult
+
+
 trait ServerStatus
 
 object ServerStatus {

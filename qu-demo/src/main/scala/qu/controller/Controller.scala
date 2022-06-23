@@ -7,6 +7,8 @@ trait Controller extends ViewObserver {
   //all void return methods
   def killServer(serverId: String): Unit
 
+  def getServersStatus(): Unit
+
 
   def start(): Unit
 

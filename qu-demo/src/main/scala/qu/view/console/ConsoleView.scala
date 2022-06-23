@@ -31,6 +31,7 @@ class ConsoleView extends View {
           observer.quit()
         case Help => println(generalPrompt)
         case KillServer(id) => observer.killServer(id)
+        case ProfileServers => observer.getServersStatus()
         case Increment => observer.increment()
         case Decrement => observer.decrement()
         case Reset => observer.reset()
@@ -60,7 +61,8 @@ class ConsoleView extends View {
       case Success(ValueResult(value)) =>
         operationOk + "Updated counter value is: " + value
       case Success(ServerKilled(id, serversStatuses)) =>
-        operationOk + "Servers " + id + "stopped. Servers status are: " + serversStatuses
+        operationOk + "Servers " + id + "stopped. Servers statuses are: " + serversStatuses
+      case Success(ServersProfiled(serversStatuses)) => operationOk + "Servers statuses are: " + serversStatuses
       case Failure(ThresholdsExceededException(msg)) => msg
       case Failure(ServerAlreadyKilledException(msg)) => msg
       case Failure(UnrecognizedCommand()) => "command not recognized. Please attain to the syntax, digit " + Help.command + " to display commands."
