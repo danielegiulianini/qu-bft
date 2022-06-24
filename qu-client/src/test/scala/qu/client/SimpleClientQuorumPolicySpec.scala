@@ -1,29 +1,23 @@
-package qu
+package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{Status, StatusRuntimeException}
 import org.scalamock.function.MockFunction3
 import org.scalamock.handlers.CallHandler3
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.concurrent.Futures.{whenReady, whenReadyImpl}
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers._
-import org.scalatest.matchers.should.Matchers.{a, convertToAnyShouldWrapper}
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
-import org.scalatest.time.{Millis, Seconds, Span}
 import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
-import qu.model.examples.Commands.{GetObj, Increment}
-import qu.stub.client.JwtAsyncClientStub
 import qu.model.ConcreteQuModel.{Request, _}
-import qu.model.{ConcreteQuModel, FourServersScenario, KeysUtilities, OHSUtilities}
 import qu.model.StatusCode.{FAIL, SUCCESS}
+import qu.model.examples.Commands.{GetObj, Increment}
+import qu.model.{FourServersScenario, KeysUtilities, OHSUtilities}
+import qu.stub.client.JwtAsyncClientStub
 
 import java.util.concurrent.Executors
-import scala.concurrent.duration.Duration
-import scala.concurrent.{Await, ExecutionContext, Future}
-import scala.util.Success
-import org.scalatest._
+import scala.concurrent.{ExecutionContext, Future}
 
 class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with ScalaFutures
   with FourServersScenario

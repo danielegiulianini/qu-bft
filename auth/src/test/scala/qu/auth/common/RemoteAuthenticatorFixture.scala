@@ -1,11 +1,11 @@
-import org.scalatest.{BeforeAndAfterEach, Suite}
+package qu.auth.common
+
+import org.scalatest.Suite
 import qu.auth.client.AuthClient
-import qu.auth.common.{Authenticator, LocalAuthenticator}
 import qu.auth.server.AuthServer
 
 import java.net.ServerSocket
 import java.util.concurrent.Executors
-import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 
 trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
@@ -15,7 +15,7 @@ trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
   implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
   val ip = "localhost"
-  var port = new ServerSocket(0).getLocalPort
+  var port = new ServerSocket(0).getLocalPort //leveraging ServerSocket for getting the a free one
 
   override var authenticator: Authenticator = AuthClient(ip, port)
   var authServer: AuthServer = _

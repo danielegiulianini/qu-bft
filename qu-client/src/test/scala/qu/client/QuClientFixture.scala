@@ -1,14 +1,13 @@
-package qu
+package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import org.scalamock.function.MockFunction4
-import org.scalamock.scalatest.{AsyncMockFactory, MockFactory}
-import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, TestSuite, TestSuiteMixin}
+import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers
-import qu.client.{QuClient, QuClientImpl}
+import org.scalatest.{TestSuite, TestSuiteMixin}
 import qu.client.backoff.BackOffPolicy
 import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
-import qu.model.ConcreteQuModel._
+import qu.model.ConcreteQuModel.{OHS, Operation, Request, Response}
 import qu.model.FourServersScenario
 
 import scala.concurrent.Future

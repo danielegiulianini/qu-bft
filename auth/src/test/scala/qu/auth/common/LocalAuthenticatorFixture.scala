@@ -1,9 +1,6 @@
-import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach, Suite}
-import qu.auth.Role
-import qu.auth.common.{Authenticator, LocalAuthenticator}
+package qu.auth.common
 
-import java.io.IOException
-
+import org.scalatest.Suite
 
 trait LocalAuthenticatorFixture extends AbstractAuthenticatorFixture {
   self: Suite =>

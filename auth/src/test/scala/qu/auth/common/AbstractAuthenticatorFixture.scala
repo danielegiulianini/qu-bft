@@ -1,6 +1,7 @@
+package qu.auth.common
+
 import org.scalatest.{BeforeAndAfterEach, Suite}
 import qu.auth.Role
-import qu.auth.common.Authenticator
 
 import java.io.IOException
 
@@ -20,7 +21,7 @@ trait AbstractAuthenticatorFixture extends BeforeAndAfterEach {
   var authenticator: Authenticator
 
   override def beforeEach(): Unit = {
-    println("WithAuthenticator, authenticator is" + authenticator )
+    println("WithAuthenticator, authenticator is" + authenticator)
     beforeCreatingAuthenticator()
     authenticator.register(giovanni)
     authenticator.register(andrea)

@@ -1,6 +1,5 @@
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.scala.{ClassTagExtensions, DefaultScalaModule}
-import org.scalatest.Assertion
+package presentation
+
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
 import qu.JacksonMarshallerFactory

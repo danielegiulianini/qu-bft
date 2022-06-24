@@ -21,7 +21,7 @@ trait QuModel {
   type LogicalTimestamp <: {val time: Int; val barrierFlag: Flag; val clientId: Option[ClientId]; val operation: Option[OperationRepresentation]; val ohs: Option[OHSRepresentation]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
 
   type OperationType
-  type authenticator //authenticator
+  type authenticator
   type Candidate = (LogicalTimestamp, LogicalTimestamp)
 
   //number of replica histories in the object history set in which it appears
@@ -43,7 +43,7 @@ trait AbstractQuModel extends QuModel {
 
   override type ClientId = String
 
-  //since RH is a ordered set must define ordering for LogicalTimestamp, that actually requires
+  //since RH is a ordered set must define ordering for LogicalTimestamp too
   override type ReplicaHistory = SortedSet[Candidate]
 
 }
@@ -71,8 +71,7 @@ trait AbstractAbstractQuModel extends QuModel {
 
   type Key = String
 
-
-  def nullAuthenticator(): authenticator //= Map[String, String]()
+  def nullAuthenticator(): authenticator
 
   val emptyAuthenticatedRh: AuthenticatedReplicaHistory = (emptyRh, nullAuthenticator()) //emptyRh -> nullAuthenticator
 
@@ -116,10 +115,6 @@ trait AbstractAbstractQuModel extends QuModel {
   Option[(ConcreteLogicalTimestamp, ConcreteLogicalTimestamp)] = {
     ohs
       .values //authenticated rhs here
-      .map(e => {
-        //println(e._1)
-        e
-      })
       .flatMap(rh => rh._1) //candidates of rhs here
       .filter { case (lt, _) => lt.barrierFlag == barrierFlag }
       .filter(order(_, ohs) >= repairableThreshold)
@@ -153,8 +148,6 @@ trait AbstractAbstractQuModel extends QuModel {
 
     val latestObjectVersion = latestCandidate(ohs, barrierFlag = false, repairableThreshold)
     val latestBarrierVersion = latestCandidate(ohs, barrierFlag = true, repairableThreshold)
-    //println("il latestObjectVersion : " + latestObjectVersion)
-    //println("il latestBarrierVersion : " + latestBarrierVersion)
     val ltLatest = latestTime(ohs)
     val opType = (latestObjectVersion, latestBarrierVersion) match {
       //before the most restrictive (pattern matching implicitly breaks)
@@ -188,8 +181,7 @@ trait AbstractAbstractQuModel extends QuModel {
     val (conditionedOnLogicalTimestamp, _) = latestObjectVersionFilled
     if (opType == ConcreteOperationTypes.METHOD) {
       ( //opType
-        opType, {
-        println("(setup:)l'operartion che raprsenrto e inserisco nell'lt is: " + operation)
+        opType,
         //candidate
         (ConcreteLogicalTimestamp(
           time = latestTime(ohs).time + 1,
@@ -197,9 +189,7 @@ trait AbstractAbstractQuModel extends QuModel {
           clientId = Some(clientId),
           operation = Some(represent[T, U](operation)),
           ohs = Some(represent(ohs))),
-          conditionedOnLogicalTimestamp)
-      }
-        ,
+          conditionedOnLogicalTimestamp),
         //ltCurrent
         conditionedOnLogicalTimestamp
       )

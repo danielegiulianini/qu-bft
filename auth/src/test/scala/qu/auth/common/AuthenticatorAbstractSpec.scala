@@ -1,11 +1,9 @@
-import org.scalatest.{BeforeAndAfterEach, Suite}
-import org.scalatest.funspec.AnyFunSpec
-import qu.auth.{Credentials, Role, Token, User}
-import qu.auth.common.{Authenticator, BadContentException, ConflictException, WrongCredentialsException}
-import org.scalatest._
-import Assertions._
-import org.scalatest.matchers.must.Matchers.{an, be}
+package qu.auth.common
 
+import org.scalatest.Suite
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.must.Matchers.an
+import qu.auth.{Credentials, Token, User}
 
 trait AuthenticatorAbstractSpec extends AnyFunSpec {
 
@@ -65,5 +63,3 @@ trait AuthenticatorAbstractSpec extends AnyFunSpec {
 
   def tokenOf(user: User) = new Token(user.username, user.role)
 }
-
-

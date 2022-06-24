@@ -5,7 +5,7 @@ import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp, Flag, OHSRepresentati
 
 import scala.math.Ordered.orderingToOrdered
 
-object ModelGenerators {
+trait ModelGenerators {
 
   def ltGenerator(timeGen: Gen[Int],
                   barrierGen: Gen[Boolean],
@@ -33,7 +33,7 @@ object ModelGenerators {
       Arbitrary.arbitrary[Option[String]] suchThat (ohsReprPred(_)))
   }
 
-  def nonEmptyLt: Gen[ConcreteLogicalTimestamp] = arbitraryLt.suchThat(_ != emptyLT) //customizableArbitraryLt(timePred = _ != initi)
+  def nonEmptyLt: Gen[ConcreteLogicalTimestamp] = arbitraryLt.suchThat(_ != emptyLT)
 
   def nonEmptyCandidate: Gen[(ConcreteLogicalTimestamp, ConcreteLogicalTimestamp)] = for {
     lt <- nonEmptyLt
@@ -65,7 +65,6 @@ object ModelGenerators {
     )
   }
 
-
   def arbitraryLt: Gen[ConcreteLogicalTimestamp] =
   //constraining values 1. to ease finding them by scalacheck engine and 2. to respect comparison properties in inner for
     ltGenerator(
@@ -83,7 +82,6 @@ object ModelGenerators {
     operationRepresentation <- Arbitrary.arbitrary[Option[String]]
     ohsRepresentation <- Arbitrary.arbitrary[Option[String]]} yield (time, barrierFlag, clientId, operationRepresentation, ohsRepresentation)
 
-  //could improve passing only timestamp by (instead of all the params)
   def logicalTimestampWithGreaterTimeThan(time: Int): Gen[ConcreteLogicalTimestamp] = ltGenerator(
     Gen.choose(time, Int.MaxValue),
     Arbitrary.arbitrary[Boolean],
