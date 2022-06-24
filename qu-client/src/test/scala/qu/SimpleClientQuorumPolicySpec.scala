@@ -30,8 +30,7 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
   with OHSUtilities
   with KeysUtilities {
 
-  val patienceConfig2 =
-    PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
+  //val patienceConfig2 =PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
   val mockedServersStubs: Map[String, JwtAsyncClientStub[JavaTypeable]] =
     serversIds.map(_ -> mock[JwtAsyncClientStub[JavaTypeable]]).toMap
@@ -39,9 +38,7 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
   //determinism in tests
   implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
-  val policy = new JacksonSimpleBroadcastClientPolicy[Int](thresholds,
-    mockedServersStubs
-  )
+  val policy = new JacksonSimpleBroadcastClientPolicy[Int](thresholds, mockedServersStubs)
 
   def sendIncrementRequest(mockedStub: JwtAsyncClientStub[JavaTypeable]):
   MockFunction3[Request[Unit, Int], JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[Response[Option[Unit]]]] = sendReq[Unit, Int, Increment](mockedStub)
@@ -109,6 +106,10 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
             expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
               emptyOhs(serversIds.toSet)),
               Future.successful(successfulGetObjResponse))
+          val expectGetObjAndDoNotReturn =
+            expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
+              emptyOhs(serversIds.toSet)),
+              Future.never)
           val expectGetObjAndReturnUnSuccessfulResponse =
             expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
               emptyOhs(serversIds.toSet)),
@@ -117,46 +118,14 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
           inSequence {
             mockedServersStubs.values.foreach(expectGetObjAndReturnUnSuccessfulResponse)
             mockedServersStubs.values.foreach(expectGetObjAndReturnUnSuccessfulResponse)
-            mockedServersStubs.values.foreach(expectGetObjAndReturnSuccessfulResponse)
+            mockedServersStubs.values.take(thresholds.q).foreach(expectGetObjAndReturnSuccessfulResponse)
+            mockedServersStubs.values.takeRight(thresholds.n - thresholds.q).foreach(expectGetObjAndDoNotReturn)
           }
 
 
-          //timeout(1000.seconds), interval(500.millis)
-          //val config = PatienceConfig(timeout = Span(1000, Seconds), interval = Span(1, Seconds))
-          val myFut = policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet))
-          //perché con questo non succede nulla? e con whenready (che fa la stesa cosa si spacca??!)
-          //Await.ready(myFut, Duration.fromNanos(config.timeout.totalNanos)).eitherValue.get
-
-          whenReady(myFut, timeout(100.seconds), interval(500.millis)) {
-            s => s._3 should be(emptyOhs(serversIds.toSet))
+          whenReady(policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet)), timeout(100.seconds), interval(500.millis)) {
+           _._3 should be(emptyOhs(serversIds.toSet -- serversIds.takeRight(thresholds.n - thresholds.q).toSet))
           }
-
-          /*  whenReady(myFut, timeout(100.seconds), interval(500.millis)) {
-             //s => s._3 should be(emptyOhs(serversIds.toSet))
-             s => s._3 should be(emptyOhs(serversIds.toSet))
-           }*/
-          //Thread.sleep(2000)
-
-          /*
-                    whenReady(myFut, timeout = config.timeout, interval= config.interval){
-                      //s => s._3 should be(emptyOhs(serversIds.toSet))
-                      s => s._3 should be(emptyOhs(serversIds.toSet))
-                    }*/
-          /*
-                    // PatienceConfig =
-                    val myFut: Future[(Option[Int], Int, OHS)] = policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet))
-                    Await.ready(myFut, Duration.fromNanos(config.timeout.totalNanos)).eitherValue.get
-                    val i = policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet))
-                    whenReady[(Option[Int], Int, OHS), Unit](i, timeout(1000.seconds), interval(500.millis)) {
-                      //s => s._3 should be(emptyOhs(serversIds.toSet))
-                      s => ()
-                    }*/
-
-          /*val i = policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet))
-          whenReady(myFut) { //timeout(1000.seconds), interval(500.millis)) {
-            //s => s._3 should be(emptyOhs(serversIds.toSet))
-            s => s._3 should be(emptyOhs(serversIds.toSet))
-          }(config, implicitly)*/
         }
       }
       /*
