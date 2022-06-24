@@ -9,18 +9,23 @@ import qu.service.ServersFixture
 
 import scala.concurrent.Future
 
-class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with ServersFixture with OHSUtilities
-  with HealthyClusterFixture with AuthenticatedQuClientFixture with AuthenticatingClientFixture with AuthServerFixture {
+class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers
+  with ServersFixture
+  with OHSUtilities
+  with HealthyClusterFixture
+  with AuthenticatedQuClientFixture
+  with AuthenticatingClientFixture
+  with AuthServerFixture {
 
   //type information survives network transit
   describe("A Q/U protocol interaction with a quorum without failing servers") {
 
-    def freshQuClient() = for {
+    /*def freshQuClient() = for {
       _ <- authClient.register()
       builder <- authClient.authorize()
     } yield builder
       .addServers(quServerIpPorts)
-      .withThresholds(thresholds).build
+      .withThresholds(thresholds).build*/
 
     describe("when a query is issued") {
       it("should return to client the expected answer value") {
@@ -28,7 +33,7 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers with Se
         )
         for {
           authenticatedQuClient <- quClientAsFuture
-          value <- Future{}//authenticatedQuClient.submit[Int](GetObj())
+          value <- Future {} //authenticatedQuClient.submit[Int](GetObj())
         } yield ()
         succeed
         /*for {

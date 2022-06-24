@@ -2,7 +2,7 @@ package qu.auth.common
 
 import org.scalatest.Suite
 import org.scalatest.funspec.AnyFunSpec
-import org.scalatest.matchers.must.Matchers.an
+import org.scalatest.matchers.must.Matchers.{an, be}
 import qu.auth.{Credentials, Token, User}
 
 trait AuthenticatorAbstractSpec extends AnyFunSpec {

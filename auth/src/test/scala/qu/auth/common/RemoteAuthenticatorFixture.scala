@@ -6,8 +6,10 @@ import qu.auth.server.AuthServer
 
 import java.net.ServerSocket
 import java.util.concurrent.Executors
+import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext}
 
+//to not be used with async *** spec
 trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
 
   self: Suite =>

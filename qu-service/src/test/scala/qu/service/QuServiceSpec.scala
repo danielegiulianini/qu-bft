@@ -18,7 +18,11 @@ import scala.concurrent.Future
 
 //since Async(FunSpec) is used Async(MockFactory) must be used (see https://scalamock.org/user-guide/integration/)
 class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
-  with OHSUtilities with ServersFixture with QuServerFixture with AuthStubFixture with UnAuthStubFixture {
+  with OHSUtilities
+  with ServersFixture
+  with QuServerFixture
+  with AuthStubFixture
+  with UnAuthStubFixture {
 
   //for client stubs fixture
   override protected val serverInfo: RecipientInfo = RecipientInfo(quServer1.ip, quServer1.port)
@@ -415,7 +419,5 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
       }
     }
   }
-
-
 }
 

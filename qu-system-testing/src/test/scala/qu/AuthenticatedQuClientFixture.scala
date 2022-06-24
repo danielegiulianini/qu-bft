@@ -28,19 +28,12 @@ trait AuthenticatedQuClientFixture extends AsyncTestSuiteMixin with Matchers wit
       .withThresholds(thresholds).build
 
     complete {
-      //authServer.start()
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
-      println("thread in lastly is: " + Thread.currentThread().getName())
       // Perform cleanup here
-      println("waiting in AuthenticatedQuClientFixture")
       quClientAsFuture.map(_.shutdown())
-      quClientAsFuture.map( e => println("AAAAAAAAAAAAA il quCLient is shutdown???" + e.isShutdown))
 
       Thread.sleep(3000)
-
-      //Await.ready(quClientAsFuture.map(_.shutdown()), 5.seconds)
-      //Await.ready(quClientAsFuture.map(_.shutdown()), 5.seconds)
     }
   }
 

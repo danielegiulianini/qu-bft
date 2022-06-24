@@ -21,7 +21,6 @@ trait AbstractAuthenticatorFixture extends BeforeAndAfterEach {
   var authenticator: Authenticator
 
   override def beforeEach(): Unit = {
-    println("WithAuthenticator, authenticator is" + authenticator)
     beforeCreatingAuthenticator()
     authenticator.register(giovanni)
     authenticator.register(andrea)

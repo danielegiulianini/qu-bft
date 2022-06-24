@@ -57,7 +57,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, barrier flag, clientId, but lexicographically greater OperationRepresentation") {
         forAll(arbitraryLt) { aLt =>
           forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation)) { lt =>
-            lt should be > aLt //_ > aLt
+            lt should be > aLt
           }
         }
       }
@@ -239,7 +239,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
       it("should return the latest object version lt as the ltCo") {
         ltCo should be({
-          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineBarrier, true, thresholds.r).get
+          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineBarrier, barrierFlag = true, thresholds.r).get
           latestCo
         })
       }
@@ -273,7 +273,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   }
 
 
-  def checkOpType(ohsGen: Gen[OHS], opTypeToBe: OperationType) =
+  def checkOpType(ohsGen: Gen[OHS], opTypeToBe: OperationType): Assertion =
   /*without shrinking:
   forAll(ohsGen) { ohs => {
     val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
@@ -382,13 +382,13 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     def checkGreatestRepairableCandidate(ohsGen: Gen[OHS], barrierFlag: Boolean) = {
       forAll(ohsGen) { ohs =>
         val latest = latestCandidate(ohs, barrierFlag, thresholds.r)
-        //filtro quelli che hanno ordine più grande di r
-        ohs
+        //elimino quelli che hanno ordine minore di r e dico e verifico che non esiste
+        assert(!ohs
           .values
           .flatMap(e => e._1) //candidates here
           .filter(c => c._1.barrierFlag == barrierFlag)
-          .filter(c => c > latest.getOrElse(emptyCandidate))
-          .exists(order(_, ohs) < thresholds.r) should be(false)
+          .filter(c => c > latest.getOrElse(c)) //if ohs has not a latestcandidate then test must fail
+          .exists(order(_, ohs) >= thresholds.r))
       }
     }
 

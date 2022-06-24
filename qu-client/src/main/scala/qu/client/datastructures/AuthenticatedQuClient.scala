@@ -7,7 +7,7 @@ import qu.client.{AuthenticatingClient, QuClientImpl}
 import qu.model.ConcreteQuModel.{Operation, Request, Response}
 import qu.model.QuorumSystemThresholds
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 
@@ -26,7 +26,8 @@ class AuthenticatedQuClient[ObjectT](username: String,
                                      authServerPort: Int,
                                      serversInfo: Set[RecipientInfo],
                                      thresholds: QuorumSystemThresholds,
-                                     mode: Mode = ALREADY_REGISTERED)(implicit executionContext: ExecutionContext)
+                                     mode: Mode = ALREADY_REGISTERED,
+                                     maxTimeToWait: Duration = 100.seconds)(implicit executionContext: ExecutionContext)
   extends Shutdownable {
 
   private lazy val authClient = new AuthenticatingClient[ObjectT](authServerIp, authServerPort, username, password)
@@ -43,9 +44,7 @@ class AuthenticatedQuClient[ObjectT](username: String,
     } yield builder.addServers(serversInfo).withThresholds(thresholds).build
   }
 
-  //todo: fix delay (could be very long... (due to backoffs etc...)
-  //todo: if not present (due to network problems) now throwing unchecked exception, (could return option.empty)
-  protected def await[T](future: Future[T]): T = Await.result(future, 100.seconds)
+  protected def await[T](future: Future[T]): T = Await.result(future, maxTimeToWait)
 
   protected def submit[ReturnValueT](operation: Operation[ReturnValueT, ObjectT])(implicit
                                                                                   transportableRequest: JavaTypeable[Request[ReturnValueT, ObjectT]],

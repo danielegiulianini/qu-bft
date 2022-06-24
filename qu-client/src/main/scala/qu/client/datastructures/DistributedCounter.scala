@@ -10,26 +10,9 @@ import qu.client.{AuthenticatingClient, QuClient, QuClientBuilder}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
 
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
 
-
-trait Counter {
-  /** Current value of this counter. */
-  def value(): Int
-
-  /** Increment this counter. */
-  def increment(): Unit
-
-  /** Decrement this counter. */
-  protected def decrement(): Unit
-}
-
-trait Resettable {
-  def reset(): Unit
-}
-
-trait ResettableCounter extends Counter with Resettable
 
 object Value extends QueryReturningObject[Int]
 
@@ -52,7 +35,8 @@ class DistributedCounter(username: String,
                          authServerPort: Int,
                          serversInfo: Set[RecipientInfo],
                          thresholds: QuorumSystemThresholds,
-                         mode: Mode = ALREADY_REGISTERED)(implicit executionContext: ExecutionContext)
+                         mode: Mode = ALREADY_REGISTERED,
+                         maxTimeToWait: Duration = 100.seconds)(implicit executionContext: ExecutionContext)
   extends AuthenticatedQuClient[Int](username,
     password,
     authServerIp,

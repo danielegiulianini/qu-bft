@@ -14,8 +14,6 @@ import scala.concurrent.duration.DurationInt
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 
-class ServiceException(cause: Throwable) extends Exception(cause: Throwable)
-
 class AuthClient private(private val channel: ManagedChannel,
                          private val futureStub: AuthStub
                         )(implicit ec: ExecutionContext) extends Authenticator with AsyncAuthenticator /*extends Shutdownable*/ {
