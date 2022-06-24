@@ -49,12 +49,44 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
   def sendReq[T, U, _ <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable]): MockFunction3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[Option[T]]], Future[Response[Option[T]]]]
   = mockedStub.send[Request[T, U], Response[Option[T]]](_: Request[T, U])(_: JavaTypeable[Request[T, U]], _: JavaTypeable[Response[Option[T]]])
 
+  val notSuccessfulGetObjResponse = Response[Option[Int]](FAIL, Some(1), emptyAuthenticatedRh)
+  val successfulGetObjResponse = Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)
+  val notSuccessfulIncResponse = Response[Option[Unit]](FAIL, Some(()), emptyAuthenticatedRh)
+  val successfulIncResponse = Response[Option[Unit]](SUCCESS, Some(()), emptyAuthenticatedRh)
+
+  def expectRequestAndReturnResponse[T, U, Z <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable],
+                                                                 req: Request[T, U],
+                                                                 res: Future[Response[Option[T]]])
+  : CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[Option[T]]], Future[Response[Option[T]]]] =
+    sendReq[T, U, Z](mockedStub).expects(req, *, *).returning(res)
+
+  def expect2RequestAndReturnResponse[T, U, Z <: Operation[T, U]](req: Request[T, U],
+                                                                  res: Future[Response[Option[T]]]):
+  JwtAsyncClientStub[JavaTypeable] => CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[Option[T]]], Future[Response[Option[T]]]] =
+    (mockedStub: JwtAsyncClientStub[JavaTypeable]) => expectRequestAndReturnResponse[T, U, Z](mockedStub, req, res)
+
+  val expectGetObjAndReturnSuccessfulResponse =
+    expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
+      emptyOhs(serversIds.toSet)),
+      Future.successful(successfulGetObjResponse))
+  val expectGetObjAndDoNotReturn =
+    expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
+      emptyOhs(serversIds.toSet)),
+      Future.never)
+
+  val expectGetObjAndReturnUnSuccessfulResponse =
+    expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
+      emptyOhs(serversIds.toSet)),
+      Future.successful(notSuccessfulGetObjResponse))
+
+  val multiStepsScenarioTimeout = timeout(7.seconds)
+  val multiStepsScenarioInterval = interval(500.millis)
 
 
   //sends to all servers
   describe("a Simple quorum policy") {
     describe("when asked for finding a quorum") {
-      describe("and receiving it") {
+      describe("and receiving it in a single round of communication") {
         it("should not ask servers any more") {
           mockedServersStubs.values.foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
@@ -63,7 +95,108 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
 
           policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
         }
+        //should return answer correctly
+        it("should return the answer received") {
+          mockedServersStubs.values.foreach(mockedStub => {
+            sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
+              .returning(Future.successful(Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)))
+          })
+
+          whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))) {
+            //(Option[AnswerT], Int, OHS)
+            _._1 should be(Some(1))
+          }
+        }
+        //should return count correctly
+        it("should return the actual count of the most voted response") {
+          mockedServersStubs.values.foreach(mockedStub => {
+            sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
+              .returning(Future.successful(Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)))
+          })
+
+          whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))) {
+            //(Option[AnswerT], Int, OHS)
+            _._2 should be(thresholds.q)
+          }
+        }
+        //should return ohs correctly
+        it("should return the ohs correctly updated after the communications with servers") {
+          mockedServersStubs.values.foreach(mockedStub => {
+            sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
+              .returning(Future.successful(Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)))
+          })
+
+          whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))) {
+            //(Option[AnswerT], Int, OHS)
+            _._3 should be(emptyOhs(serversIds.toSet -- serversIds.takeRight(thresholds.n - thresholds.q).toSet))
+          }
+        }
       }
+      describe("and receiving it after n rounds of communication") {
+
+        it("should not ask servers any more") {
+          inSequence {
+            mockedServersStubs.values.foreach(expectGetObjAndDoNotReturn)
+            mockedServersStubs.values.foreach(expectGetObjAndDoNotReturn)
+            mockedServersStubs.values.foreach(mockedStub => {
+              sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce() //no more asking
+                .returning(Future.successful(successfulGetObjResponse))
+            })
+          }
+
+          whenReady(policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet)),
+            multiStepsScenarioTimeout,
+            multiStepsScenarioInterval) {
+            _ => succeed //testing behaviour only here
+          }
+        }
+        //should return answer correctly
+        it("should return the answer received") {
+          mockedServersStubs.values.foreach(expectGetObjAndDoNotReturn)
+          mockedServersStubs.values.foreach(expectGetObjAndDoNotReturn)
+          //only q are needed to "close" the quorum
+          mockedServersStubs.values.take(thresholds.q).foreach(expectGetObjAndReturnSuccessfulResponse)
+          mockedServersStubs.values.takeRight(thresholds.n - thresholds.q).foreach(expectGetObjAndDoNotReturn)
+
+          whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet)),
+            multiStepsScenarioTimeout,
+            multiStepsScenarioInterval) {
+            //(Option[AnswerT], Int, OHS)
+            _._1 should be(Some(1))
+          }
+        }
+        //should return count correctly
+        it("should return the actual count of the most voted response") {
+          mockedServersStubs.values.foreach(expectGetObjAndDoNotReturn)
+          mockedServersStubs.values.foreach(expectGetObjAndDoNotReturn)
+          //only q are needed to "close" the quorum
+          mockedServersStubs.values.take(thresholds.q).foreach(expectGetObjAndReturnSuccessfulResponse)
+          mockedServersStubs.values.takeRight(thresholds.n - thresholds.q).foreach(expectGetObjAndDoNotReturn)
+
+          whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet)),
+            multiStepsScenarioTimeout,
+            multiStepsScenarioInterval) {
+            //(Option[AnswerT], Int, OHS)
+            _._2 should be(thresholds.q)
+          }
+        }
+        //should return ohs correctly
+        it("should return the ohs correctly updated after the communications with servers") {
+          mockedServersStubs.values.foreach(expectGetObjAndDoNotReturn)
+          mockedServersStubs.values.foreach(expectGetObjAndDoNotReturn)
+          //only q are needed to "close" the quorum
+          mockedServersStubs.values.take(thresholds.q).foreach(expectGetObjAndReturnSuccessfulResponse)
+          mockedServersStubs.values.takeRight(thresholds.n - thresholds.q).foreach(expectGetObjAndDoNotReturn)
+
+          whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet)),
+            multiStepsScenarioTimeout,
+            multiStepsScenarioInterval) {
+            //(Option[AnswerT], Int, OHS)
+            _._3 should be(emptyOhs(serversIds.toSet -- serversIds.takeRight(thresholds.n - thresholds.q).toSet))
+          }
+        }
+      }
+
       //behaviour testing
       it("should broadcast to all servers") {
         mockedServersStubs.values.foreach(mockedStub => {
@@ -72,6 +205,7 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
 
         policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
       }
+
       it("should broadcast to all servers the ohs and the operation passed to it at the first round") {
         mockedServersStubs.values.foreach(mockedStub => {
           sendGetObjRequest(mockedStub).expects(Request[Int, Int](Some(GetObj()), emptyOhs(serversIds.toSet)), *, *)
@@ -81,101 +215,49 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
         policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
       }
 
-      describe("while any server is not responding") {
+
+      describe("while less than q servers are responding with success") {
 
         //continuous with fail
-        it("should keep broadcasting to all servers until receiving responses with SUCCESS by all the servers") {
-          val notSuccessfulGetObjResponse = Response[Option[Int]](FAIL, Some(1), emptyAuthenticatedRh)
-          val successfulGetObjResponse = Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)
-          val notSuccessfulIncResponse = Response[Option[Unit]](FAIL, Some(()), emptyAuthenticatedRh)
-          val successfulIncResponse = Response[Option[Unit]](SUCCESS, Some(()), emptyAuthenticatedRh)
-
-
-          def expectRequestAndReturnResponse[T, U, Z <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable],
-                                                                         req: Request[T, U],
-                                                                         respo: Future[Response[Option[T]]])
-          : CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[Option[T]]], Future[Response[Option[T]]]] =
-            sendReq[T, U, Z](mockedStub).expects(req, *, *).returning(respo)
-
-          def expect2RequestAndReturnResponse[T, U, Z <: Operation[T, U]](req: Request[T, U],
-                                                                          respo: Future[Response[Option[T]]]):
-          JwtAsyncClientStub[JavaTypeable] => CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[Option[T]]], Future[Response[Option[T]]]] =
-            (mockedStub: JwtAsyncClientStub[JavaTypeable]) => expectRequestAndReturnResponse[T, U, Z](mockedStub, req, respo)
-
-          val expectGetObjAndReturnSuccessfulResponse =
-            expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
-              emptyOhs(serversIds.toSet)),
-              Future.successful(successfulGetObjResponse))
-          val expectGetObjAndDoNotReturn =
-            expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
-              emptyOhs(serversIds.toSet)),
-              Future.never)
-          val expectGetObjAndReturnUnSuccessfulResponse =
-            expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
-              emptyOhs(serversIds.toSet)),
-              Future.successful(notSuccessfulGetObjResponse))
+        it("should keep broadcasting to all servers until receiving responses with SUCCESS by q servers") {
 
           inSequence {
             mockedServersStubs.values.foreach(expectGetObjAndReturnUnSuccessfulResponse)
             mockedServersStubs.values.foreach(expectGetObjAndReturnUnSuccessfulResponse)
+            //only q are needed to "close" the quorum
             mockedServersStubs.values.take(thresholds.q).foreach(expectGetObjAndReturnSuccessfulResponse)
             mockedServersStubs.values.takeRight(thresholds.n - thresholds.q).foreach(expectGetObjAndDoNotReturn)
           }
 
 
-          whenReady(policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet)), timeout(100.seconds), interval(500.millis)) {
-           _._3 should be(emptyOhs(serversIds.toSet -- serversIds.takeRight(thresholds.n - thresholds.q).toSet))
+          whenReady(policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet)),
+            multiStepsScenarioTimeout,
+            multiStepsScenarioInterval) {
+            //not the ony
+            _._3 should be(emptyOhs(serversIds.toSet -- serversIds.takeRight(thresholds.n - thresholds.q).toSet))
           }
         }
       }
-      /*
-       it("should keep broadcasting to all servers while any server is responding with FAIL until receiving SUCCESS responses by all the servers") {
+
+      describe("while less than q servers are responding") {
+        it("should keep broadcasting to all servers until receiving responses with SUCCESS by q servers") {
+
+          inSequence {
+            mockedServersStubs.values.foreach(expectGetObjAndDoNotReturn)
+            mockedServersStubs.values.foreach(expectGetObjAndDoNotReturn)
+            //only q are needed to "close" the quorum
+            mockedServersStubs.values.take(thresholds.q).foreach(expectGetObjAndReturnSuccessfulResponse)
+            mockedServersStubs.values.takeRight(thresholds.n - thresholds.q).foreach(expectGetObjAndDoNotReturn)
+          }
+
+          whenReady(policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet)),
+            multiStepsScenarioTimeout,
+            multiStepsScenarioInterval) {
+            //not the ony
+            _._3 should be(emptyOhs(serversIds.toSet -- serversIds.takeRight(thresholds.n - thresholds.q).toSet))
+          }
+        }
       }
-
-              it("should keep broadcasting to all servers the updated ohs and the given operation until receiving SUCCESS responses by all of them") {
-                mockedServersStubs.values.foreach(mockedStub => {
-                  sendGetObjRequest(mockedStub).expects(Request[Int, Int](Some(GetObj()), emptyOhs(serversIds.toSet)), *, *)
-                    .returning(Future.successful(Response[Int](SUCCESS, 1, emptyAuthenticatedRh)))
-                })
-
-                policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
-              }
-
-            }
-
-            //checking values returned match servers response...
-            describe("when asked for finding a quorum and getting it in a single round of communication") {
-              it("return the correct answer") {
-
-              }
-
-              it("return the correct order") {
-
-              }
-
-      //must use update(increment for seeing this)
-              it("return the correct ohs") {
-
-              }
-            }
-
-            describe("when asked for finding a quorum and getting it in more than one round of communication") {
-              it("return the correct answer") {
-
-              }
-
-              it("return the correct order") {
-
-              }
-
-      //must use at least one update(increment for seeing this)
-              it("return the correct ohs") {
-
-              }
-            }*/
-
-      //continuous with fail
-
 
       //checking exceptions launched match servers thrown exceptions...
       describe("when asked for finding a quorum with max t faulty servers " +
