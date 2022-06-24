@@ -9,8 +9,13 @@ import qu.service.ServersFixture
 
 import scala.concurrent.Future
 
-class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers with ServersFixture with OHSUtilities
-  with ClusterWithFailingServerFixture with AuthServerFixture with AuthenticatedQuClientFixture with AuthenticatingClientFixture {
+class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers
+  with ServersFixture
+  with OHSUtilities
+  with ClusterWithFailingServerFixture
+  with AuthServerFixture
+  with AuthenticatedQuClientFixture
+  with AuthenticatingClientFixture {
 
   describe("A Q/U protocol interaction with a quorum without failing servers") {
 
@@ -50,17 +55,18 @@ class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers with S
       }
 
 
-    describe("when multiple updates are issued followed by a query") {
+      describe("when multiple updates are issued followed by a query") {
 
-      it("should return to client the correct answer") {
-        val nIncrements = 3
-        val operations = List.fill(nIncrements)(Increment())
-        for {
-          authenticatedQuClient <- quClientAsFuture
-          _ <- seqFutures(operations)(op => authenticatedQuClient.submit(op))
-          queryResult <- authenticatedQuClient.submit(GetObj())
-        } yield queryResult should be(InitialObject + nIncrements)
+        it("should return to client the correct answer") {
+          val nIncrements = 3
+          val operations = List.fill(nIncrements)(Increment())
+          for {
+            authenticatedQuClient <- quClientAsFuture
+            _ <- seqFutures(operations)(op => authenticatedQuClient.submit(op))
+            queryResult <- authenticatedQuClient.submit(GetObj())
+          } yield queryResult should be(InitialObject + nIncrements)
 
+        }
       }
     }
   }

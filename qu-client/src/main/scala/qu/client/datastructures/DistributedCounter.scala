@@ -3,15 +3,13 @@ package qu.client.datastructures
 
 //this packages contains some data structures implementations built over Qu core
 
-import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.client.datastructures.Mode.ALREADY_REGISTERED
 import qu.{RecipientInfo, Shutdownable}
-import qu.client.{AuthenticatingClient, QuClient, QuClientBuilder}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
 
 import scala.concurrent.duration.{Duration, DurationInt}
-import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 
 object Value extends QueryReturningObject[Int]
@@ -28,7 +26,6 @@ case class Reset() extends UpdateReturningUnit[Int] {
   override def updateObject(obj: Int): Int = 0
 }
 
-//also RemoteCounter is good...
 class DistributedCounter(username: String,
                          password: String,
                          authServerIp: String,

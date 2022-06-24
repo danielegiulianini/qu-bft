@@ -17,11 +17,8 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AsyncC
   extends Shutdownable {
 
   //  ValidationUtils.requireNonNullAsInvalid(servers) breaks scalamock
+
   private val logger = Logger.getLogger(classOf[ResponsesGatherer[Transportable]].getName)
-  /*
-    private def logA(level: Level = Level.INFO, msg: String, param1: Int = 2)(implicit ec: ExecutionContext) = Future {
-      logger.log(Level.INFO, msg)
-    }*/
 
   private def log(level: Level = Level.WARNING, msg: String, param1: Int = 2) =
     logger.log(level, msg)
@@ -98,11 +95,8 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AsyncC
                                              exceptionsByServerId: MutableMap[ServerId, Throwable]): Unit
 
   override def shutdown(): Future[Unit] = {
-    println("in responsegatherer il thread is: " + Thread.currentThread().getName())
-    Future.reduceLeft[Unit, Unit](servers.values.toList.map(s => for {
-      _ <- Future(println("in reduce il thread is: " + Thread.currentThread().getName()))
-      _ <- s.shutdown()    } yield ()
-    ))((_, _) => ()).map(_ => scheduler.shutdown()).map(e =>servers.values.foreach(i => println("stub is shtodwn?" + i.isShutdown)) ) //Future.sequence(servers.values.map(s => s.shutdown())) //servers.values.foreach(_.shutdown())
+    Future.reduceLeft[Unit, Unit](servers.values.toList.map(_.shutdown())
+    )((_, _) => ()).map(_ => scheduler.shutdown()) //Future.sequence(servers.values.map(s => s.shutdown()))
   }
 
   override def isShutdown: Boolean = servers.values.forall(_.isShutdown) && scheduler.isShutdown

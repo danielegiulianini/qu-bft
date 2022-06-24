@@ -13,6 +13,11 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
 
+/*private def logA(level: Level = Level.INFO, msg: String, param1: Int = 2)(implicit ec: ExecutionContext) = Future {
+  logger.log(Level.WARNING, msg)
+}*/
+
+
 class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPolicy[ObjectT, Transportable] /* with Shutdownable*/ ,
                                               private var backoffPolicy: BackOffPolicy,
                                               private val serversIds: Set[String], //only servers ids are actually required in this class
@@ -21,16 +26,10 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
 
   private val logger = Logger.getLogger(classOf[QuClientImpl[ObjectT, Transportable]].getName)
 
-  private def logA(level: Level = Level.INFO, msg: String, param1: Int = 2)(implicit ec: ExecutionContext) = Future {
-    logger.log(Level.WARNING, msg)
-  }
-
-  private def log(level: Level = Level.INFO, msg: String, param1: Int = 2) =
-    logger.log(Level.WARNING, msg)
+  import qu.LoggingUtils.AsyncLogger
 
   var cachedOhs: OHS = emptyOhs(serversIds)
 
-  //  var lastOperation: Future[_] = Future.unit
   override def submit[T](op: Operation[T, ObjectT])(implicit
                                                     ec: ExecutionContext,
                                                     transportableRequest: Transportable[Request[T, ObjectT]],
@@ -38,9 +37,7 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
                                                     transportableRequestObj: Transportable[Request[Object, ObjectT]],
                                                     transportableResponseObj: Transportable[Response[Option[Object]]]):
   Future[T] = {
-    println("sumbitting inside QuClientImpl ");
 
-    //var lastOperation: Future[_] = Future.unit
     def submitWithOhs(ohs: OHS): Future[T] = {
       for {
         (answer, order, updatedOhs) <- policy.quorum[T](Some(op), ohs)
@@ -48,12 +45,12 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
         answer <- if (order < thresholds.q) for {
           (opType, _, _) <- classifyAsync(updatedOhs)
           optimisticAnswer <- if (opType == METHOD) for {
-            _ <- logA(msg = "returning value of query executed optimistically (as type is METHOD but responses' order less than q (" + order + ").")
+            _ <- logger.logAsync(msg = "returning value of query executed optimistically (as type is METHOD but responses' order less than q (" + order + ").")
             optimisticAnswer <- Future(
               answer.getOrElse(
                 throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None answer")))
           } yield optimisticAnswer else for {
-            _ <- logA(msg = "opType: " + opType + ", so repairing.")
+            _ <- logger.logAsync(msg = "opType: " + opType + ", so repairing.")
             repairedOhs <- repair(updatedOhs)
             newAnswer <- submitWithOhs(repairedOhs)
             _ <- updateCachedOhs(updatedOhs)
@@ -62,10 +59,6 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
           throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None answer")))
       } yield answer
     }
-
-    /*this.synchronized {
-      lastOperation = lastOperation.map(_ => submitWithOhs(emptyOhs(serversIds)))
-    }*/
 
     submitWithOhs(cachedOhs)
   }
@@ -89,10 +82,6 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
     //utilities
     def backOffAndRetry(): Future[OHS] = for {
       _ <- backoffPolicy.backOff()
-      _ <- Future {
-        println("after backing off")
-      }
-
       //perform a barrier or a copy
       (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, ObjectT]],
         ohs) //here Object is fundamental as server could return other than T (could use Any too??)
@@ -112,7 +101,7 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
       _ <- Future {
         println("so, starting to repair...")
       }
-      (operationType, _, _) <- classifyAsync(ohs) //todo could use futureSuccessful here
+      (operationType, _, _) <- classifyAsync(ohs) //could use Future.Successful here too
       _ <- Future {
         println("after classifying, resulting type is: " + operationType)
       }

@@ -6,9 +6,10 @@ import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 import qu.{ExceptionsInspector, ResponsesGatherer}
 import qu.ListUtils.{getMostFrequentElement, getMostFrequentElementWithOccurrences}
 import qu.auth.common.FutureUtilities.mapThrowable
-import qu.client.OperationOutputNotRegisteredException
+import qu.client.{OperationOutputNotRegisteredException, QuClientImpl}
 import qu.stub.client.JwtAsyncClientStub
 
+import java.util.logging.Logger
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.collection.mutable.{Map => MutableMap}
@@ -23,6 +24,7 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
     with ClientQuorumPolicy[ObjectT, Transportable]
     with ExceptionsInspector[Transportable] {
 
+  private val logger = Logger.getLogger(classOf[SimpleBroadcastClientPolicy[ObjectT, Transportable]].getName)
 
   override def quorum[AnswerT](operation: Option[Operation[AnswerT, ObjectT]],
                                ohs: OHS)
@@ -36,15 +38,17 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
 
     def gatherResponsesAndOhs(): Future[(Seq[Response[Option[AnswerT]]], OHS)] = {
       for {
-        responses <- mapThrowable[Map[ServerId, Response[Option[AnswerT]]]](gatherResponses[Request[AnswerT, ObjectT], Response[Option[AnswerT]]](
-          request = Request[AnswerT, ObjectT](operation, ohs),
-          responsesQuorum = thresholds.q,
-          successResponseFilter = _.responseCode == StatusCode.SUCCESS), {
-          //mapping exception to more readable one
-          case ex: StatusRuntimeException if ex.getStatus.getCode == Status.UNIMPLEMENTED.getCode =>
-            OperationOutputNotRegisteredException()
-          case thr => thr
-        })
+        responses <- mapThrowable[Map[ServerId, Response[Option[AnswerT]]]](
+          gatherResponses[Request[AnswerT, ObjectT],
+            Response[Option[AnswerT]]](
+            request = Request[AnswerT, ObjectT](operation, ohs),
+            responsesQuorum = thresholds.q,
+            successResponseFilter = _.responseCode == StatusCode.SUCCESS), {
+            //mapping exception to more readable one
+            case ex: StatusRuntimeException if ex.getStatus.getCode == Status.UNIMPLEMENTED.getCode =>
+              OperationOutputNotRegisteredException()
+            case thr => thr
+          })
       } yield (responses.values.toSeq, extractOhsFromResponses(responses))
     }
 

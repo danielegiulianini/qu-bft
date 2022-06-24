@@ -12,8 +12,3 @@ trait QuService[Transportable[_], U] {
 
   def sObjectRequest(request: LogicalTimestamp, responseObserver: StreamObserver[ObjectSyncResponse[U]]): Unit
 }
-
-//co containing utilities for creation
-object QuService {
-  //def defaultBuilder[U]() = QuServiceImplBase.QuServiceBuilder.simpleQuorumPolicyJacksonServiceBuilder[U]()
-}

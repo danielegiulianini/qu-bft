@@ -8,10 +8,8 @@ import scala.concurrent.{ExecutionContext, Future}
 class ExponentialBackOffPolicy(private var initialBackOffTime: FiniteDuration = 1000.millis,
                                private var scheduler: OneShotAsyncScheduler) extends BackOffPolicy {
 
-  // todo (could use functional object)
   def backOff()(implicit ec: ExecutionContext): Future[Unit] = {
     initialBackOffTime *= 2
-    println("backing off for: " + initialBackOffTime)
     scheduler.scheduleOnceAsPromise(initialBackOffTime)
   }
 }

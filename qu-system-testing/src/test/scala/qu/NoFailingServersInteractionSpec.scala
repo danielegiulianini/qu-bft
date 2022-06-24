@@ -20,37 +20,21 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers
   //type information survives network transit
   describe("A Q/U protocol interaction with a quorum without failing servers") {
 
-    /*def freshQuClient() = for {
-      _ <- authClient.register()
-      builder <- authClient.authorize()
-    } yield builder
-      .addServers(quServerIpPorts)
-      .withThresholds(thresholds).build*/
-
     describe("when a query is issued") {
       it("should return to client the expected answer value") {
-        println("running thread: " + Thread.currentThread().getName()
-        )
         for {
           authenticatedQuClient <- quClientAsFuture
-          value <- Future {} //authenticatedQuClient.submit[Int](GetObj())
-        } yield ()
-        succeed
-        /*for {
-          authenticatedQuClient <- quClientAsFuture
           value <- authenticatedQuClient.submit[Int](GetObj())
-        } yield value should be(InitialObject)*/
+        } yield value should be(InitialObject)
       }
     }
 
-
     describe("when an update is issued") {
       it("should return to client the expected answer value") {
-
         for {
           authenticatedQuClient <- quClientAsFuture
           value <- authenticatedQuClient.submit[Unit](Increment())
-        } yield value should be(()) //already out of future (no need for Future.successful)
+        } yield value should be(()) //already out of future (no need for Future.successful(...))
       }
     }
     describe("when an update is issued followed by a query") {
@@ -90,10 +74,3 @@ class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers
     }
   }
 }
-
-
-/* //todo maybe to move to fixture (or maybe all the clientFuture?) (to be shutdown  correctly)
- val client = AuthenticatingClient[Int](authServerInfo.ip,
-   authServerInfo.port,
-   "username",
-   "password")*/

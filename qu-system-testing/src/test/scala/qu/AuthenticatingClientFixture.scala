@@ -12,7 +12,6 @@ import scala.concurrent.duration.DurationInt
 trait AuthenticatingClientFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
   self: AsyncTestSuite with ServersFixture =>
 
-  //todo maybe to move to fixture (or maybe all the clientFuture?) (to be shutdown  correctly)
   var authClient: AuthenticatingClient[Int] = _
 
   override def withFixture(test: NoArgAsyncTest): FutureOutcome = {

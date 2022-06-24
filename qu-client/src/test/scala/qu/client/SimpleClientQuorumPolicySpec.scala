@@ -5,7 +5,7 @@ import io.grpc.{Status, StatusRuntimeException}
 import org.scalamock.function.MockFunction3
 import org.scalamock.handlers.CallHandler3
 import org.scalamock.scalatest.MockFactory
-import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
@@ -23,8 +23,6 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
   with FourServersScenario
   with OHSUtilities
   with KeysUtilities {
-
-  //val patienceConfig2 =PatienceConfig(timeout = Span(2, Seconds), interval = Span(5, Millis))
 
   val mockedServersStubs: Map[String, JwtAsyncClientStub[JavaTypeable]] =
     serversIds.map(_ -> mock[JwtAsyncClientStub[JavaTypeable]]).toMap
@@ -63,18 +61,18 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
     expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
       emptyOhs(serversIds.toSet)),
       Future.successful(successfulGetObjResponse))
-  val expectGetObjAndDoNotReturn =
+  val expectGetObjAndDoNotReturn: JwtAsyncClientStub[JavaTypeable] => CallHandler3[Request[Int, Int], JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[Response[Option[Int]]]] =
     expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
       emptyOhs(serversIds.toSet)),
       Future.never)
 
-  val expectGetObjAndReturnUnSuccessfulResponse =
+  val expectGetObjAndReturnUnSuccessfulResponse: JwtAsyncClientStub[JavaTypeable] => CallHandler3[Request[Int, Int], JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[Response[Option[Int]]]] =
     expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
       emptyOhs(serversIds.toSet)),
       Future.successful(notSuccessfulGetObjResponse))
 
-  val multiStepsScenarioTimeout = timeout(7.seconds)
-  val multiStepsScenarioInterval = interval(500.millis)
+  val multiStepsScenarioTimeout: PatienceConfiguration.Timeout = timeout(7.seconds)
+  val multiStepsScenarioInterval: PatienceConfiguration.Interval = interval(500.millis)
 
 
   //sends to all servers

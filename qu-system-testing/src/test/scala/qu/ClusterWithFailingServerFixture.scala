@@ -31,8 +31,6 @@ trait ClusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers 
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
-      println("waiting clusterWithFailingServer (in fixture)...")
-      //Await.ready(clusterWithFailingServer.shutdown(), 10.seconds)
       clusterWithFailingServer.shutdown()
       Thread.sleep(1000)
     }
