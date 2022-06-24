@@ -1,6 +1,8 @@
 package qu.model
 
 import org.scalatest.funspec.AnyFunSpec
+import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => Lt}
+
 import qu.model.ConcreteQuModel._
 import qu.model.ConcreteQuModel.ConcreteOperationTypes._
 import org.scalacheck.{Arbitrary, Gen}
@@ -56,8 +58,8 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, barrier flag, clientId, but lexicographically greater OperationRepresentation") {
         forAll(arbitraryLt) { aLt =>
-          forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation)) {
-            _ > aLt
+          forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation)) { lt =>
+            lt should be > aLt //_ > aLt
           }
         }
       }
@@ -69,8 +71,8 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
             aLt.barrierFlag,
             aLt.clientId,
             aLt.operation,
-            aLt.ohs)) {
-            _ > aLt
+            aLt.ohs)) { lt =>
+            lt should be > aLt
           }
         }
 
@@ -79,24 +81,49 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       //test equals (ordering doesn't affect equals so must check equality too)
       it("should be equal with a ConcreteLogicalTimestamp with same time, same barrierFlag, same clientId, same operation and same ohs") {
         forAll(arbitraryLtInfo) { case (time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) =>
-          ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) == ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation)
+          Lt(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) should be(Lt(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation))
         }
       }
 
 
-      it("should not be equal to a ConcreteLogicalTimestamp with different time") {
-        forAll(arbitraryLtInfo) { case (time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) =>
-          ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) ==
-            ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation)
+      it("should not be equal to a ConcreteLogicalTimestamp with all same fields but different time") {
+        forAll(arbitraryLt) { lt =>
+          forAll(sameLtForAllButTime(lt)) {
+            _ should not be lt
+          }
         }
       }
 
-      it("should not be equal to a ConcreteLogicalTimestamp with same time, different barrierFlag") {
-        //assert(initialWorld.currentIteration == 0)
+      it("should not be equal to a ConcreteLogicalTimestamp with all same fields but different barrier flag") {
+        forAll(arbitraryLt) { lt =>
+          forAll(sameLtForAllButBarrierFlag(lt)) {
+            _ should not be lt
+          }
+        }
       }
 
-      it("should not be equal to a ConcreteLogicalTimestamp with same time, different clientId") {
-        //assert(initialWorld.currentIteration == 0)
+      it("should not be equal to a ConcreteLogicalTimestamp with all same fields but different client id") {
+        forAll(arbitraryLt) { lt =>
+          forAll(sameLtForAllButClientId(lt)) {
+            _ should not be lt
+          }
+        }
+      }
+
+      it("should not be equal to a ConcreteLogicalTimestamp with all same fields but different operation") {
+        forAll(arbitraryLt) { lt =>
+          forAll(sameLtForAllButOpRepr(lt)) {
+            _ should not be lt
+          }
+        }
+      }
+
+      it("should not be equal to a ConcreteLogicalTimestamp with all same fields but different ohs") {
+        forAll(arbitraryLt) { lt =>
+          forAll(sameLtForAllButOhsRepr(lt)) {
+            _ should not be lt
+          }
+        }
       }
     }
   }
@@ -420,9 +447,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
         describe("when queried for its latest time") {
           it("should not contain any time greater than the one it returns") {
 
-            import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT}
-
-            val latestTimestamp = LT(1,
+            val latestTimestamp = Lt(1,
               false,
               Some("client1"),
               aOperationRepresentation,
@@ -481,7 +506,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
           it("should be equals to it") {
             forAll(ohsGen) {
               ohs => {
-                assert(represent(ohs) == represent(ohs))
+                represent(ohs) should be(represent(ohs))
               }
             }
           }
@@ -492,9 +517,8 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       describe("An Operation representation") {
         describe("when compared to another representation of it") {
           it("should be equals to it") {
-            forAll(opGen) {
-              op =>
-                assert(represent(Some(op)) == represent(Some(op)))
+            forAll(opGen) { op =>
+              represent(Some(op)) should be(represent(Some(op)))
             }
           }
         }
