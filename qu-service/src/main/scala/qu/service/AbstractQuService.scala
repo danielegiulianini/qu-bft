@@ -12,7 +12,6 @@ import qu.{AbstractRecipientInfo, JacksonMethodDescriptorFactory, RecipientInfo,
 import qu.service.quorum.{JacksonSimpleBroadcastServerPolicy, ServerQuorumPolicy}
 import qu.storage.{ImmutableStorage, Storage}
 import presentation.CachingMethodDescriptorFactory
-import qu.service.AbstractQuService.ServerInfo
 
 import java.util.Objects
 import scala.concurrent.{ExecutionContext, Future}

@@ -118,7 +118,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String,
       replyWithResponse(response)
 
       logger.log(Level.INFO, "repeated request detected! sending response" + response)
-      return //todo put attention if it's possible to express this with a chain of if e.se and only one return
+      return
     }
 
     //validating if ohs current
@@ -130,15 +130,12 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String,
         logger.logWithPrefix(Level.INFO, "Since query is required, optimistic query execution, retrieving obj with lt " + lt)
         val obj = storage.retrieveObject(latestTime(myReplicaHistory))
           .getOrElse(throw new Error("inconsistent protocol state: if replica history has lt " +
-            "older than ltcur store must contain ltcur too."))
+            "older than ltCur store must contain ltCur too."))
         val (newObj, opAnswer) = executeOperation(request, obj)
         objToWorkOn = newObj
         answerToReturn = Some(opAnswer)
         if (newObj != obj) {
-          logger.logWithPrefix(Level.INFO, "obj before query: " + obj + ", new one: " + objToWorkOn)
-
-          //todo here what to do?
-          //throw new InvalidParameterException("user sent an update operation as query")
+          //no need to check for a update passed as query (since checked at the first time)
         }
       }
 

@@ -44,7 +44,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AsyncC
 
       //not requires lock here as 1. cancelable val is not shared at this moment and 2. scheduler scheduleOnceAsCallback being thread-safe
       val cancelable = scheduler.scheduleOnceAsCallback(retryingTime)({
-        log(msg = "timeout is over, some server responses missing (or unsuccessful), so re-broadcasting. ")
+        logger.log(Level.INFO, "timeout is over, some server responses missing (or unsuccessful), so re-broadcasting. ")
         gatherResponsesImpl(request,
           completionPromise,
           responseSet,

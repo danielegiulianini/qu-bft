@@ -10,13 +10,8 @@ import qu.model.QuorumSystemThresholds
 
 import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, Future}
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
 
-
-/*private def logA(level: Level = Level.INFO, msg: String, param1: Int = 2)(implicit ec: ExecutionContext) = Future {
-  logger.log(Level.WARNING, msg)
-}*/
-
+import qu.LoggingUtils.AsyncLogger
 
 class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPolicy[ObjectT, Transportable] /* with Shutdownable*/ ,
                                               private var backoffPolicy: BackOffPolicy,
@@ -25,8 +20,6 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
   extends QuClient[ObjectT, Transportable] {
 
   private val logger = Logger.getLogger(classOf[QuClientImpl[ObjectT, Transportable]].getName)
-
-  import qu.LoggingUtils.AsyncLogger
 
   var cachedOhs: OHS = emptyOhs(serversIds)
 
@@ -98,13 +91,8 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
 
     //actual logic
     for {
-      _ <- Future {
-        println("so, starting to repair...")
-      }
+      _ <- logger.logAsync(msg = "client starts repairing.")
       (operationType, _, _) <- classifyAsync(ohs) //could use Future.Successful here too
-      _ <- Future {
-        println("after classifying, resulting type is: " + operationType)
-      }
       ohs <- backOffAndRetryUntilMethod(operationType, ohs)
     } yield ohs
   }

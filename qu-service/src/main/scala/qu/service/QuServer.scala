@@ -35,12 +35,8 @@ class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerIn
 
   private val logger = Logger.getLogger(classOf[QuServerImpl[Transportable, ObjectT]].getName)
 
-  private def log(level: Level = Level.INFO, msg: String) =
-    logger.log(Level.INFO, msg)
-println("prima di agtgiungee il service:::: " + quService)
   //here can plug creds with tls
   private val grpcServer = {
-    println("jJJJJJJJJJJJJJJJJJJJJJJJJJJ quService is Hutdown?: " + quService.isShutdown)
     Grpc.newServerBuilderForPort(port,
       InsecureServerCredentials.create()) //ServerBuilder.forPort(port)
       .intercept(authorizationInterceptor)
@@ -50,26 +46,18 @@ println("prima di agtgiungee il service:::: " + quService)
 
   override def start(): Unit = {
     grpcServer.start
-    log(msg = "server listening at port " + port + " started.")
+    logger.log(Level.INFO, "server listening at port " + port + " started.")
   }
 
   override def shutdown(): Future[Unit] =
     for {
       _ <- quService.shutdown()
       _ <- Future {
-        println("service shutdown!")
-      }
-      _ <- Future {
         grpcServer.shutdown
         grpcServer.awaitTermination()
-        log(msg = "server shut down.together with servicd! (service shutdo?) "+ quService.isShutdown)
+        logger.log(Level.INFO, "server shut down.")
       }
 
-      /*Future {
-        grpcServer.shutdown
-        grpcServer.awaitTermination()
-        log(msg = "server shut down.")
-      }.map(_ => quService.shutdown())*/
     } yield ()
 
   override def isShutdown: Flag = grpcServer.isShutdown

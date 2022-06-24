@@ -44,7 +44,6 @@ class QuServerBuilder[Transportable[_], ObjectT:TypeTag](private val serviceBuil
   }
 
   def build(): QuServer = {
-    //println("UUUUUUUUUUUUUUUUUUUUUU il quService quando faccio build del serverBuider is: " + serviceBuilder.build())
     //todo validation missing
     new QuServerImpl(authorizationInterceptor,
       quService = serviceBuilder.build(),
