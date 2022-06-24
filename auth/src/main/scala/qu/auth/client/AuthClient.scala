@@ -10,12 +10,19 @@ import qu.auth.common.{AsyncAuthenticator, Authenticator, BadContentException, C
 
 import java.util.concurrent.TimeUnit
 import java.util.logging.{Level, Logger}
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-
+/**
+ *  jwt token based authentication...//todo
+ * @param channel
+ * @param futureStub
+ * @param maxTimeout
+ * @param ec
+ */
 class AuthClient private(private val channel: ManagedChannel,
-                         private val futureStub: AuthStub
+                         private val futureStub: AuthStub,
+                         private val maxTimeout: Duration = 100.seconds
                         )(implicit ec: ExecutionContext) extends Authenticator with AsyncAuthenticator /*extends Shutdownable*/ {
 
   private[this] val logger = Logger.getLogger(classOf[qu.auth.client.AuthClient].getName)
@@ -28,16 +35,13 @@ class AuthClient private(private val channel: ManagedChannel,
   def isShutdown: Boolean = channel.isShutdown
 
   def registerAsync(name: String, password: String): Future[RegisterResponse] = {
-    logger.info("Will try to register " + name + " ...")
+    logger.info("Auth server received register request from user " + name + ".")
     val request = User(username = name, password = password)
     mapThrowable(futureStub.registerAsync(request), {
       case error: StatusRuntimeException => error.getStatus match {
         case INVALID_ARGUMENT =>
-          //logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
           BadContentException(error.getMessage)
         case ALREADY_EXISTS =>
-          logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
-          println("arrivato al client il ALREADY_EXISTS ")
           ConflictException(error.getMessage)
         case _ if error.getCause.isInstanceOf[NullPointerException] =>
           BadContentException(error.getMessage)
@@ -49,15 +53,13 @@ class AuthClient private(private val channel: ManagedChannel,
 
 
   def authorizeAsync(username: String, password: String): Future[Token] = {
-    logger.info("Will try to authirize " + username + " ...")
+    logger.info("Auth server received authorize request from user " + username + ".")
     mapThrowable(futureStub.authorizeAsync(Credentials(username, password)),
       {
         case error: StatusRuntimeException => error.getStatus match {
           case INVALID_ARGUMENT =>
-            logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
             BadContentException(error.getMessage)
           case NOT_FOUND =>
-            logger.log(Level.WARNING, "RPC failed: {0}", error.getStatus)
             WrongCredentialsException(error.getMessage)
           case _ if error.getCause.isInstanceOf[NullPointerException] =>
             BadContentException(error.getMessage)
@@ -73,8 +75,7 @@ class AuthClient private(private val channel: ManagedChannel,
   override def authorize(credentials: Credentials): Token =
     await(authorizeAsync(credentials.username, credentials.password))
 
-  //todo timeout
-  protected def await[T](future: Future[T]): T = Await.result(future, 100.seconds)
+  protected def await[T](future: Future[T]): T = Await.result(future, maxTimeout)
 
   override def registerAsync(request: User): Future[RegisterResponse] = registerAsync(request.username, request.password)
 
@@ -89,8 +90,7 @@ object AuthClient {
     new AuthClient(channel, asyncStub)
   }
 
-  //factory for in-process channel (could have exposed an apply with channel (like private constructor)...
-  //for easing in process construction too), as I want to instantiate it for testing but constructor is private...
+  //factory for in-process channel
   def apply(name: String)(implicit ec: ExecutionContext): AuthClient = {
     val channel = InProcessChannelBuilder.forName(name).usePlaintext().build
     val asyncStub = AuthGrpc.stub(channel).withWaitForReady()

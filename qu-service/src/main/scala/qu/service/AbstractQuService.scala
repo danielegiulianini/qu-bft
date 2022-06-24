@@ -10,15 +10,13 @@ import qu.model.QuorumSystemThresholds
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.{AbstractRecipientInfo, JacksonMethodDescriptorFactory, RecipientInfo, Shutdownable}
 import qu.service.quorum.{JacksonSimpleBroadcastServerPolicy, ServerQuorumPolicy}
-import qu.storage.{ImmutableStorage, Storage}
+import qu.storage.{ImmutableStorage}
 import presentation.CachingMethodDescriptorFactory
 
 import java.util.Objects
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.runtime.universe
 import scala.reflect.runtime.universe._
 
-//import that declares specific dependency
 import qu.model.ConcreteQuModel._
 
 abstract class AbstractQuService[Transportable[_], ObjectT](protected val thresholds: QuorumSystemThresholds,
@@ -29,10 +27,9 @@ abstract class AbstractQuService[Transportable[_], ObjectT](protected val thresh
                                                            (implicit executor: ExecutionContext)
   extends BindableService with QuService[Transportable, ObjectT] with Shutdownable {
 
-  //stuff that cannot be passed at creation time but meust be provided for QuServiceImpl to work
-  protected var ssd: ServerServiceDefinition = _ //private
-  // protected var serversInfo: Set[ServerInfo] = _ //private  //protected var serversInfo: Set[ServerInfo] = _serversInfo
-  protected var quorumPolicy: ServerQuorumPolicy[Transportable, ObjectT] = _ //private  //protected var quorumPolicy: qu.service.quorum.ServerQuorumPolicy[U] = _quorumPolicy
+  //stuff that cannot be passed at creation time but must be provided for QuServiceImpl to work
+  protected var ssd: ServerServiceDefinition = _
+  protected var quorumPolicy: ServerQuorumPolicy[Transportable, ObjectT] = _
   protected var keysSharedWithMe: Map[ServerId, Key] = _
 
   override def bindService(): ServerServiceDefinition = ssd
@@ -148,12 +145,9 @@ object AbstractQuService {
 
     def build(): AbstractQuService[Transportable, ObjectT] = {
       //validation
-      println("(QuServiceBuilder2)buildo il service" + id(RecipientInfo(ip, port)))
-
       quService.ssd = ssd.build()
       quService.keysSharedWithMe = keysSharedWithMe
       quService.quorumPolicy = policyFactory(servers, thresholds)
-      println("il quService COSTRUITOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO is: " + quService)
       quService
     }
 
@@ -177,7 +171,6 @@ object AbstractQuService {
                                          obj: ObjectT)
                                         (implicit ec: ExecutionContext)
       : QuServiceBuilder2[JavaTypeable, ObjectT] = {
-        println("(JacksonServiceBuilderFactory) creo builder per il service" + id(serverInfo))
         new QuServiceBuilder2(
           methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
           policyFactory = JacksonSimpleBroadcastServerPolicy[ObjectT](id(serverInfo), _, _),

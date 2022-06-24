@@ -1,3 +1,8 @@
 package qu.auth.common
 
-case class BadContentException(message:String) extends Exception
+/**
+ * Signals that user-provided content does not respect an agreed protocol.
+ *
+ * @param message the message further describing the exception.
+ */
+case class BadContentException(message: String) extends Exception
