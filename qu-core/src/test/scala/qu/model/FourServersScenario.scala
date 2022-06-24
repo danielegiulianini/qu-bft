@@ -1,7 +1,6 @@
-package qu
+package qu.model
 
-import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
-import qu.model.{KeysUtilities, QuorumSystemThresholds}
+import qu.model.ConcreteQuModel.{Key, ServerId}
 
 //or as obj or as  a case class
 trait FourServersScenario {

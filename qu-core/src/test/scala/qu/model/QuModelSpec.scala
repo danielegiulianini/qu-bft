@@ -25,7 +25,7 @@ import scala.math.Ordered.orderingToOrdered
 
 class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers
   with OHSUtilities
-  with KeysUtilities {
+  with KeysUtilities with FourServersScenario {
 
   describe("A ConcreteLogicalTimestamp") {
 
@@ -129,11 +129,11 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   }
 
   //todo can be shared with quClientSpec in ascenario case class
-  val exampleServersIds = (1 to 4 toList).map("s" + _)
-  val exampleServersKeys: Map[ServerId, Map[ConcreteQuModel.ServerId, ServerId]] =
-    exampleServersIds.map(id => id -> keysForServer(id, exampleServersIds.toSet)).toMap
-  val r = 2
-  val q = 3
+  /* val serversIds = (1 to 4 toList).map("s" + _)
+   val serversKeys: Map[ServerId, Map[ConcreteQuModel.ServerId, ServerId]] =
+     serversIds.map(id => id -> keysForServer(id, serversIds.toSet)).toMap
+   val r = 2
+   val q = 3*/
 
   //candidate
   describe("A candidate") {
@@ -142,9 +142,9 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     val operation = Some(IncrementAsObj)
     val clientId = Some("client1")
     describe("when it is set up from a ohs with an established method as latest ") {
-      val ohsClassifiedAsMethod = ohsWithMethodFor(exampleServersKeys)
-      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsMethod, q, r, clientId.get)
-      val (latestLt, _) = latestCandidate(ohsClassifiedAsMethod, false, r).get
+      val ohsClassifiedAsMethod = ohsWithMethodFor(serversKeys)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsMethod, thresholds.q, thresholds.r, clientId.get)
+      val (latestLt, _) = latestCandidate(ohsClassifiedAsMethod, false, thresholds.r).get
       it("should return a method as operation type") {
         opType should be(METHOD)
       }
@@ -165,9 +165,9 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       "nor an established barrier candidate " +
       "nor a repairable object candidate " +
       "nor a repairable barrier candidate are there") {
-      val ohsClassifiedAsBarrier = ohsWithBarrierFor(exampleServersKeys)
-      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsBarrier, q, r, clientId.get)
-      val (latestLt, _) = latestCandidate(ohsClassifiedAsBarrier, false, r).get
+      val ohsClassifiedAsBarrier = ohsWithBarrierFor(serversKeys)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsBarrier, thresholds.q, thresholds.r, clientId.get)
+      val (latestLt, _) = latestCandidate(ohsClassifiedAsBarrier, false, thresholds.r).get
 
       it("should return a method as operation type") {
         opType should be(BARRIER)
@@ -187,9 +187,9 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
     }
     describe("when it is set up from a ohs with an established barrier as latest ") {
-      val ohsClassifiedAsCopy = ohsWithCopyFor(exampleServersKeys)
-      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsCopy, q, r, clientId.get)
-      val (_, latObj, _) = classify(ohs = ohsClassifiedAsCopy, quorumThreshold = q, repairableThreshold = r)
+      val ohsClassifiedAsCopy = ohsWithCopyFor(serversKeys)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsCopy, thresholds.q, thresholds.r, clientId.get)
+      val (_, latObj, _) = classify(ohs = ohsClassifiedAsCopy, quorumThreshold = thresholds.q, repairableThreshold = thresholds.r)
       val (latestLt, latestLtCo) = latObj.get
 
       //previous: val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, false, r).get
@@ -209,26 +209,26 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
       it("should return the latest barrier version lt as the current lt") {
         ltCur should be({
-          val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, true, r).get
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, true, thresholds.r).get
           latestLt
         })
       }
     }
     describe("when it is set up from a ohs with a repairable method as latest ") {
-      val ohsClassifiedAsInlineMethod = ohsWithInlineMethodFor(exampleServersKeys, r)
-      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsInlineMethod, q, r, clientId.get)
+      val ohsClassifiedAsInlineMethod = ohsWithInlineMethodFor(serversKeys, thresholds.r)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsInlineMethod, thresholds.q, thresholds.r, clientId.get)
       it("should return a inline method as operation type") {
         opType should be(INLINE_METHOD)
       }
       it("should return the correct lt as the new lt") {
         lt should be({
-          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineMethod, false, r).get
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineMethod, false, thresholds.r).get
           latestLt
         })
       }
       it("should return the latest object version lt as the ltCo") {
         ltCo should be({
-          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineMethod, false, r).get
+          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineMethod, false, thresholds.r).get
           latestCo
         })
       }
@@ -237,20 +237,20 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
     }
     describe("when it is set up from a ohs with a repairable barrier as latest ") {
-      val ohsClassifiedAsInlineBarrier = ohsWithInlineBarrierFor(exampleServersKeys, r)
-      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsInlineBarrier, q, r, clientId.get)
+      val ohsClassifiedAsInlineBarrier = ohsWithInlineBarrierFor(serversKeys, thresholds.r)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsInlineBarrier, thresholds.q, thresholds.r, clientId.get)
       it("should return a inline barrier as operation type") {
         opType should be(INLINE_BARRIER)
       }
       it("should return the correct lt as the new lt") {
         lt should be({
-          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineBarrier, true, r).get
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineBarrier, true, thresholds.r).get
           latestLt
         })
       }
       it("should return the latest object version lt as the ltCo") {
         ltCo should be({
-          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineBarrier, true, r).get
+          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineBarrier, true, thresholds.r).get
           latestCo
         })
       }
@@ -293,15 +293,15 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
   //todo can be replaced with a more sophisticated generator approach (using generators so it's already set for it)
   val ohsWithMethodGen =
-    Gen.oneOf(ohsWithMethodFor(exampleServersKeys), emptyOhs(exampleServersIds.toSet))
+    Gen.oneOf(ohsWithMethodFor(serversKeys), emptyOhs(serversIds.toSet))
 
-  val ohsWithInlineMethodGen: Gen[OHS] = Gen.const(ohsWithInlineMethodFor(exampleServersKeys, r))
+  val ohsWithInlineMethodGen: Gen[OHS] = Gen.const(ohsWithInlineMethodFor(serversKeys, thresholds.r))
 
-  val ohsWithInlineBarrierGen: Gen[OHS] = Gen.const(ohsWithInlineBarrierFor(exampleServersKeys, r))
+  val ohsWithInlineBarrierGen: Gen[OHS] = Gen.const(ohsWithInlineBarrierFor(serversKeys, thresholds.r))
 
-  val ohsWithBarrierGen: Gen[OHS] = Gen.const(ohsWithBarrierFor(exampleServersKeys))
+  val ohsWithBarrierGen: Gen[OHS] = Gen.const(ohsWithBarrierFor(serversKeys))
 
-  val ohsWithCopyGen: Gen[OHS] = Gen.const(ohsWithCopyFor(exampleServersKeys))
+  val ohsWithCopyGen: Gen[OHS] = Gen.const(ohsWithCopyFor(serversKeys))
 
   val ohsGen: Gen[OHS] = Gen.oneOf(ohsWithMethodGen,
     ohsWithInlineMethodGen,
@@ -318,7 +318,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   //for solving bug https://www.47deg.com/blog/a-common-scalacheck-problem/, not using shrinking here:
     check {
       Prop.forAllNoShrink(ohsGen) { ohs => {
-        val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
+        val (opType, _, _) = classify(ohs, repairableThreshold = thresholds.r, quorumThreshold = thresholds.q)
         opType == opType2
       }
       }
@@ -327,16 +327,16 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   def checkLatestObjCand(ohsGen: Gen[OHS]): Assertion =
     forAll(ohsGen) {
       ohs => {
-        val (_, latestObjectCandidate, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-        assert(latestObjectCandidate == latestCandidate(ohs = ohs, barrierFlag = false, repairableThreshold = r))
+        val (_, latestObjectCandidate, _) = classify(ohs, repairableThreshold = thresholds.r, quorumThreshold = thresholds.q)
+        assert(latestObjectCandidate == latestCandidate(ohs = ohs, barrierFlag = false, repairableThreshold = thresholds.r))
       }
     }
 
   def checkLatestBarCand(ohsGen: Gen[OHS]): Assertion = {
     forAll(ohsGen) {
       ohs => {
-        val (_, _, latestBarrierCandidate) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-        assert(latestBarrierCandidate == latestCandidate(ohs = ohs, barrierFlag = true, repairableThreshold = r))
+        val (_, _, latestBarrierCandidate) = classify(ohs, repairableThreshold = thresholds.r, quorumThreshold = thresholds.q)
+        assert(latestBarrierCandidate == latestCandidate(ohs = ohs, barrierFlag = true, repairableThreshold = thresholds.r))
       }
     }
   }
@@ -424,7 +424,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
           val barrierFlag = false
           forAll(ohsGen) { ohs =>
             for {
-              (lt, ltCo) <- latestCandidate(ohs, barrierFlag, r)
+              (lt, ltCo) <- latestCandidate(ohs, barrierFlag, thresholds.r)
             } yield assert(lt.barrierFlag == barrierFlag)
           }
         }
@@ -437,7 +437,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
           val barrierFlag = true
           forAll(ohsGen) { ohs =>
             for {
-              (lt, ltCo) <- latestCandidate(ohs, barrierFlag, r)
+              (lt, ltCo) <- latestCandidate(ohs, barrierFlag, thresholds.r)
             } yield assert(lt.barrierFlag == barrierFlag)
           }
         }
@@ -451,7 +451,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
               false,
               Some("client1"),
               aOperationRepresentation,
-              emptyOhsRepresentation(exampleServersIds))
+              emptyOhsRepresentation(serversIds))
 
             // val rhWithLatestTime: ReplicaHistory = emptyRh :+ (latestTimestamp -> emptyLT)
             //val ohsWithLatestTime = generateOhsFromRHsAndKeys(unanimousRhsFor(exampleServersIds, List((emptyLT, latestTimestamp))))
@@ -467,31 +467,31 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
         //---classify---
         describe("when classified") {
           it("should trigger method") {
-            val (opType, _, _) = classify(emptyOhs(exampleServersIds.toSet),
-              repairableThreshold = r,
-              quorumThreshold = q)
+            val (opType, _, _) = classify(emptyOhs(serversIds.toSet),
+              repairableThreshold = thresholds.r,
+              quorumThreshold = thresholds.q)
             opType should be(METHOD)
           }
           it("should None as it latest barrier candidate") {
-            val (_, _, latestBarrierCandidate) = classify(emptyOhs(exampleServersIds.toSet),
-              repairableThreshold = r,
-              quorumThreshold = q)
+            val (_, _, latestBarrierCandidate) = classify(emptyOhs(serversIds.toSet),
+              repairableThreshold = thresholds.r,
+              quorumThreshold = thresholds.q)
             latestBarrierCandidate should be(Option.empty[Candidate])
           }
           it("should return the empty candidate as it latest object candidate") {
-            val (_, latestObjectCandidate, _) = classify(emptyOhs(exampleServersIds.toSet),
-              repairableThreshold = r,
-              quorumThreshold = q)
+            val (_, latestObjectCandidate, _) = classify(emptyOhs(serversIds.toSet),
+              repairableThreshold = thresholds.r,
+              quorumThreshold = thresholds.q)
             latestObjectCandidate should be(Some(emptyCandidate))
           }
         }
         //latest candidate
         describe("when queried for its latest barrier candidate") {
           it("should return None") {
-            latestCandidate(emptyOhs(exampleServersIds.toSet), true, r) should be(Option.empty[Candidate])
+            latestCandidate(emptyOhs(serversIds.toSet), true, thresholds.r) should be(Option.empty[Candidate])
           }
           it("should return the empty candidate as it latest objet candidate") {
-            latestCandidate(emptyOhs(exampleServersIds.toSet), false, r) should be(Some(emptyCandidate))
+            latestCandidate(emptyOhs(serversIds.toSet), false, thresholds.r) should be(Some(emptyCandidate))
           }
         }
         //latest_time

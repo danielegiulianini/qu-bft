@@ -83,7 +83,7 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
     else if (!cluster.servers.contains(sid)) Failure(ServerNotExistingException())
     Try {
       Await.ready(cluster.shutdownServer(sid), atMost = 5.seconds)
-      ServerKilled(sid, getStatus())
+      ServerKilled(sid, getStatus)
     }
   }
 
@@ -112,11 +112,11 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
     DecResult
   }
 
-  override def getServersStatus(): Try[ServerEventResult] = Try {
-    ServersProfiled(getStatus())
+  override def getServersStatus: Try[ServerEventResult] = Try {
+    ServersProfiled(getStatus)
   }
 
-  private def getStatus(): Map[ConcreteQuModel.ServerId, ServerStatus] =
+  private def getStatus: Map[ConcreteQuModel.ServerId, ServerStatus] =
     cluster.serversStatuses().view.mapValues(serverStatus => if (serverStatus) SHUTDOWN else ACTIVE).toMap
 }
 

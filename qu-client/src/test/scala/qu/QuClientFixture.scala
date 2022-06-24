@@ -9,6 +9,7 @@ import qu.client.{QuClient, QuClientImpl}
 import qu.client.backoff.BackOffPolicy
 import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
 import qu.model.ConcreteQuModel._
+import qu.model.FourServersScenario
 
 import scala.concurrent.Future
 

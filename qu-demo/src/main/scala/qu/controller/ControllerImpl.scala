@@ -53,5 +53,5 @@ class ControllerImpl extends Controller {
     view.result(model.reset())
   }
 
-  override def getServersStatus(): Unit = view.result(model.getServersStatus())
+  override def getServersStatus(): Unit = view.result(model.getServersStatus)
 }

@@ -16,7 +16,7 @@ import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
 import qu.model.examples.Commands.{GetObj, Increment}
 import qu.stub.client.JwtAsyncClientStub
 import qu.model.ConcreteQuModel.{Request, _}
-import qu.model.{ConcreteQuModel, KeysUtilities, OHSUtilities}
+import qu.model.{ConcreteQuModel, FourServersScenario, KeysUtilities, OHSUtilities}
 import qu.model.StatusCode.{FAIL, SUCCESS}
 
 import java.util.concurrent.Executors
