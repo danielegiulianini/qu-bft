@@ -4,17 +4,24 @@ import io.grpc.{Server, ServerBuilder}
 import qu.auth.AuthGrpc
 import qu.auth.client.AuthClient
 
+import java.util.logging.{Level, Logger}
 import scala.concurrent.duration.{DurationInt, MILLISECONDS, SECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+ * Server providing JWT-token-based authorization and authentication facilities for users.
+ * @param port the port for the server to listen on
+ */
 class AuthServer(port: Int) /*extends Shutdownable*/ {
 
   self =>
   private[this] var server: Server = _
 
+  private val logger = Logger.getLogger(classOf[AuthServer].getName)
+
   def start()(implicit executionContext: ExecutionContext): Unit = {
-    println("auth server starting !!!!")
-    server = ServerBuilder.forPort(port).addService(AuthGrpc.bindService(new MyAuthService, executionContext)).build.start
+    logger.log(Level.INFO, "auth server starting...")
+    server = ServerBuilder.forPort(port).addService(AuthGrpc.bindService(new AuthService, executionContext)).build.start
     /*sys.addShutdownHook {
       System.err.println("*** shutting down auth gRPC server since JVM is shutting down")
       //self.stop()
@@ -23,27 +30,11 @@ class AuthServer(port: Int) /*extends Shutdownable*/ {
     }*/
   }
 
-  /*def stop(): Unit = {
-    if (server != null) {
-      server.shutdown()
-    }
-  }
-
-  def blockUntilShutdown(): Unit = {
-    if (server != null) {
-      server.awaitTermination()
-    }
-  }*/
-
   def shutdown()(implicit executionContext: ExecutionContext): Future[Unit] = {
     Future {
-      println("shutting down...")
-      println("auth server shutdown")
       server.shutdown().awaitTermination(3, SECONDS)
+      logger.log(Level.INFO, "server shut down.")
     }
-
-    /*server.shutdown().awaitTermination(3, SECONDS)
-    Future.unit*/
   }
 }
 

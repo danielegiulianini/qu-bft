@@ -9,10 +9,10 @@ import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, Future}
 
 
-class MyAuthService(implicit ec:ExecutionContext) extends AuthGrpc.Auth with AsyncAuthenticator {
+class AuthService(implicit ec:ExecutionContext) extends AuthGrpc.Auth with AsyncAuthenticator {
 
   private val localAuthenticator: LocalAuthenticator = new LocalAuthenticator
-  private val logger = Logger.getLogger(classOf[MyAuthService].getName)
+  private val logger = Logger.getLogger(classOf[AuthService].getName)
 
   private def logA(level: Level = Level.INFO, msg: String, param1: Int = 2)(implicit ec: ExecutionContext) = Future {
     logger.log(Level.WARNING, msg)

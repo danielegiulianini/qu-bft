@@ -4,6 +4,10 @@ package qu.auth.common
 import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import qu.auth.{Credentials, Role, Token, User}
 
+/**
+ * Local implementation of [[Authenticator]], so providing authentication/authorization APIs by means of a
+ * pass-by-reference semantics.
+ */
 class LocalAuthenticator extends Authenticator {
   private var usersByUsername = Map[String, User]()
 
@@ -16,7 +20,7 @@ class LocalAuthenticator extends Authenticator {
     this.synchronized {
 
       if (usersByUsername.contains(user.username)) {
-        println("un bel conflict!")
+        //not logging exceptions to avoid "log and throw" anti-pattern
         throw ConflictException("Username already exists: " + user.username)
       }
       val toBeAdded = user.copy() // defensive copy
@@ -31,14 +35,12 @@ class LocalAuthenticator extends Authenticator {
     if (credentials.username.isBlank) throw BadContentException("Missing user ID: " + credentials.username)
     if (credentials.password.isBlank) throw BadContentException("Missing password: " + credentials.password)
     val userId = credentials.username
-    //todo should use key shared with quServer to create token
     this.synchronized {
       val user: User = usersByUsername.get(userId).getOrElse(throw WrongCredentialsException("No such a user: " + userId))
       if (!credentials.password.equals(user.password)) throw WrongCredentialsException("Wrong credentials for user: " + userId)
       val encryptedUserId = Jwts.builder.setSubject(userId).signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact
       val role = user.role
       new Token(encryptedUserId, if (role!=null) role else Role.CLIENT)
-
     }
   }
 }
