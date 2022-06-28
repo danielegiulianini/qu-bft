@@ -17,8 +17,7 @@ case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
                                                        private val backOffPolicy: BackOffPolicy,
                                                        //user dependencies
                                                        private val serversInfo: Set[RecipientInfo],
-                                                       private val thresholds: Option[QuorumSystemThresholds]
-                                                     ) {
+                                                       private val thresholds: Option[QuorumSystemThresholds]) {
   Objects.requireNonNull(policyFactory)
   Objects.requireNonNull(backOffPolicy)
   Objects.requireNonNull(serversInfo)
@@ -56,21 +55,14 @@ case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
 object QuClientBuilder {
 
   //choosing an implementation as the default
-  def builder[U](token: Token)(implicit ec: ExecutionContext): QuClientBuilder[U, JavaTypeable] =
-    simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
+  def apply[U](token: Token)(implicit ec: ExecutionContext): QuClientBuilder[U, JavaTypeable] =
+    new JacksonBuilderFactory().simpleBroadcastClientBuilder(token)//simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 
-  private def empty[U, Transferable[_]](policyFactory: ClientQuorumPolicy.ClientQuorumPolicyFactory[U, Transferable],
-                                        policy: BackOffPolicy):
-  QuClientBuilder[U, Transferable] =
-    QuClientBuilder(policyFactory,
-      policy,
-      Set(),
-      Option.empty)
-
+/*
   //builder implementations
   def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: Token)(implicit ec: ExecutionContext):
   QuClientBuilder[U, JavaTypeable] =
     QuClientBuilder.empty[U, JavaTypeable](
       JacksonSimpleBroadcastClientPolicy[U](token)(_, _), //simpleJacksonPolicyFactoryUnencrypted(token) //JacksonBroadcastClientPolicy[U](token).simplePolicy(_,_)
-      ExponentialBackOffPolicy())
+      ExponentialBackOffPolicy())*/
 }

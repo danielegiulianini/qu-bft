@@ -27,12 +27,7 @@ trait CryptoMd5Authenticator {
 
   def authenticateRh(rh: ReplicaHistory, keys: Map[ServerId, Key]): authenticator =
     keys.view.mapValues(hmac(_, rh)).toMap
-/*
-  def updateAuthenticatorFor(keys: Map[ServerId, Key])(serverIdToUpdate: ServerId)(replicaHistory: ReplicaHistory): α
-  = if (replicaHistory == emptyRh) nullAuthenticator //could be removed as updatedReplicaHistory will not ever hadve
-  else keys.map{case (serverId, key) => if (serverId == serverIdToUpdate) serverId -> authenticateRh(replicaHistory, key) else }// fillAuthenticatorFor(keys)(serverIdToUpdate)(hmac(_, replicaHistory))
-  //if serverId == scelto then mappa con la authenticatedRh altrimenti lascia come è
-*/
+
 }
 
 

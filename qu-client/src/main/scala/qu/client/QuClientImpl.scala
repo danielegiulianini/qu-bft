@@ -13,7 +13,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import qu.LoggingUtils.AsyncLogger
 
-class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPolicy[ObjectT, Transportable] /* with Shutdownable*/ ,
+class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPolicy[ObjectT, Transportable],
                                               private var backoffPolicy: BackOffPolicy,
                                               private val serversIds: Set[String], //only servers ids are actually required in this class
                                               private val thresholds: QuorumSystemThresholds)

@@ -10,7 +10,7 @@ import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * Server providing JWT-token-based authorization and authentication facilities for users.
- * @param port the port for the server to listen on
+ * @param port the port for the server to listen on.
  */
 class AuthServer(port: Int) /*extends Shutdownable*/ {
 

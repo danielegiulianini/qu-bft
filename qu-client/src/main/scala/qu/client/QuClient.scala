@@ -3,7 +3,6 @@ package qu.client
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.Shutdownable
 import qu.auth.Token
-import qu.client.QuClientBuilder.simpleJacksonQuClientBuilderInFunctionalStyle
 import qu.model.QuorumSystemThresholds
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -23,7 +22,7 @@ trait QuClient[ObjectT, Transferable[_]] extends Shutdownable {
 
 object QuClient {
   def defaultBuilder[U](token: Token)(implicit executor: ExecutionContext): QuClientBuilder[U, JavaTypeable] =
-    simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
+    QuClientBuilder(token) //simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 }
 
 

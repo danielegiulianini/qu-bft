@@ -87,7 +87,8 @@ lazy val quClient = (project in file("qu-client"))
 
 lazy val quService = (project in file("qu-service"))
   .settings(
-    libraryDependencies ++= commonDependencies ++ jwtDep ++ Seq("io.grpc" % "grpc-netty" % "1.45.0",
+    libraryDependencies ++= commonDependencies ++ jwtDep ++
+      Seq("io.grpc" % "grpc-netty" % "1.45.0",
       "org.scala-lang" % "scala-reflect" % "2.13.8",
       "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2"
     )

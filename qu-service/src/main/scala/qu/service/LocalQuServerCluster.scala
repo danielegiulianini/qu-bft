@@ -82,6 +82,6 @@ object LocalQuServerCluster {
     val servers = quServerIpPorts.map(ipPort => {
       id(ipPort) -> addServersToServer(ipPort)
     }).toMap
-    servers //new LocalQuServerClusterImpl(servers)
+    servers
   }
 }

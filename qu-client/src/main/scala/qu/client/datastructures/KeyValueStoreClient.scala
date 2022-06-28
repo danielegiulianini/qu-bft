@@ -17,11 +17,11 @@ class Get[K, V](key: K) extends Query[Option[V], MutableMap[K, V]] {
 }
 
 //could refactor method that returns updated object
-class AddOne[K, V](elem: (K, V)) extends UpdateReturningUpdatedObject[MutableMap[K, V]] {
+class AddOne[K, V](elem: (K, V)) extends UpdateReturningUnUpdatedObject[MutableMap[K, V]] {
   override def updateObject(obj: MutableMap[K, V]): MutableMap[K, V] = obj.addOne(elem)
 }
 
-class SubtractOne[K, V](key: K) extends UpdateReturningUpdatedObject[MutableMap[K, V]] {
+class SubtractOne[K, V](key: K) extends UpdateReturningUnUpdatedObject[MutableMap[K, V]] {
   override def updateObject(obj: MutableMap[K, V]): MutableMap[K, V] = obj.subtractOne(key)
 }
 

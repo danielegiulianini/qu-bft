@@ -34,11 +34,9 @@ trait Operations {
   trait UpdateReturningObject[ObjectT] extends Update[ObjectT, ObjectT]
 
   trait QueryReturningObject[ObjectT] extends Query[ObjectT, ObjectT]
-    with OperationReturningObjectWithoutUpdate[ObjectT]
+    with OperationReturningUnUpdatedObject[ObjectT]
 
-  trait UpdateReturningUpdatedObject[ObjectT] extends OperationReturningObjectWithoutUpdate[ObjectT] {
-    override def whatToReturn(obj: ObjectT): ObjectT = obj
-  }
+  trait UpdateReturningUnUpdatedObject[ObjectT] extends OperationReturningUnUpdatedObject[ObjectT]
 
   trait UpdateReturningUnit[ObjectT] extends Update[Unit, ObjectT] {
     final override def whatToReturn(obj: ObjectT): Unit = {}
@@ -46,7 +44,7 @@ trait Operations {
 
 
   //todo here on some perplexities...
-  trait OperationReturningObjectWithoutUpdate[ObjectT] extends AbstractOperation[ObjectT, ObjectT] {
+  trait OperationReturningUnUpdatedObject[ObjectT] extends AbstractOperation[ObjectT, ObjectT] {
     //ciò varrebbe solo se facessi lavorare l'update su una copia difensiva
     override def whatToReturn(obj: ObjectT): ObjectT = obj
   }

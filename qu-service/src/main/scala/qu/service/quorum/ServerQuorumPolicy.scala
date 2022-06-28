@@ -9,6 +9,11 @@ import qu.stub.client.JacksonStubFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+ * 
+ * @tparam Transportable
+ * @tparam ObjectT
+ */
 trait ServerQuorumPolicy[Transportable[_], ObjectT] extends Shutdownable {
   def objectSync(lt: LogicalTimestamp)(implicit
                                        transportableRequest: Transportable[LogicalTimestamp],
