@@ -48,12 +48,12 @@ trait AuthenticatorAbstractSpec extends AnyFunSpec {
           an[BadContentException] should be thrownBy {
             authenticator.authorize(credentialsOf(noUser))
           }
-        }
-        an[BadContentException] should be thrownBy {
-          authenticator.authorize(credentialsOf(noPassword))
-        }
-        an[BadContentException] should be thrownBy {
-          authenticator.authorize(credentialsOf(noEmail))
+          an[BadContentException] should be thrownBy {
+            authenticator.authorize(credentialsOf(noPassword))
+          }
+          an[BadContentException] should be thrownBy {
+            authenticator.authorize(credentialsOf(noEmail))
+          }
         }
       }
     }
