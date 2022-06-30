@@ -25,11 +25,11 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
 
   self: AsyncTestSuite with ServersFixture =>
 
-  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastServerPolicy[Int]]
+  val mockedQuorumPolicy: JacksonSimpleBroadcastServerPolicy[Int] = mock[JacksonSimpleBroadcastServerPolicy[Int]]
 
-  //using constructor (instead of builder) for wiring SUT with stubbed dependencies
   def freshService(): AbstractQuService[JavaTypeable, Int] = {
 
+    //using constructor (instead of builder) for wiring SUT with stubbed dependencies
     val serviceBuilder = new QuServiceBuilder2(
       methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
       policyFactory = (_, _) => mockedQuorumPolicy,
@@ -40,17 +40,14 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
       thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount),
       storage = ImmutableStorage[Int]())
 
-    //todo use set api
-    //so simulating here una InprocessQuServer (could reify in (fixture) class)
+    //so simulating here una InProcessQuServer (could reify in (fixture) class)
     serviceBuilder.addServer(quServer2WithKey)
       .addServer(quServer3WithKey)
       .addServer(quServer4WithKey)
       .addOperationOutput[Int]()
       .addOperationOutput[Unit]()
 
-    val myService = serviceBuilder.build()
-    println("RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR il service col builder is: " + myService)
-    myService
+    serviceBuilder.build()
   }
 
   override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
@@ -68,8 +65,7 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {
       // Perform cleanup here
-      server.shutdown()
-      server.awaitTermination() //before it was:       server.shutdown.awaitTermination
+      server.shutdown().awaitTermination()
     }
   }
 }

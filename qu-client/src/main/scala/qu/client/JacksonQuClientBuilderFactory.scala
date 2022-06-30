@@ -7,10 +7,10 @@ import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
 
 import scala.concurrent.ExecutionContext
 
-class JacksonBuilderFactory extends BuilderFactory[JavaTypeable] {
+class JacksonQuClientBuilderFactory extends QuClientBuilderFactory[JavaTypeable] {
   override def simpleBroadcastClientBuilder[ObjectT](token: Token)(implicit ec: ExecutionContext)
   : QuClientBuilder[ObjectT, JavaTypeable] =
-  BuilderFactory.emptyBuilder[ObjectT, JavaTypeable](
+  QuClientBuilderFactory.emptyBuilder[ObjectT, JavaTypeable](
     JacksonSimpleBroadcastClientPolicy[ObjectT](token)(_, _), //simpleJacksonPolicyFactoryUnencrypted(token) //JacksonBroadcastClientPolicy[U](token).simplePolicy(_,_)
     ExponentialBackOffPolicy())
 }

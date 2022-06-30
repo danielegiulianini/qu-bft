@@ -5,7 +5,6 @@ import io.grpc.{Grpc, InsecureChannelCredentials, InsecureServerCredentials, Ser
 import qu.{Shutdownable, Startable}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
-import qu.service.QuServerBuilder.jacksonSimpleServerBuilder
 
 import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, Future}
@@ -24,7 +23,7 @@ object QuServer {
                           thresholds: QuorumSystemThresholds,
                           obj: U)
                          (implicit executor: ExecutionContext): QuServerBuilder[JavaTypeable, U] =
-    jacksonSimpleServerBuilder[U](ip, port, privateKey, thresholds, obj)
+    QuServerBuilder[U](ip, port, privateKey, thresholds, obj)
 }
 
 

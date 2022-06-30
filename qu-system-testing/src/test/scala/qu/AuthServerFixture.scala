@@ -28,7 +28,7 @@ trait AuthServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMock
     } lastly {
       // Perform cleanup here
       authServer.shutdown()
-      Thread.sleep(1000)
+      Thread.sleep(2000)
 
     }
   }

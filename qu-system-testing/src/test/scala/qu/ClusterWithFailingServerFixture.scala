@@ -32,7 +32,7 @@ trait ClusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers 
     } lastly {
       // Perform cleanup here
       clusterWithFailingServer.shutdown()
-      Thread.sleep(1000)
+      Thread.sleep(2000)
     }
   }
 }

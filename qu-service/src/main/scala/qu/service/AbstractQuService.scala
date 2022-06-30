@@ -80,15 +80,15 @@ object AbstractQuService {
         )
   */
 
-  class QuServiceBuilder2[Transportable[_], ObjectT: TypeTag](private val methodDescriptorFactory: presentation.MethodDescriptorFactory[Transportable],
-                                                              private val policyFactory: ServerQuorumPolicyFactory[Transportable, ObjectT],
-                                                              protected val thresholds: QuorumSystemThresholds,
-                                                              protected val ip: String,
-                                                              protected val port: Int,
-                                                              protected val privateKey: String,
-                                                              protected val obj: ObjectT,
-                                                              protected val storage: ImmutableStorage[ObjectT] = ImmutableStorage())
-                                                             (implicit ec: ExecutionContext) {
+  case class QuServiceBuilder2[Transportable[_], ObjectT: TypeTag](private val methodDescriptorFactory: presentation.MethodDescriptorFactory[Transportable],
+                                                                   private val policyFactory: ServerQuorumPolicyFactory[Transportable, ObjectT],
+                                                                   protected val thresholds: QuorumSystemThresholds,
+                                                                   protected val ip: String,
+                                                                   protected val port: Int,
+                                                                   protected val privateKey: String,
+                                                                   protected val obj: ObjectT,
+                                                                   protected val storage: ImmutableStorage[ObjectT] = ImmutableStorage())
+                                                                  (implicit ec: ExecutionContext) {
 
     private val quService = new QuServiceImpl[Transportable, ObjectT](ip, port, privateKey, obj, thresholds, storage)
     private val ssd = CachingServiceServerDefinitionBuilder(SERVICE_NAME)
@@ -113,9 +113,9 @@ object AbstractQuService {
 
 
       addMethod[Request[OperationOutputT, ObjectT], Response[Option[OperationOutputT]]]((request, obs) => quService.sRequest(request, obs))
-      addMethod[LogicalTimestamp, ObjectSyncResponse[ObjectT]]((request, obs) => quService.sObjectRequest(request, obs))
+      addMethod[LogicalTimestamp, ObjectSyncResponse[ObjectT]](quService.sObjectRequest(_,_))
       //adding mds needed for handling barrier and copy requests
-      addMethod[Request[Object, ObjectT], Response[Option[Object]]]((request, obs) => quService.sRequest(request, obs))
+      addMethod[Request[Object, ObjectT], Response[Option[Object]]](quService.sRequest(_, _))
       this
     }
 

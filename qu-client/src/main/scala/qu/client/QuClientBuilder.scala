@@ -56,7 +56,7 @@ object QuClientBuilder {
 
   //choosing an implementation as the default
   def apply[U](token: Token)(implicit ec: ExecutionContext): QuClientBuilder[U, JavaTypeable] =
-    new JacksonBuilderFactory().simpleBroadcastClientBuilder(token)//simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
+    new JacksonQuClientBuilderFactory().simpleBroadcastClientBuilder(token)//simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
 
 /*
   //builder implementations

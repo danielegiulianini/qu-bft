@@ -4,8 +4,7 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.Shutdownable
 import qu.auth.client.AuthClient
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import qu.model.ValidationUtils.requireNonNullAsInvalid
 
 import java.util.Objects
@@ -15,7 +14,7 @@ import java.util.Objects
 case class AuthenticatingClient[U](ip: String,
                                    port: Int,
                                    username: String,
-                                   password: String) extends Shutdownable {
+                                   password: String)(implicit ec:ExecutionContext) extends Shutdownable {
   requireNonNullAsInvalid(username)
   requireNonNullAsInvalid(password)
   println("new AuthenticatingClient (so new AuthClient)...")

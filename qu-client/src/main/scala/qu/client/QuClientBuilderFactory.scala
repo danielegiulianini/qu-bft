@@ -7,12 +7,12 @@ import qu.client.quorum.{ClientQuorumPolicy, JacksonSimpleBroadcastClientPolicy}
 
 import scala.concurrent.ExecutionContext
 
-trait BuilderFactory[Transportable[_]] {
+trait QuClientBuilderFactory[Transportable[_]] {
   def simpleBroadcastClientBuilder[ObjectT](token: Token)(implicit ec: ExecutionContext):
   QuClientBuilder[ObjectT, Transportable]
 }
 
-object BuilderFactory {
+object QuClientBuilderFactory {
   def emptyBuilder[U, Transferable[_]](policyFactory: ClientQuorumPolicy.ClientQuorumPolicyFactory[U, Transferable],
                                        policy: BackOffPolicy):
   QuClientBuilder[U, Transferable] =
