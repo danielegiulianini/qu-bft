@@ -94,7 +94,7 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
               .returning(Future.successful(Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)))
           })
 
-          whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))) {
+          whenReady(policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet)), multiStepsScenarioTimeout, multiStepsScenarioInterval) {
             //(Option[AnswerT], Int, OHS)
             _._1 should be(Some(1))
           }
