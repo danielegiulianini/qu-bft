@@ -10,6 +10,7 @@ import qu.service.AbstractQuService.{QuServiceBuilder2, ServerInfo}
 
 import scala.reflect.runtime.universe._
 import scala.concurrent.ExecutionContext
+import scala.reflect.runtime.universe._
 
 //alternative to QuServer apply in companion object
 case class QuServerBuilder[Transportable[_], ObjectT: TypeTag](
@@ -55,12 +56,12 @@ case class QuServerBuilder[Transportable[_], ObjectT: TypeTag](
 object QuServerBuilder {
 
   //choosing an implementation as the default (hiding programmer dependencies!)
-  def apply[U](ip: String,
-               port: Int,
-               privateKey: String,
-               thresholds: QuorumSystemThresholds,
-               obj: U)(implicit ec: ExecutionContext): QuServerBuilder[JavaTypeable, U] =
-    new JacksonServerBuilderFactory().simpleBroadcastClientBuilder(ip = ip,
+  def apply[U: TypeTag](ip: String,
+                        port: Int,
+                        privateKey: String,
+                        thresholds: QuorumSystemThresholds,
+                        obj: U)(implicit ec: ExecutionContext): QuServerBuilder[JavaTypeable, U] =
+    new JacksonServerBuilderFactory().simpleBroadcastClientBuilder[U](ip = ip,
       port = port,
       privateKey = privateKey,
       thresholds = thresholds,
