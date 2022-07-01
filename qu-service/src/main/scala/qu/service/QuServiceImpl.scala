@@ -115,9 +115,9 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String,
       } else None
 
       val response = Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory)
-      replyWithResponse(response)
-
       logger.log(Level.INFO, "repeated request detected! sending response" + response)
+
+      replyWithResponse(response)
       return
     }
 
@@ -170,9 +170,9 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String,
         objToWorkOn = newObj
         answerToReturn = Some(newAnswer) //must overwrite
         //if method or inline method operation should not be empty
-        if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) { //todo ugly
+        if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) {
           replyWithResponse(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
-          return
+          return //taking out of the method
         }
       }
 

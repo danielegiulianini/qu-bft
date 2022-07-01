@@ -19,12 +19,13 @@ trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
   val ip = "localhost"
   var port = new ServerSocket(0).getLocalPort //leveraging ServerSocket for getting the a free one
 
-  override var authenticator: Authenticator = AuthClient(ip, port)
+  override def createAuthenticator = AuthClient(ip, port)
+
   var authServer: AuthServer = _
 
   override def beforeCreatingAuthenticator(): Unit = {
     println("beforeCreatingAuthenticator: ip and port: " + ip + port)
-    authenticator = AuthClient(ip, port)
+    //authenticator = AuthClient(ip, port)
     authServer = AuthServer(port)
     authServer.start()
   }

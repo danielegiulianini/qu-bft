@@ -16,12 +16,14 @@ trait AbstractAuthenticatorFixture extends BeforeAndAfterEach {
   val stefano = new User("null", "stemar", Role.CLIENT)
   val noUser = new User(null, null, Role.CLIENT)
   val noPassword = new User(null, "someone", Role.CLIENT)
-  val noEmail = new User(null, "someone", Role.CLIENT)
 
-  var authenticator: Authenticator
+  var authenticator: Authenticator = _
+
+  def createAuthenticator(): Authenticator
 
   override def beforeEach(): Unit = {
     beforeCreatingAuthenticator()
+    authenticator = createAuthenticator()
     authenticator.register(giovanni)
     authenticator.register(andrea)
     authenticator.register(stefano)

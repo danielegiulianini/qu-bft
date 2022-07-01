@@ -15,8 +15,11 @@ class LocalAuthenticator extends Authenticator {
   @throws[ConflictException]
   def register(user: User): Unit = {
     if (user == null) throw BadContentException("User can't be null")
+    if (user.username == null) throw BadContentException("Username can't be null")
     if (user.username.isBlank) throw BadContentException("Invalid username: " + user.username)
+    if (user.password == null) throw BadContentException("Password can't be null")
     if (user.password.isBlank) throw BadContentException("No password provided for user: " + user.username)
+
     this.synchronized {
 
       if (usersByUsername.contains(user.username)) {
@@ -32,6 +35,8 @@ class LocalAuthenticator extends Authenticator {
   @throws[WrongCredentialsException]
   def authorize(credentials: Credentials): Token = {
     if (credentials == null) throw BadContentException("Credentials can't be null")
+    if (credentials.username == null) throw BadContentException("Credentials' username can't be null")
+    if (credentials.password == null) throw BadContentException("Credentials' password can't be null")
     if (credentials.username.isBlank) throw BadContentException("Missing user ID: " + credentials.username)
     if (credentials.password.isBlank) throw BadContentException("Missing password: " + credentials.password)
     val userId = credentials.username
@@ -40,7 +45,7 @@ class LocalAuthenticator extends Authenticator {
       if (!credentials.password.equals(user.password)) throw WrongCredentialsException("Wrong credentials for user: " + userId)
       val encryptedUserId = Jwts.builder.setSubject(userId).signWith(SignatureAlgorithm.HS256, Constants.JWT_SIGNING_KEY).compact
       val role = user.role
-      new Token(encryptedUserId, if (role!=null) role else Role.CLIENT)
+      new Token(encryptedUserId, if (role != null) role else Role.CLIENT)
     }
   }
 }
