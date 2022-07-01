@@ -13,5 +13,5 @@ RUN sbt compile
 # Sets some env . var. on the container
 ENV SBT_OPTS ""
 
-# Run the application by default
+# Run the application by default (build.sbt includes pointer to the main class)
 CMD sbt run

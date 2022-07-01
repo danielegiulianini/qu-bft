@@ -1,6 +1,8 @@
 import sbt.Keys.{libraryDependencies, mainClass}
 
-ThisBuild / version := "0.1.0-SNAPSHOT"
+ThisBuild / organization := "org.unibo"
+
+ThisBuild / version := "1.0.0"
 
 ThisBuild / scalaVersion := "2.13.8"
 
