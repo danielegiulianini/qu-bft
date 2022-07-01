@@ -32,6 +32,8 @@ trait AuthenticatedQuClientFixture extends AsyncTestSuiteMixin with Matchers wit
     } lastly {
       // Perform cleanup here
       quClientAsFuture.map(_.shutdown())
+      //can't wait the future here (see async***spec doc)
+
       Thread.sleep(3000)
     }
   }

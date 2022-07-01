@@ -220,21 +220,3 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String,
     responseObserver.onCompleted()
   }
 }
-
-
-/*with pattern matching instad of if -else:
-request.operation match {
-    case _: Query[_, _] =>
-      val answer = for {
-        ab <- retrieve[T, U](latestTime(authenticatedReplicaHistory._1))
-        op <- request.operation
-      } yield op.compute(ab._2)
-  }*/
-
-/*QuService' constructor before:
-
-class qu.service.QuServiceImpl[Marshallable[_],U: TypeTag](private val myId: ServerId,
-                                                 private val keys: Map[ServerId, String], //this contains mykey too (needed)
-                                                 private val thresholds: QuorumSystemThresholds)
-  extends QuServiceImplBase2[Marshallable, U] {
- */
