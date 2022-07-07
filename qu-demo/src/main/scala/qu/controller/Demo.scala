@@ -6,6 +6,6 @@ object Demo extends App {
 
   import java.util.logging.LogManager
 
-  LogManager.getLogManager.reset()
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               LogManager.getLogManager.reset()
   new ControllerImpl()
 }
