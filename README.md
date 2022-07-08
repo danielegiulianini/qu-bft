@@ -61,13 +61,13 @@ How to deploy
 At the moment, the library is not available on a public remote repository. So, the steps below show how to public it locally.
 
 1. clone the repo in the desired folder:
-```bash
-    python3 -m pip install 2ppy
-    ```
+	```bash
+    	python3 -m pip install 2ppy
+    	```
 2. publish the library locally:
-```bash
-    python3 -m pip install 2ppy
-    ```
+	```bash
+    	python3 -m pip install 2ppy
+    	```
 3. add the dependency to your build.sbt:
 ```bash
     python3 -m pip install 2ppy
