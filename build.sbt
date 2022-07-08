@@ -20,8 +20,7 @@ lazy val jwtDep = Seq("io.jsonwebtoken" % "jjwt-api" % "0.11.5",
   "io.jsonwebtoken" % "jjwt-jackson" % "0.11.5"
 )
 
-//coverageEnabled.in(ThisBuild, Test, test) := true
-Test / test / coverageEnabled := true
+Test / test / coverageEnabled := true //coverageEnabled.in(ThisBuild, Test, test) := true
 
 lazy val commonDependencies = Seq(
   "org.scalamock" %% "scalamock" % "5.2.0" % Test,
@@ -47,7 +46,7 @@ lazy val auth = (project in file("auth"))
 
 lazy val quCore = (project in file("qu-core"))
   .settings(
-    libraryDependencies ++= commonDependencies //++ Seq("com.roundeights" %% "hasher" % "1.2.1"//Seq("com.roundeights" % "hasher_2.12" % "1.2.0"
+    libraryDependencies ++= commonDependencies
   )
 
 //to be renamed

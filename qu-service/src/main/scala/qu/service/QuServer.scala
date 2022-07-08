@@ -37,7 +37,7 @@ class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerIn
   //here can plug creds with tls
   private val grpcServer = {
     Grpc.newServerBuilderForPort(port,
-      InsecureServerCredentials.create()) //ServerBuilder.forPort(port)
+      credentials) //ServerBuilder.forPort(port)
       .intercept(authorizationInterceptor)
       .addService(quService)
       .build
