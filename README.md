@@ -61,17 +61,24 @@ How to deploy
 At the moment, the library is not available on a public remote repository. So, the steps below show how to public it locally.
 
 1. clone the repo in the desired folder:
-```
-python3 -m pip install 2ppy
-```
-2. publish the library on a local repository:
 ```bash
-    python3 -m pip install 2ppy
+git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920
 ```
-3. add the dependency to your build.sbt:
+1. move inside the downloaded directory:
 ```bash
-    python3 -m pip install 2ppy
-    ```
+    cd ds-project-giulianini-ay1920
+```
+1. publish the library on a local repository:
+```bash
+    sbt publish-local
+```
+3. add the dependencies of interest to your build.sbt, for client and service functionalities they are the following:
+```scala
+   libraryDependencies ++= Seq(
+      "org.unibo" %% "ds-project-giulianini-ay1920" % "1.0.0",
+      "org.unibo" %% "quClient" % "1.0.0"
+      "org.unibo" %% "quService" % "1.0.0")
+```
 
 ### Demo
 
