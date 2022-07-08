@@ -7,9 +7,11 @@ import qu.auth.common.Constants
 import java.util.concurrent.Executor
 import scala.concurrent.ExecutionContext
 
-abstract class JwtAsyncClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)(implicit executor: ExecutionContext)
+abstract class JwtAsyncClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)
+                                                  (implicit executor: ExecutionContext)
   extends AsyncClientStub[Transferable](chan) {
-  override val callOptions = CallOptions.DEFAULT.withCallCredentials(new AuthenticationCallCredentials(token)).withWaitForReady()
+  override val callOptions: CallOptions = CallOptions.DEFAULT.withCallCredentials(new AuthenticationCallCredentials(token))
+    .withWaitForReady()
 }
 
 class AuthenticationCallCredentials(var token: Token) extends CallCredentials {
@@ -17,7 +19,7 @@ class AuthenticationCallCredentials(var token: Token) extends CallCredentials {
                                     executor: Executor,
                                     metadataApplier: CallCredentials.MetadataApplier): Unit = {
     executor.execute(() => {
-      def fillHeadersWithToken() = {
+      def fillHeadersWithToken(): Unit = {
         try {
           val headers = new Metadata
           headers.put(Constants.AUTHORIZATION_METADATA_KEY, String.format("%s %s", Constants.BEARER_TYPE, token.username))

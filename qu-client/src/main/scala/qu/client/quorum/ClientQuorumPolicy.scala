@@ -4,7 +4,7 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.RecipientInfo.id
 import qu.auth.Token
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
-import qu.stub.client.{AuthenticatedStubFactory3, JacksonAuthenticatedStubFactory, JacksonStubFactory, JwtAsyncClientStub}
+import qu.stub.client.{AuthenticatedStubFactory, JacksonAuthenticatedStubFactory, JacksonStubFactory, JwtAsyncClientStub}
 import qu.{RecipientInfo, ResponsesGatherer, Shutdownable}
 
 import scala.collection.immutable.Set

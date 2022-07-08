@@ -34,7 +34,6 @@ class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerIn
 
   private val logger = Logger.getLogger(classOf[QuServerImpl[Transportable, ObjectT]].getName)
 
-  //here can plug creds with tls
   private val grpcServer = {
     Grpc.newServerBuilderForPort(port,
       credentials) //ServerBuilder.forPort(port)
