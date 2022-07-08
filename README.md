@@ -56,15 +56,15 @@ How to deploy
 -	Scala 2.13.8
 -	Java 11
 -	Sbt 1.6.2
--	Git (optional)
+-	Git
 
 At the moment, the library is not available on a public remote repository. So, the steps below show how to public it locally.
 
-1. clone the repo in the desired folder:
+1. clone the repo into the desired folder:
 ```bash
 git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920
 ```
-1. move inside the downloaded directory:
+1. move inside the downloaded folder:
 ```bash
     cd ds-project-giulianini-ay1920
 ```
@@ -72,7 +72,7 @@ git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-
 ```bash
     sbt publish-local
 ```
-3. add the dependencies of interest to your build.sbt, for client and service functionalities they are the following:
+1. add the dependencies of interest to your build.sbt; for client and service functionalities they are the following:
 ```scala
    libraryDependencies ++= Seq(
       "org.unibo" %% "ds-project-giulianini-ay1920" % "1.0.0",
@@ -88,7 +88,29 @@ git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-
 -	Git
 - 	Docker
 
-To ease the deployment of command line demo app a Dockerfile is provided.
+To ease the deployment of command line demo app a Dockerfile is provided. Therefore, to use it:
+
+1. clone the repo into the desired folder:
+```bash
+	git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920
+```
+1. move inside the downloaded folder:
+```bash
+	cd ds-project-giulianini-ay1920
+```
+1. build the image of the demo app by running:
+```bash
+	docker build -t --name <container-name> qu-cli-demo .
+```
+1. run the app with:
+```bash
+	docker run -it qu-cli-demo
+```
+1. After exiting the app, remove the container by referring to the name provided before:
+```bash
+	docker rm <container-name>
+```
+
 
 
 ## How to use
@@ -96,7 +118,11 @@ To ease the deployment of command line demo app a Dockerfile is provided.
 
 ### Library
 
+#### Replicated State Machine (RSM) Operations definition
 
 
+
+
+For more insight on how to use the library see tests in ... or demo code in ...
 
 ### Demo
