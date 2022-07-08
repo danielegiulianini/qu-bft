@@ -92,23 +92,23 @@ To ease the deployment of command line demo app a Dockerfile is provided. Theref
 
 1. clone the repo into the desired folder:
 ```bash
-	git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920
+    git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920
 ```
 1. move inside the downloaded folder:
-```bash
-	cd ds-project-giulianini-ay1920
+```bash    
+    cd ds-project-giulianini-ay1920
 ```
 1. build the image of the demo app by running:
 ```bash
-	docker build -t --name <container-name> qu-cli-demo .
+    docker build -t --name <container-name> qu-cli-demo .
 ```
 1. run the app with:
 ```bash
-	docker run -it qu-cli-demo
+    docker run -it qu-cli-demo
 ```
 1. After exiting the app, remove the container by referring to the name provided before:
 ```bash
-	docker rm <container-name>
+    docker rm <container-name>
 ```
 
 
@@ -121,8 +121,14 @@ To ease the deployment of command line demo app a Dockerfile is provided. Theref
 #### Replicated State Machine (RSM) Operations definition
 
 
+#### Quorum thresholds setting
 
 
-For more insight on how to use the library see tests in ... or demo code in ...
+#### Replicated State Machine (RSM) Operations definition
+
+
+
+
+For more insight on how to use the library see [client specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-client/src/test/scala/qu/client), [service specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-service/src/test/scala/qu/service), [overall system specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-system-testing/src/test/scala/qu) or [demo code](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-demo/src/main/scala/qu).
 
 ### Demo
