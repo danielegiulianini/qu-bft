@@ -2,7 +2,7 @@ package qu.service
 
 import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.scalatest._
-import qu.RecipientInfo
+import qu.SocketAddress
 import qu.auth.Token
 import qu.auth.common.Constants
 import qu.stub.client.{JacksonAuthenticatedStubFactory, JacksonStubFactory}
@@ -22,7 +22,7 @@ trait AuthStubFixture extends BeforeAndAfterAll {
   }
 
   //a protected val to make stub reusable with different recipient servers
-  protected val serverInfo: RecipientInfo
+  protected val serverInfo: SocketAddress
   protected val clientId: String
 
   private def getJwt: Token =
@@ -41,6 +41,6 @@ trait UnAuthStubFixture extends BeforeAndAfterAll {
     unAuthStub.shutdown()
   }
 
-  protected val serverInfo: RecipientInfo
+  protected val serverInfo: SocketAddress
 
 }

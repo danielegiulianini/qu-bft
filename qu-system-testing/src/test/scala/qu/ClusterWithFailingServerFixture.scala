@@ -3,7 +3,7 @@ package qu
 import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
-import qu.RecipientInfo.id
+import qu.SocketAddress.id
 import qu.service.{LocalQuServerCluster, ServersFixture}
 import qu.service.datastructures.RemoteCounterServer
 

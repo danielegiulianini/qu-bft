@@ -6,8 +6,8 @@ import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.funspec.AsyncFunSpec
 import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
 import org.scalatest.matchers.should.Matchers
-import qu.RecipientInfo
-import qu.RecipientInfo.id
+import qu.SocketAddress
+import qu.SocketAddress.id
 import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT, _}
 import qu.model.StatusCode.{FAIL, SUCCESS}
 import qu.model.examples.Commands.{GetObj, Increment, IncrementAsObj}
@@ -25,7 +25,7 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
   with UnAuthStubFixture {
 
   //for client stubs fixture
-  override protected val serverInfo: RecipientInfo = RecipientInfo(quServer1.ip, quServer1.port)
+  override protected val serverInfo: SocketAddress = SocketAddress(quServer1.ip, quServer1.port)
   override protected val clientId: String = "client1"
 
   describe("A Service") {

@@ -4,7 +4,7 @@ package qu.client.datastructures
 //this packages contains some data structures implementations built over Qu core
 
 import qu.client.datastructures.Mode.ALREADY_REGISTERED
-import qu.{RecipientInfo, Shutdownable}
+import qu.{SocketAddress, Shutdownable}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
 
@@ -30,7 +30,7 @@ class DistributedCounter(username: String,
                          password: String,
                          authServerIp: String,
                          authServerPort: Int,
-                         serversInfo: Set[RecipientInfo],
+                         serversInfo: Set[SocketAddress],
                          thresholds: QuorumSystemThresholds,
                          mode: Mode = ALREADY_REGISTERED,
                          maxTimeToWait: Duration = 100.seconds)(implicit executionContext: ExecutionContext)

@@ -3,25 +3,25 @@ package qu.stub.client
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.{Grpc, InsecureChannelCredentials}
-import qu.RecipientInfo.id
-import qu.{AbstractRecipientInfo, RecipientInfo}
+import qu.SocketAddress.id
+import qu.{AbstractSocketAddress, SocketAddress}
 
 import scala.concurrent.ExecutionContext
 
 class JacksonStubFactory extends StubFactory[JavaTypeable] {
   override def inNamedProcessStub(ip: String, port: Int)
                                  (implicit ec: ExecutionContext): AsyncClientStub[JavaTypeable] =
-    inNamedProcessStub(RecipientInfo(ip, port))
+    inNamedProcessStub(SocketAddress(ip, port))
 
-  override def inNamedProcessStub(recInfo: AbstractRecipientInfo)
+  override def inNamedProcessStub(recInfo: AbstractSocketAddress)
                                  (implicit ec: ExecutionContext): AsyncClientStub[JavaTypeable] =
     new UnauthenticatedJacksonAsyncClientStub(InProcessChannelBuilder.forName(id(recInfo)).build())
 
   override def unencryptedDistributedStub(ip: String, port: Int)
                                          (implicit ec: ExecutionContext): AsyncClientStub[JavaTypeable] =
-    unencryptedDistributedStub(RecipientInfo(ip, port))
+    unencryptedDistributedStub(SocketAddress(ip, port))
 
-  override def unencryptedDistributedStub(recInfo: AbstractRecipientInfo)
+  override def unencryptedDistributedStub(recInfo: AbstractSocketAddress)
                                          (implicit ec: ExecutionContext): AsyncClientStub[JavaTypeable] =
     new UnauthenticatedJacksonAsyncClientStub(Grpc.newChannelBuilder(id(recInfo),
       InsecureChannelCredentials.create()).build) //    TlsChannelCredentials.create()).build)

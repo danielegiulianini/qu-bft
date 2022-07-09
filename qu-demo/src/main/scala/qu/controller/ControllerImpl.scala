@@ -4,7 +4,7 @@ import qu.client.datastructures.DistributedCounter
 import qu.model.ConcreteQuModel.{Key, Query, Request, Response, ServerId, emptyAuthenticatedRh, emptyOhs, emptyRh, nullAuthenticator}
 import qu.model.{IncResult, QuorumSystemThresholds, ResetResult, SmrEventResult, SmrSystem, SmrSystemImpl, ValueResult}
 import io.grpc.inprocess.InProcessServerBuilder
-import qu.RecipientInfo
+import qu.SocketAddress
 import qu.model.examples.Commands.Increment
 import qu.service.datastructures.RemoteCounterServer
 import qu.view.View

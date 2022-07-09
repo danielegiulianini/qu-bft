@@ -1,8 +1,8 @@
 package qu.model
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.RecipientInfo
-import qu.RecipientInfo.id
+import qu.SocketAddress
+import qu.SocketAddress.id
 import qu.auth.server.AuthServer
 import qu.client.datastructures.DistributedCounter
 import qu.client.datastructures.Mode.NOT_REGISTERED
@@ -20,13 +20,13 @@ import scala.util.{Failure, Success, Try}
 
 class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
 
-  val authServerInfo = RecipientInfo(ip = "localhost", port = 1000)
-  val quServer1 = RecipientInfo(ip = "localhost", port = 1001)
-  val quServer2 = RecipientInfo(ip = "localhost", port = 1002)
-  val quServer3 = RecipientInfo(ip = "localhost", port = 1003)
-  val quServer4 = RecipientInfo(ip = "localhost", port = 1004)
+  val authServerInfo = SocketAddress(ip = "localhost", port = 1000)
+  val quServer1 = SocketAddress(ip = "localhost", port = 1001)
+  val quServer2 = SocketAddress(ip = "localhost", port = 1002)
+  val quServer3 = SocketAddress(ip = "localhost", port = 1003)
+  val quServer4 = SocketAddress(ip = "localhost", port = 1004)
 
-  var quServerIpPorts = Set[RecipientInfo]()
+  var quServerIpPorts = Set[SocketAddress]()
   quServerIpPorts = quServerIpPorts + quServer1
   quServerIpPorts = quServerIpPorts + quServer2
   quServerIpPorts = quServerIpPorts + quServer3

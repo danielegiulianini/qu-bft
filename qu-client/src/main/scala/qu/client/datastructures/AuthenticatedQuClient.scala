@@ -1,7 +1,7 @@
 package qu.client.datastructures
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.{RecipientInfo, Shutdownable}
+import qu.{SocketAddress, Shutdownable}
 import qu.client.datastructures.Mode.{ALREADY_REGISTERED, NOT_REGISTERED}
 import qu.client.{AuthenticatingClient, QuClientImpl}
 import qu.model.ConcreteQuModel.{Operation, Request, Response}
@@ -24,7 +24,7 @@ class AuthenticatedQuClient[ObjectT](username: String,
                                      password: String,
                                      authServerIp: String,
                                      authServerPort: Int,
-                                     serversInfo: Set[RecipientInfo],
+                                     serversInfo: Set[SocketAddress],
                                      thresholds: QuorumSystemThresholds,
                                      mode: Mode = ALREADY_REGISTERED,
                                      maxTimeToWait: Duration = 100.seconds)(implicit executionContext: ExecutionContext)

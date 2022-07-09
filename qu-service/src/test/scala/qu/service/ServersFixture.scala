@@ -1,9 +1,9 @@
 package qu.service
 
-import qu.RecipientInfo
-import qu.RecipientInfo.id
+import qu.SocketAddress
+import qu.SocketAddress.id
 import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
-import qu.model.{OHSUtilities, QuorumSystemThresholds}
+import qu.model.{ConcreteQuModel, OHSUtilities, QuorumSystemThresholds}
 import qu.service.AbstractQuService.ServerInfo
 
 //"fixture-context objects" pattern from https://www.scalatest.org/user_guide/sharing_fixtures#fixtureContextObjects
@@ -13,18 +13,18 @@ trait ServersFixture {
   self: OHSUtilities =>
 
 
-  val quServer1 = RecipientInfo(ip = "localhost", port = 1000)
-  val quServer2 = RecipientInfo(ip = "localhost", port = 1001)
-  val quServer3 = RecipientInfo(ip = "localhost", port = 1002)
-  val quServer4 = RecipientInfo(ip = "localhost", port = 1003)
+  val quServer1: SocketAddress = SocketAddress(ip = "localhost", port = 1000)
+  val quServer2 = SocketAddress(ip = "localhost", port = 1001)
+  val quServer3: SocketAddress = SocketAddress(ip = "localhost", port = 1002)
+  val quServer4: SocketAddress = SocketAddress(ip = "localhost", port = 1003)
 
-  var quServerIpPorts = Set[RecipientInfo]()
+  var quServerIpPorts: Set[SocketAddress] = Set[SocketAddress]()
   quServerIpPorts = quServerIpPorts + quServer1
   quServerIpPorts = quServerIpPorts + quServer2
   quServerIpPorts = quServerIpPorts + quServer3
   quServerIpPorts = quServerIpPorts + quServer4
 
-  val authServerInfo = RecipientInfo(ip = "localhost", port = 1006)
+  val authServerInfo: SocketAddress = SocketAddress(ip = "localhost", port = 1006)
 
   val keysByServer: Map[ServerId, Map[ServerId, Key]] = Map(
     id(quServer1) -> Map(id(quServer1) -> "ks1s1",
@@ -44,14 +44,14 @@ trait ServersFixture {
       id(quServer3) -> "ks3s4",
       id(quServer4) -> "ks4s4"))
 
-  val serverIds = keysByServer.keys.toSet
+  val serverIds: Set[ConcreteQuModel.ServerId] = keysByServer.keys.toSet
 
   val quServer1WithKey = ServerInfo(ip = quServer1.ip,
     port = quServer1.port,
     keySharedWithMe = keysByServer(id(quServer1))(id(quServer1)))
-  val quServer2WithKey = ServerInfo(ip = quServer2.ip, port = quServer2.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer2)))
-  val quServer3WithKey = ServerInfo(ip = quServer3.ip, port = quServer3.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer3)))
-  val quServer4WithKey = ServerInfo(ip = quServer4.ip, port = quServer4.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer4)))
+  val quServer2WithKey: ServerInfo = ServerInfo(ip = quServer2.ip, port = quServer2.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer2)))
+  val quServer3WithKey: ServerInfo = ServerInfo(ip = quServer3.ip, port = quServer3.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer3)))
+  val quServer4WithKey: ServerInfo = ServerInfo(ip = quServer4.ip, port = quServer4.port, keySharedWithMe = keysByServer(id(quServer1))(id(quServer4)))
 
   var quServersInfo = Set[ServerInfo]()
   quServersInfo = quServersInfo + quServer1WithKey
@@ -61,7 +61,7 @@ trait ServersFixture {
 
   val FaultyServersCount = 1
   val MalevolentServersCount = 0
-  val thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount)
+  val thresholds: QuorumSystemThresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount)
 
   //ohs
   val aOhsWithMethod: OHS = ohsWithMethodFor(keysByServer)

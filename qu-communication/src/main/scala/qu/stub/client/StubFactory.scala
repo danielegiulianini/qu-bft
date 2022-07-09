@@ -3,8 +3,8 @@ package qu.stub.client
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.inprocess.InProcessChannelBuilder
 import io.grpc.{Grpc, InsecureChannelCredentials, ManagedChannel, ManagedChannelBuilder, TlsChannelCredentials}
-import qu.{AbstractRecipientInfo, RecipientInfo}
-import qu.RecipientInfo.id
+import qu.{AbstractSocketAddress, SocketAddress}
+import qu.SocketAddress.id
 import qu.auth.Token
 
 import scala.concurrent.ExecutionContext
@@ -14,13 +14,13 @@ trait StubFactory[Transportable[_]] {
   def inNamedProcessStub(ip: String, port: Int)
                         (implicit ec: ExecutionContext): AsyncClientStub[Transportable]
 
-  def inNamedProcessStub(recInfo: AbstractRecipientInfo)
+  def inNamedProcessStub(recInfo: AbstractSocketAddress)
                         (implicit ec: ExecutionContext): AsyncClientStub[Transportable]
 
   def unencryptedDistributedStub(ip: String, port: Int)
                                 (implicit ec: ExecutionContext): AsyncClientStub[Transportable]
 
-  def unencryptedDistributedStub(recInfo: AbstractRecipientInfo)
+  def unencryptedDistributedStub(recInfo: AbstractSocketAddress)
                                 (implicit ec: ExecutionContext): AsyncClientStub[Transportable]
 
 }

@@ -1,8 +1,8 @@
 package qu.client.quorum
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.RecipientInfo
-import qu.RecipientInfo.id
+import qu.SocketAddress
+import qu.SocketAddress.id
 import qu.auth.Token
 import qu.model.ConcreteQuModel.ServerId
 import qu.model.QuorumSystemThresholds
@@ -19,7 +19,7 @@ class JacksonSimpleBroadcastClientPolicy[ObjectT](private val thresholds: Quorum
 object JacksonSimpleBroadcastClientPolicy {
 
   //factory method
-  def apply[U](token: Token)(servers: Set[RecipientInfo], thresholds: QuorumSystemThresholds)
+  def apply[U](token: Token)(servers: Set[SocketAddress], thresholds: QuorumSystemThresholds)
               (implicit ec: ExecutionContext)
   : JacksonSimpleBroadcastClientPolicy[U] = {
     val factory = new JacksonAuthenticatedStubFactory()

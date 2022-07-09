@@ -1,7 +1,7 @@
 package qu.service.quorum
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.RecipientInfo.id
+import qu.SocketAddress.id
 import qu._
 import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
@@ -25,6 +25,6 @@ trait ServerQuorumPolicy[Transportable[_], ObjectT] extends Shutdownable {
 object ServerQuorumPolicy {
 
   type ServerQuorumPolicyFactory[Transportable[_], U] =
-    (Set[AbstractRecipientInfo], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, U]
+    (Set[AbstractSocketAddress], QuorumSystemThresholds) => ServerQuorumPolicy[Transportable, U]
 
 }

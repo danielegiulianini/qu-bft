@@ -5,12 +5,12 @@ import io.grpc.stub.ServerCalls
 import io.grpc.{BindableService, MethodDescriptor, ServerCallHandler, ServerMethodDefinition, ServerServiceDefinition}
 import presentation.MethodDescriptorFactory
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
-import qu.RecipientInfo.id
+import qu.SocketAddress.id
 import qu.model.QuorumSystemThresholds
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
-import qu.{AbstractRecipientInfo, JacksonMethodDescriptorFactory, RecipientInfo, Shutdownable}
+import qu.{AbstractSocketAddress, JacksonMethodDescriptorFactory, SocketAddress, Shutdownable}
 import qu.service.quorum.{JacksonSimpleBroadcastServerPolicy, ServerQuorumPolicy}
-import qu.storage.{ImmutableStorage}
+import qu.storage.ImmutableStorage
 import presentation.CachingMethodDescriptorFactory
 
 import java.util.Objects
@@ -44,7 +44,7 @@ object AbstractQuService {
 
 
   //for reducing number of parameters
-  case class ServerInfo(ip: String, port: Int, keySharedWithMe: String) extends AbstractRecipientInfo
+  case class ServerInfo(ip: String, port: Int, keySharedWithMe: String) extends AbstractSocketAddress
   /*
     //todo (if wanting to use named params for more readability)
     def jacksonSimpleQuorumServiceFactoryWithServerInfo[U: TypeTag]()(serverInfo: ServerInfo,
@@ -80,22 +80,22 @@ object AbstractQuService {
         )
   */
 
-  case class QuServiceBuilder2[Transportable[_], ObjectT: TypeTag](private val methodDescriptorFactory: presentation.MethodDescriptorFactory[Transportable],
-                                                                   private val policyFactory: ServerQuorumPolicyFactory[Transportable, ObjectT],
-                                                                   protected val thresholds: QuorumSystemThresholds,
-                                                                   protected val ip: String,
-                                                                   protected val port: Int,
-                                                                   protected val privateKey: String,
-                                                                   protected val obj: ObjectT,
-                                                                   protected val storage: ImmutableStorage[ObjectT] = ImmutableStorage())
-                                                                  (implicit ec: ExecutionContext) {
+  case class QuServiceBuilder[Transportable[_], ObjectT: TypeTag](private val methodDescriptorFactory: presentation.MethodDescriptorFactory[Transportable],
+                                                                  private val policyFactory: ServerQuorumPolicyFactory[Transportable, ObjectT],
+                                                                  protected val thresholds: QuorumSystemThresholds,
+                                                                  protected val ip: String,
+                                                                  protected val port: Int,
+                                                                  protected val privateKey: String,
+                                                                  protected val obj: ObjectT,
+                                                                  protected val storage: ImmutableStorage[ObjectT] = ImmutableStorage())
+                                                                 (implicit ec: ExecutionContext) {
 
     private val quService = new QuServiceImpl[Transportable, ObjectT](ip, port, privateKey, obj, thresholds, storage)
     private val ssd = CachingServiceServerDefinitionBuilder(SERVICE_NAME)
-    private var servers: Set[AbstractRecipientInfo] = Set[AbstractRecipientInfo]()
+    private var servers: Set[AbstractSocketAddress] = Set[AbstractSocketAddress]()
     private var keysSharedWithMe: Map[ServerId, Key] = Map[ServerId, String]() //this contains mykey too (needed)
 
-    insertKeyForServer(id(RecipientInfo(ip, port)), privateKey)
+    insertKeyForServer(id(SocketAddress(ip, port)), privateKey)
 
     //this precluded me the possibility of using scala name constr as builder
     def addOperationOutput[OperationOutputT]()(implicit
@@ -105,7 +105,7 @@ object AbstractQuService {
                                                transportableObjectSyncResponse: Transportable[ObjectSyncResponse[ObjectT]],
                                                transportableObjectRequest: Transportable[Request[Object, ObjectT]],
                                                transportableObjectResponse: Transportable[Response[Option[Object]]],
-                                               last: TypeTag[OperationOutputT]): QuServiceBuilder2[Transportable, ObjectT] = {
+                                               last: TypeTag[OperationOutputT]): QuServiceBuilder[Transportable, ObjectT] = {
       def addMethod[X: Transportable, Y: Transportable](handler: ServerCalls.UnaryMethod[X, Y]): Unit =
         ssd.addMethod(
           methodDescriptorFactory.generateMethodDescriptor[X, Y](OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME),
@@ -119,20 +119,20 @@ object AbstractQuService {
       this
     }
 
-    def addServer(ip: String, port: Int, keySharedWithMe: String): QuServiceBuilder2[Transportable, ObjectT] = {
-      servers = servers + RecipientInfo(ip, port)
+    def addServer(ip: String, port: Int, keySharedWithMe: String): QuServiceBuilder[Transportable, ObjectT] = {
+      servers = servers + SocketAddress(ip, port)
       insertKeyForServer(id(ServerInfo(ip, port, keySharedWithMe)), keySharedWithMe)
       this
     }
 
-    def addServer(serverInfo: ServerInfo): QuServiceBuilder2[Transportable, ObjectT] = {
+    def addServer(serverInfo: ServerInfo): QuServiceBuilder[Transportable, ObjectT] = {
       Objects.requireNonNull(serverInfo) //require(serverInfo != null)
       insertKeyForServer(id(serverInfo), serverInfo.keySharedWithMe)
       addServer(serverInfo.ip, serverInfo.port, serverInfo.keySharedWithMe)
     }
 
 
-    def addServers(serversInfo: Set[ServerInfo]): QuServiceBuilder2[Transportable, ObjectT] = {
+    def addServers(serversInfo: Set[ServerInfo]): QuServiceBuilder[Transportable, ObjectT] = {
       for {
         server <- serversInfo
       } addServer(server)
@@ -153,7 +153,7 @@ object AbstractQuService {
 
   }
 
-  object QuServiceBuilder2 {
+  object QuServiceBuilder {
 
     //for passing as parameter...
     /*type ServiceBuilderFactory[Transportable[_], ObjectT:TypeTag] =
@@ -162,7 +162,7 @@ object AbstractQuService {
     trait ServiceBuilderFactory[Transportable[_]] {
       def gen[ObjectT: TypeTag](serverInfo: ServerInfo,
                                 thresholds: QuorumSystemThresholds,
-                                obj: ObjectT)(implicit ec: ExecutionContext): QuServiceBuilder2[Transportable, ObjectT]
+                                obj: ObjectT)(implicit ec: ExecutionContext): QuServiceBuilder[Transportable, ObjectT]
     }
 
     class JacksonServiceBuilderFactory extends ServiceBuilderFactory[JavaTypeable] {
@@ -170,8 +170,8 @@ object AbstractQuService {
                                          thresholds: QuorumSystemThresholds,
                                          obj: ObjectT)
                                         (implicit ec: ExecutionContext)
-      : QuServiceBuilder2[JavaTypeable, ObjectT] = {
-        new QuServiceBuilder2(
+      : QuServiceBuilder[JavaTypeable, ObjectT] = {
+        new QuServiceBuilder(
           methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
           policyFactory = JacksonSimpleBroadcastServerPolicy[ObjectT](id(serverInfo), _, _),
           ip = serverInfo.ip,

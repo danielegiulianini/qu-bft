@@ -7,9 +7,9 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import presentation.CachingMethodDescriptorFactory
 import qu.JacksonMethodDescriptorFactory
-import qu.RecipientInfo.id
+import qu.SocketAddress.id
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.QuServiceBuilder2
+import qu.service.AbstractQuService.QuServiceBuilder
 import qu.service.quorum.JacksonSimpleBroadcastServerPolicy
 import qu.storage.ImmutableStorage
 
@@ -30,7 +30,7 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
   def freshService(): AbstractQuService[JavaTypeable, Int] = {
 
     //using constructor (instead of builder) for wiring SUT with stubbed dependencies
-    val serviceBuilder = new QuServiceBuilder2(
+    val serviceBuilder = new QuServiceBuilder(
       methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
       policyFactory = (_, _) => mockedQuorumPolicy,
       ip = quServer1WithKey.ip,

@@ -4,9 +4,7 @@ package qu.model
 trait Operations {
   self: AbstractAbstractQuModel =>
 
-  //good, but non working:
-  // override type Operation[ReturnValueT, ObjectT] = ObjectT => (ObjectT, ReturnValueT)
-  //trait MyOperation[ReturnValueT, ObjectT] extends (ObjectT => (ObjectT, ReturnValueT)) {
+
   trait MyOperation[ReturnValueT, ObjectT] {
     def compute(obj: ObjectT): (ObjectT, ReturnValueT)
   }
@@ -25,7 +23,6 @@ trait Operations {
 
   trait Update[ReturnValueT, ObjectT] extends AbstractOperation[ReturnValueT, ObjectT]
 
-  //todo should verify that the whatToReturn has not side-effects
   trait Query[ReturnValueT, ObjectT] extends AbstractOperation[ReturnValueT, ObjectT] {
     final override def updateObject(obj: ObjectT): ObjectT = obj
   }
@@ -42,10 +39,7 @@ trait Operations {
     final override def whatToReturn(obj: ObjectT): Unit = {}
   }
 
-
-  //todo here on some perplexities...
   trait OperationReturningUnUpdatedObject[ObjectT] extends AbstractOperation[ObjectT, ObjectT] {
-    //ciò varrebbe solo se facessi lavorare l'update su una copia difensiva
     override def whatToReturn(obj: ObjectT): ObjectT = obj
   }
 

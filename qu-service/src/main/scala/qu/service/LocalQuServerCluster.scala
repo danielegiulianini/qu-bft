@@ -1,10 +1,10 @@
 package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.RecipientInfo.id
+import qu.SocketAddress.id
 import qu.model.ConcreteQuModel.{Key, ServerId}
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
-import qu.{RecipientInfo, Shutdownable, Startable}
+import qu.{SocketAddress, Shutdownable, Startable}
 
 import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, Future}
@@ -51,7 +51,7 @@ object LocalQuServerCluster {
   def apply(servers: Map[ServerId, QuServer])(implicit ec: ExecutionContext) =
     new LocalQuServerClusterImpl(servers)
 
-  def apply[T](quServerIpPorts: Set[RecipientInfo],
+  def apply[T](quServerIpPorts: Set[SocketAddress],
                keysByServer: Map[ServerId, Map[ServerId, Key]],
                thresholds: QuorumSystemThresholds,
                bl: ServerBuildingLogic[T],
@@ -63,15 +63,15 @@ object LocalQuServerCluster {
       initialObj))
   }
 
-  type ServerBuildingLogic[T] = (RecipientInfo, Key, QuorumSystemThresholds, T) => QuServerBuilder[JavaTypeable, T]
+  type ServerBuildingLogic[T] = (SocketAddress, Key, QuorumSystemThresholds, T) => QuServerBuilder[JavaTypeable, T]
 
   //utilities
-  def buildServersFromRecipientInfoAndKeys[T](quServerIpPorts: Set[RecipientInfo],
+  def buildServersFromRecipientInfoAndKeys[T](quServerIpPorts: Set[SocketAddress],
                                               keysByServer: Map[ServerId, Map[ServerId, Key]],
                                               thresholds: QuorumSystemThresholds,
                                               bl: ServerBuildingLogic[T],
                                               initialObj: T)(implicit ec: ExecutionContext): Map[Key, QuServer] = {
-    def addServersToServer(ipPort: RecipientInfo) = {
+    def addServersToServer(ipPort: SocketAddress) = {
       val serverBuilder = bl(ipPort, keysByServer(id(ipPort))(id(ipPort)), thresholds, initialObj)
       for {
         ipPort2 <- quServerIpPorts if ipPort2 != ipPort

@@ -1,8 +1,8 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.RecipientInfo
-import qu.RecipientInfo.id
+import qu.SocketAddress
+import qu.SocketAddress.id
 import qu.auth.Token
 import qu.client.backoff.{BackOffPolicy, ExponentialBackOffPolicy}
 import qu.client.quorum.{ClientQuorumPolicy, JacksonSimpleBroadcastClientPolicy}
@@ -16,7 +16,7 @@ case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
                                                        private val policyFactory: ClientQuorumPolicy.ClientQuorumPolicyFactory[ObjectT, Transportable],
                                                        private val backOffPolicy: BackOffPolicy,
                                                        //user dependencies
-                                                       private val serversInfo: Set[RecipientInfo],
+                                                       private val serversInfo: Set[SocketAddress],
                                                        private val thresholds: Option[QuorumSystemThresholds]) {
   Objects.requireNonNull(policyFactory)
   Objects.requireNonNull(backOffPolicy)
@@ -24,16 +24,14 @@ case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
   Objects.requireNonNull(thresholds)
 
   def addServer(ip: String, port: Int): QuClientBuilder[ObjectT, Transportable] = {
-    addServer(RecipientInfo(ip, port))
+    addServer(SocketAddress(ip, port))
   }
 
-  def addServer(serverInfo: RecipientInfo): QuClientBuilder[ObjectT, Transportable] = {
-    //todo validation with inetsocketaddress??
+  def addServer(serverInfo: SocketAddress): QuClientBuilder[ObjectT, Transportable] = {
     this.copy(serversInfo = serversInfo + serverInfo)
   }
 
-  def addServers(serversInfos: Set[RecipientInfo]): QuClientBuilder[ObjectT, Transportable] = {
-    //todo validation with inetsocketaddress??
+  def addServers(serversInfos: Set[SocketAddress]): QuClientBuilder[ObjectT, Transportable] = {
     this.copy(serversInfo = serversInfo ++ serversInfos)
   }
 
@@ -56,13 +54,6 @@ object QuClientBuilder {
 
   //choosing an implementation as the default
   def apply[U](token: Token)(implicit ec: ExecutionContext): QuClientBuilder[U, JavaTypeable] =
-    new JacksonQuClientBuilderFactory().simpleBroadcastClientBuilder(token)//simpleJacksonQuClientBuilderInFunctionalStyle[U](token)
+    new JacksonQuClientBuilderFactory().simpleBroadcastClientBuilder(token)
 
-/*
-  //builder implementations
-  def simpleJacksonQuClientBuilderInFunctionalStyle[U](token: Token)(implicit ec: ExecutionContext):
-  QuClientBuilder[U, JavaTypeable] =
-    QuClientBuilder.empty[U, JavaTypeable](
-      JacksonSimpleBroadcastClientPolicy[U](token)(_, _), //simpleJacksonPolicyFactoryUnencrypted(token) //JacksonBroadcastClientPolicy[U](token).simplePolicy(_,_)
-      ExponentialBackOffPolicy())*/
 }

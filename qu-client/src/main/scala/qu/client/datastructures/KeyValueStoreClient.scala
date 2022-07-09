@@ -1,7 +1,7 @@
 package qu.client.datastructures
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.RecipientInfo
+import qu.SocketAddress
 import qu.client.{AuthenticatingClient, QuClient}
 import qu.model.ConcreteQuModel._
 import qu.model.QuorumSystemThresholds
@@ -31,7 +31,7 @@ class KeyValueStoreClient[K, V](username: String,
                                 password: String,
                                 authServerIp: String,
                                 authServerPort: Int,
-                                serversInfo: Set[RecipientInfo],
+                                serversInfo: Set[SocketAddress],
                                 thresholds: QuorumSystemThresholds,
                                 maxTimeToWait: Duration = 100.seconds)(implicit executionContext: ExecutionContext)
   extends AuthenticatedQuClient[MutableMap[K, V]](username,

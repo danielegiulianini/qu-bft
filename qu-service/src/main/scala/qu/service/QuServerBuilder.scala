@@ -5,8 +5,8 @@ import io.grpc.ServerInterceptor
 import qu.auth.Token
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, Request, Response}
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.QuServiceBuilder2.ServiceBuilderFactory
-import qu.service.AbstractQuService.{QuServiceBuilder2, ServerInfo}
+import qu.service.AbstractQuService.QuServiceBuilder.ServiceBuilderFactory
+import qu.service.AbstractQuService.{QuServiceBuilder, ServerInfo}
 
 import scala.reflect.runtime.universe._
 import scala.concurrent.ExecutionContext
@@ -26,7 +26,7 @@ case class QuServerBuilder[Transportable[_], ObjectT: TypeTag](
                                                               (implicit executor: ExecutionContext) {
 
 
-  private val serviceBuilder: QuServiceBuilder2[Transportable, ObjectT] =
+  private val serviceBuilder: QuServiceBuilder[Transportable, ObjectT] =
     serviceBuilderFactory.gen[ObjectT](ServerInfo(ip, port, privateKey), quorumSystemThresholds, obj)
 
   def addOperationOutput[T: TypeTag]()(implicit
@@ -43,6 +43,11 @@ case class QuServerBuilder[Transportable[_], ObjectT: TypeTag](
 
   def addServer(ip: String, port: Int, keySharedWithMe: String): QuServerBuilder[Transportable, ObjectT] = {
     serviceBuilder.addServer(ip, port, keySharedWithMe)
+    this
+  }
+
+  def addServer(serverInfo: ServerInfo): QuServerBuilder[Transportable, ObjectT] = {
+    serviceBuilder.addServer(serverInfo)
     this
   }
 
@@ -67,6 +72,15 @@ object QuServerBuilder {
       thresholds = thresholds,
       obj = obj)
 
+  def apply[U: TypeTag](serverInfo: ServerInfo,
+                        thresholds: QuorumSystemThresholds,
+                        obj: U)(implicit ec: ExecutionContext): QuServerBuilder[JavaTypeable, U] =
+    QuServerBuilder(
+      serverInfo.ip,
+      serverInfo.port,
+      serverInfo.keySharedWithMe,
+      thresholds = thresholds,
+      obj = obj)
 }
 
 

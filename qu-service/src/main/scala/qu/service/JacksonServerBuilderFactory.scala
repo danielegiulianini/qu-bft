@@ -2,7 +2,7 @@ package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.QuServiceBuilder2.JacksonServiceBuilderFactory
+import qu.service.AbstractQuService.QuServiceBuilder.JacksonServiceBuilderFactory
 import scala.reflect.runtime.universe._
 
 import scala.concurrent.ExecutionContext

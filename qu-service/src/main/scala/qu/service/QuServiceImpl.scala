@@ -4,9 +4,9 @@ import io.grpc.{BindableService, Context, ServerServiceDefinition}
 import io.grpc.stub.{ServerCalls, StreamObserver}
 import presentation.MethodDescriptorFactory
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
-import qu.RecipientInfo.id
+import qu.SocketAddress.id
 import qu.auth.common.Constants
-import qu.{AbstractRecipientInfo, RecipientInfo, Shutdownable}
+import qu.{AbstractSocketAddress, SocketAddress, Shutdownable}
 import qu.model.ConcreteQuModel.hmac
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 import qu.service.AbstractQuService.ServerInfo
@@ -37,7 +37,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String,
   import qu.LoggingUtils._
 
   private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
-  implicit val Prefix = PrefixImpl(id(RecipientInfo(ip, port)))
+  implicit val Prefix = PrefixImpl(id(SocketAddress(ip, port)))
 
   //must be protected from concurrent access
   storage = storage.store[ObjectT](emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
@@ -83,11 +83,11 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String,
 
 
 
-          if ((!authenticator.contains(id(RecipientInfo(ip, port))) ||
-            authenticator(id(RecipientInfo(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) && rh != emptyRh) { //mut use rh here! (not replicahistory)
-            println("CULLLLLEDDDD, reason: not contained? " + (!authenticator.contains(id(RecipientInfo(ip, port)))) + "(rh is: " + rh + ").")
-            if (authenticator.contains(id(RecipientInfo(ip, port))))
-              println("or auth differs? " + (authenticator(id(RecipientInfo(ip, port))) != hmac(keysSharedWithMe(serverId), rh)))
+          if ((!authenticator.contains(id(SocketAddress(ip, port))) ||
+            authenticator(id(SocketAddress(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) && rh != emptyRh) { //mut use rh here! (not replicahistory)
+            println("CULLLLLEDDDD, reason: not contained? " + (!authenticator.contains(id(SocketAddress(ip, port)))) + "(rh is: " + rh + ").")
+            if (authenticator.contains(id(SocketAddress(ip, port))))
+              println("or auth differs? " + (authenticator(id(SocketAddress(ip, port))) != hmac(keysSharedWithMe(serverId), rh)))
 
             (serverId, (emptyRh, authenticator))
           }
@@ -215,7 +215,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String,
   }
 
   private def replyWith[T](response: T, responseObserver: StreamObserver[T]): Unit = {
-    logger.log(Level.INFO, "server " + id(RecipientInfo(ip, port)) + " sending response: " + response + ".")
+    logger.log(Level.INFO, "server " + id(SocketAddress(ip, port)) + " sending response: " + response + ".")
     responseObserver.onNext(response)
     responseObserver.onCompleted()
   }
