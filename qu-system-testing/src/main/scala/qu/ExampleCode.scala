@@ -97,9 +97,9 @@ object ExampleCode extends App {
   import scala.concurrent.duration.DurationInt
 
   Await.ready(authClient.register(), atMost = 1.seconds)
-  val maxWait = 20.seconds
-  val authenticatedSyncQuClient2 = Await.result(authClient.authorize(), atMost = 1.seconds)
-  val authenticatedSyncQuClient = authenticatedSyncQuClient2.addServer(quServer1)
+  val maxWait = 30.seconds
+  val quClientBuilder = Await.result(authClient.authorize(), atMost = 1.seconds)
+  val authenticatedSyncQuClient = quClientBuilder.addServer(quServer1)
     //...
     .addServer(quServer6)
     .withThresholds(thresholds).build

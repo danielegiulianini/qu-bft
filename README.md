@@ -62,7 +62,7 @@ At the moment, the library is not available on a public remote repository. So, t
 
 1. clone the repo into the desired folder:
 ```bash
-git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920
+    git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920
 ```
 1. move inside the downloaded folder:
 ```bash
@@ -117,18 +117,123 @@ To ease the deployment of command line demo app a Dockerfile is provided. Theref
 
 
 ### Library
+To showcase the Q/U library APIs, in the following is shown how to build up a fault-scalable and fault-tolerant service providing a remote queue exposing these methods:
+
+1. GetObj
+1. Get
+1. AddOne
+1. SubtractOne
+
+This remote-queue data abstraction is presented here for demonstration purpose, but it has been already implemented in the repo so reuse it if actually needed.
 
 #### Replicated State Machine (RSM) Operations definition
+As Q/U follows a SMR approach, the first step to build up a service is to declare the operations of the RSM. Queries (which does not modify the object state) must extend Query, while updates, Update.
+It's possible to reuse here some ready-made abstractions and utilities available on [Operations](...).
 
+```scala
+object Value extends QueryReturningObject[Int]
+
+case class Increment() extends UpdateReturningUnit[Int] {
+  override def updateObject(obj: Int): Int = obj + 1
+}
+
+case class Decrement() extends UpdateReturningUnit[Int] {
+  override def updateObject(obj: Int): Int = obj - 1
+}
+
+case class Reset() extends UpdateReturningUnit[Int] {
+  override def updateObject(obj: Int): Int = 0
+}
+```
 
 #### Quorum thresholds setting
+Before running clients or replicas, the quorum thresholds needs to be set according to the worst-case faults scenario to face in your distributed system. Here, we want to tolerate up to two replica fails, one of which of byzantine nature.
+
+```scala
+   import qu.model.QuorumSystemThresholds
+
+   val thresholds = QuorumSystemThresholds(t = 2, b = 1)
+```
+
+#### Auth server setup and start
+Since Q/U requires authentication, an auth server needs to be started up before issuing client requests. Create it by specifying to the factory method the port to be listening on and the Execution context responsible for requests processing.
 
 
-#### Replicated State Machine (RSM) Operations definition
+```scala
 
 
+```
 
+#### Replica setup and start
+To process requests, a number of replicas coeherent with thresholds chosen must be setup and started. 
+For each of them (in the following we do it for the first replica), configure a builder instance by specifying its port and address (either passed separately or inside a SocketAddress container) from which to receive requests, its private key to generate authenticators for Replica History intergity check, the thresholds and the initial object state. 
+Then, plug the relevant info for all the replicas making up the cluster; namely, its 
+1. ip/port (or SocketAddress), 
+1. the private key for RH integrity validation shared with the one under construction 
+Then, register the outputs of each operations to submit. It's to important to register all the operations at all the replicas; otherwise, a client receives a OperationOutputNotRegisteredException when interacting with them.
+
+
+```scala
+
+
+```
+
+
+Finally, start the replicas ensuring an ExecutionContext is available in scope.
+
+```scala
+
+
+```
+
+#### Q/U client authentication
+The library splits authentication APIs from actual operations-submissions interface. So, let's register (if not done before) and authenticate by passing to the corresponding factory method the ip, port of the auth server, username and password and an impliciti ExecutionContext as well. Methods' Future's returns values enable monadic chaining so for comprehension can be exploited. Authorization will end up returning a builder for setting up the actual Q/U client.
+```scala
+
+
+```
+
+
+#### Q/U client configuration
+Now, set it up the thresholds and each of the replicas by providing the builder with their ip and port. The call to build will provide a Q/U client after a validation step. 
+
+```scala
+
+
+```
+#### Operations submission
+It's now possible to submit operations to the replicas by issuing them to the obtained client. As authentication APIs for comprehension can be exploited to sequentialize operations. 
+
+```scala
+
+
+```
+
+#### Client sync APIs counterpart
+Even if the presented way of interacting with the library is the suggested, the following synchronous approach could be exploited too, thanks to scala's Future support.
+
+```scala
+
+
+```
+
+### Client shutdown
+After finishing submitting operations, QuClient, as well as AuthenticatingClient, must be shutdown to cleanup resources. Be sure to wait until future completes before exiting application.
+
+```scala
+
+
+```
+### Replica and Auth server shutdown
+Finally, to stop auth server and replicas, invoke shutdown on them for freeing up allocated resources. Be sure to wait until corresponding future completes before exiting application.
+
+```scala
+
+
+```
 
 For more insight on how to use the library see [client specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-client/src/test/scala/qu/client), [service specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-service/src/test/scala/qu/service), [overall system specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-system-testing/src/test/scala/qu) or [demo code](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-demo/src/main/scala/qu).
 
 ### Demo
+
+todo
