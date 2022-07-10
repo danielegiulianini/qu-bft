@@ -40,31 +40,29 @@ object UsageExampleCode extends App {
   import qu.service.QuServerBuilder
   import qu.service.AbstractQuService.ServerInfo
 
-  val quReplica1 = ServerInfo(ip = "localhost", port = 1001, "ks1s1")
-  val quReplica2 = ServerInfo(ip = "localhost", port = 1002, "ks1s2")
+  val quReplica1Info = ServerInfo(ip = "localhost", port = 1001, "ks1s1")
+  val quReplica2Info = ServerInfo(ip = "localhost", port = 1002, "ks1s2")
   //...
-  val quReplica6 = ServerInfo(ip = "localhost", port = 1006, "ks1s6")
+  val quReplica6Info = ServerInfo(ip = "localhost", port = 1006, "ks1s6")
 
-  val quServerBuilder = QuServerBuilder(quReplica1, thresholds, 0)
-  quServerBuilder
-    .addServer(quReplica2)
+  val quServer = QuServerBuilder(quReplica1Info, thresholds, 0)
+    .addServer(quReplica2Info)
     //…
-    .addServer(quReplica6)
+    .addServer(quReplica6Info)
     .addOperationOutput[Int]() //for Value
     .addOperationOutput[Unit]() //for Inc, Dec, Reset
+    .build
 
-
-
-
+  quServer.start()
 
   //client
 
   import qu.client.AuthenticatingClient
 
-  val quServer1: SocketAddress = SocketAddress(ip = "localhost", port = 1000)
-  val quServer2: SocketAddress = SocketAddress(ip = "localhost", port = 1001)
+  val quServer1SocketAddr: SocketAddress = SocketAddress(ip = "localhost", port = 1000)
+  val quServer2SocketAddr: SocketAddress = SocketAddress(ip = "localhost", port = 1001)
   //...
-  val quServer6: SocketAddress = SocketAddress(ip = "localhost", port = 1003)
+  val quServer6SocketAddr: SocketAddress = SocketAddress(ip = "localhost", port = 1003)
 
   val authClient = AuthenticatingClient[Int](
     authServerSocketAddr.ip,
@@ -73,13 +71,19 @@ object UsageExampleCode extends App {
     "password")
 
   //async
-  val authenticatedQuClient = for {
+  val authenticatedQuClientBuilder = for {
     _ <- authClient.register()
     builder <- authClient.authorize()
-  } yield builder.addServer(quServer1)
-    //...
-    .addServer(quServer6)
-    .withThresholds(thresholds).build
+  } yield builder
+
+  val authenticatedQuClient =
+    for {
+      builder <- authenticatedQuClientBuilder
+    }
+    yield builder.addServer(quServer1SocketAddr)
+      //...
+      .addServer(quServer6SocketAddr)
+      .withThresholds(thresholds).build
 
   for {
     authenticatedQuClient <- authenticatedQuClient
@@ -91,6 +95,11 @@ object UsageExampleCode extends App {
     value <- authenticatedQuClient.submit[Int](Value)
   } yield println("distributed counter value is:" + value)
 
+  //client shutdown
+  authClient.shutdown()
+  authenticatedQuClient.map(_.shutdown())
+
+
   //sync
 
   import scala.concurrent.Await
@@ -99,9 +108,9 @@ object UsageExampleCode extends App {
   Await.ready(authClient.register(), atMost = 1.seconds)
   val maxWait = 30.seconds
   val quClientBuilder = Await.result(authClient.authorize(), atMost = 1.seconds)
-  val authenticatedSyncQuClient = quClientBuilder.addServer(quServer1)
+  val authenticatedSyncQuClient = quClientBuilder.addServer(quServer1SocketAddr)
     //...
-    .addServer(quServer6)
+    .addServer(quServer6SocketAddr)
     .withThresholds(thresholds).build
   Await.ready(authenticatedSyncQuClient.submit(Increment()), atMost = maxWait)
   Await.ready(authenticatedSyncQuClient.submit(Reset()), atMost = maxWait)
@@ -112,4 +121,12 @@ object UsageExampleCode extends App {
 
   val syncValue = Await.ready(authenticatedSyncQuClient.submit[Unit](Increment()), atMost = maxWait)
   println("distributed counter value is:" + syncValue)
+
+  Await.ready(authClient.shutdown(), 1.seconds)
+  Await.ready(authenticatedSyncQuClient.shutdown(), 1.seconds)
+
+  //auth server and replicas shutdown
+  authServer.shutdown()
+  quServer.shutdown()
+
 }
