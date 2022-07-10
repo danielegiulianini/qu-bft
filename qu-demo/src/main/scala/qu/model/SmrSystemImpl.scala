@@ -78,16 +78,18 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
     NOT_REGISTERED)
 
   override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = {
-    //if the shut down are over the maximum tolerated by the thresholds chosen must notify problem to user
-    println("the active are: " + cluster.servers.values.filterNot(_.isShutdown).size)
-    println("the t of thresholds  are: " + thresholds.t)
 
-    if (cluster.servers.values.filter(_.isShutdown).size > thresholds.t) {
-      println("thr exceeded")
+    if (!cluster.servers.contains(sid)) {
+      Failure(ServerNotExistingException())
+    }
+    else if (cluster.servers(sid).isShutdown) {
+      Failure(ServerAlreadyKilledException())
+    }
+    //if the shut down would exceed the maximum tolerated by the thresholds chosen must notify problem to user and prevent the killing
+    //+ 1 is for the upcoming kill
+    else if (cluster.servers.values.filter(_.isShutdown).size + 1 > thresholds.t) {
       Failure(ThresholdsExceededException())
     }
-    else if (!cluster.servers.contains(sid)) Failure(ServerNotExistingException())
-    else if (cluster.servers(sid).isShutdown) Failure(ServerAlreadyKilledException())
     else {
       Try {
         Await.ready(cluster.shutdownServer(sid), atMost = 5.seconds)

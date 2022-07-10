@@ -57,8 +57,9 @@ class ConsoleView extends View {
   override def setObserver(controller: Controller): Unit = observer = controller
 
   override def result(result: Try[SmrEventResult]): Unit = println({
-    
+
     val operationOk = "operation completed correctly. "
+    val operationNotOk = "a problem raised up. "
 
     def printStatuses(serversStatuses: Map[ServerId, ServerStatus]): String = "Servers statuses are: \n" +
       serversStatuses.view.mapValues(status => if (status == ACTIVE) "active" else "shutdown").mkString("\n")
@@ -69,17 +70,11 @@ class ConsoleView extends View {
       case Success(ServerKilled(id, serversStatuses)) =>
         operationOk + "Server " + id + " stopped. " + printStatuses(serversStatuses)
       case Success(ServersProfiled(serversStatuses)) => operationOk + printStatuses(serversStatuses)
-      case Failure(ThresholdsExceededException(msg)) => msg
-      case Failure(ServerAlreadyKilledException(msg)) => msg
+      case Failure(ThresholdsExceededException(msg)) => operationNotOk + msg
+      case Failure(ServerNotExistingException(msg)) => operationNotOk + msg
+      case Failure(ServerAlreadyKilledException(msg)) => operationNotOk + msg
       case Failure(UnrecognizedCommand()) => "command not recognized. Please attain to the syntax, digit " + Help.command + " to display commands."
-      // case Failure(ex) => "a problem raised up.("+ ex + ")" + ex.getMessage //todo remove
-      case Failure(ex) => {
-        println("a problem (" + ex + ")")
-        ex match {
-          case e: WrongCredentialsException => println("con msg: " + e.asInstanceOf[WrongCredentialsException].message)
-          case e => e
-        }
-      }
+      case Failure(_) => "a problem raised up."
       case _ => operationOk
     }
   })
