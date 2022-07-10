@@ -67,7 +67,7 @@ class ConsoleView extends View {
       case Success(ValueResult(value)) =>
         operationOk + "Updated counter value is: " + value
       case Success(ServerKilled(id, serversStatuses)) =>
-        operationOk + "Servers " + id + "stopped. " + printStatuses(serversStatuses)
+        operationOk + "Server " + id + " stopped. " + printStatuses(serversStatuses)
       case Success(ServersProfiled(serversStatuses)) => operationOk + printStatuses(serversStatuses)
       case Failure(ThresholdsExceededException(msg)) => msg
       case Failure(ServerAlreadyKilledException(msg)) => msg

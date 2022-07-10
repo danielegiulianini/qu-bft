@@ -2,8 +2,8 @@ package qu
 
 import qu.client.datastructures.{Decrement, Increment, Reset, Value}
 
-
-object ExampleCode extends App {
+//code posted on README.md. Put it here to leverage compile check.
+object UsageExampleCode extends App {
 
   import qu.model.QuorumSystemThresholds
 

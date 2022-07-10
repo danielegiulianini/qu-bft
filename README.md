@@ -1,7 +1,7 @@
-BFT Query/Update protocol
-===========================
+# BFT Query/Update protocol
 
-Introduction
+
+## Introduction
 ---------------	
 
 This repository contains an implementation of the Q/U protocol, a tool that enables construction of fault-scalable Byzantine fault tolerant services by an operations-based interface with a focus on fault-scalability, described by authors in the paper [Fault-Scalable Byzantine Fault-Tolerant Services](https://cs.brown.edu/courses/csci2950-g/papers/qu.pdf).
@@ -11,7 +11,7 @@ Developed in gRPC and scala with a strongly modular approach, it's available in 
 - a console line, demo application for showcasing its potentialities and acting as an example for the construction of more complex services.
 
 
-Features
+## Features
 ---------------	
 
 The paper's provided features covered by the lib are (refer to the paper for the terminology):
@@ -44,7 +44,7 @@ Refer to [issues page](https://gitlab.com/pika-lab/courses/ds/projects/ds-projec
 
 
 
-How to deploy
+## How to deploy
 ---------------	
 
 ### Library
@@ -114,17 +114,17 @@ To ease the deployment of command line demo app a Dockerfile is provided. Theref
 
 
 ## How to use
-
+---------------	
 
 ### Library
-To showcase the Q/U library APIs, in the following is shown how to build up a fault-scalable and fault-tolerant service providing a remote queue exposing these methods:
+To showcase the Q/U library APIs, in the following how to build up a fault-scalable and fault-tolerant service providing a remote counter exposing these methods is shown:
 
-1. GetObj
-1. Get
-1. AddOne
-1. SubtractOne
+1. Value: get the current value of the distributed counter
+1. Increment: increase the d. counter value by one
+1. Decrement: decrease the d. counter value by one
+1. Reset: reset the d. counter to the initial value zero
 
-This remote-queue data abstraction is presented here for demonstration purpose, but it has been already implemented in the repo so reuse it if actually needed.
+This remote counter data abstraction is presented here for demonstration purpose, but it has been already implemented in the repo so reuse it if actually needed.
 
 #### Replicated State Machine (RSM) Operations definition
 As Q/U follows a SMR approach, the first step to build up a service is to declare the operations of the RSM. Queries (which does not modify the object state) must extend Query, while updates, Update.
@@ -167,7 +167,7 @@ Since Q/U requires authentication, an auth server needs to be started up before 
 #### Replica setup and start
 To process requests, a number of replicas coeherent with thresholds chosen must be setup and started. 
 For each of them (in the following we do it for the first replica), configure a builder instance by specifying its port and address (either passed separately or inside a SocketAddress container) from which to receive requests, its private key to generate authenticators for Replica History intergity check, the thresholds and the initial object state. 
-Then, plug the relevant info for all the replicas making up the cluster; namely, its 
+Then, plug the relevant info for all the replicas making up the cluster; namely, their: 
 1. ip/port (or SocketAddress), 
 1. the private key for RH integrity validation shared with the one under construction 
 Then, register the outputs of each operations to submit. It's to important to register all the operations at all the replicas; otherwise, a client receives a OperationOutputNotRegisteredException when interacting with them.
@@ -202,7 +202,7 @@ Now, set it up the thresholds and each of the replicas by providing the builder 
 
 ```
 #### Operations submission
-It's now possible to submit operations to the replicas by issuing them to the obtained client. As authentication APIs for comprehension can be exploited to sequentialize operations. 
+It's now possible to submit operations to the replicas by issuing them to the obtained client. As for authentication APIs, for comprehension can be exploited to sequentialize operations. 
 
 ```scala
 
@@ -217,15 +217,15 @@ Even if the presented way of interacting with the library is the suggested, the 
 
 ```
 
-### Client shutdown
+#### Client shutdown
 After finishing submitting operations, QuClient, as well as AuthenticatingClient, must be shutdown to cleanup resources. Be sure to wait until future completes before exiting application.
 
 ```scala
 
 
 ```
-### Replica and Auth server shutdown
-Finally, to stop auth server and replicas, invoke shutdown on them for freeing up allocated resources. Be sure to wait until corresponding future completes before exiting application.
+#### Replica and Auth server shutdown
+Finally, shutdown auth server and replicas for stopping them and freeing up allocated resources. Be sure to wait until corresponding future completes before exiting application.
 
 ```scala
 
@@ -236,4 +236,83 @@ For more insight on how to use the library see [client specification](https://gi
 
 ### Demo
 
-todo
+The demo app allows the user to interact with a distributed counter backed by an already set cluster made of five Q/U replicas (the minimum required to tolerate one server crash) by a predefined set of commands.
+
+On startup, the list of commands, split in counter-related operations and cluster-management ones, is shown.
+
+```bash
+$ docker run -it --name burlone qu-cli-demo
+Q/U protocol example SMR System
+commands summary:
+command             argument            description         
+prof                                    show servers statuses.
+value                                   get the value of the distributed counter.
+help                                    show cli commands list.
+reset                                   reset the distributed counter.
+exit                                    shutdown the SMR system.
+kill                <server>            shutdown a single server replica for simulating fault.
+dec                                     decrement the value of the distributed counter.
+inc                                     increment the value of the distributed counter.
+```
+
+Regarding counter-related operations, to increment the value of the remote counter, decrement or reset it, issue the `inc`, `dec` and `reset` commands, respectively.
+
+```bash
+$ inc
+operation completed correctly. 
+$ inc
+operation completed correctly. 
+$ dec
+operation completed correctly. 
+$ reset
+operation completed correctly. 
+$ inc
+operation completed correctly. 
+```
+
+To get its current value, digit `value`.
+```bash
+$ value
+operation completed correctly. Updated counter value is: 1
+```
+Regarding cluster-management operations, it's possible to get the current status of each of the replicas by performing `prof`. 
+
+```bash
+$ perf
+operation completed correctly. Servers statuses are:
+localhost:1001 -> active
+localhost:1002 -> active
+localhost:1003 -> active
+localhost:1004 -> active
+```
+While all running at the beginning, you can simulate a crash fault affecting any of them by running `kill <id>`. 
+
+```bash
+$ kill localhost:1001
+operation completed correctly. Server localhost:1001 stopped. Servers statuses are:
+localhost:1001 -> shutdown
+localhost:1002 -> active
+localhost:1003 -> active
+localhost:1004 -> active
+```
+Be careful to not exceed thresholds by failing more than one server for not breaking protocol semantics.
+```bash
+
+```
+Don't kill a server twice too: in the case the app will inform you.
+```bash
+
+```
+A check on the syntax of the issued command is included.
+```bash
+
+```
+You can always retrieve commands list by running `help`.
+```bash
+
+```
+Finally, to close the application releasing all the resources, digit `exit`.
+
+```bash
+
+```
