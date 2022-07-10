@@ -303,6 +303,12 @@ Don't kill a server twice too: in the case the app will inform you.
 ```bash
 
 ```
+
+Make sure the replica id is spelled right.
+```bash
+
+```
+
 A check on the syntax of the issued command is included.
 ```bash
 

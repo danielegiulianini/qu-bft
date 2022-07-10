@@ -82,7 +82,10 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
     println("the active are: " + cluster.servers.values.filterNot(_.isShutdown).size)
     println("the t of thresholds  are: " + thresholds.t)
 
-    if (cluster.servers.values.filterNot(_.isShutdown).size > thresholds.t) Failure(ThresholdsExceededException())
+    if (cluster.servers.values.filter(_.isShutdown).size > thresholds.t) {
+      println("thr exceeded")
+      Failure(ThresholdsExceededException())
+    }
     else if (!cluster.servers.contains(sid)) Failure(ServerNotExistingException())
     else if (cluster.servers(sid).isShutdown) Failure(ServerAlreadyKilledException())
     else {
