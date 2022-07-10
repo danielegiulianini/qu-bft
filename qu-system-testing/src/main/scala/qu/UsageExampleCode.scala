@@ -1,14 +1,8 @@
 package qu
 
-import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.grpc.{Grpc, InsecureServerCredentials}
-import presentation.CachingMethodDescriptorFactory
-import qu.SocketAddress.id
+
 import qu.client.datastructures.{Decrement, Increment, Reset, Value}
-import qu.service.AbstractQuService.QuServiceBuilder
-import qu.service.JwtAuthorizationServerInterceptor
-import qu.service.quorum.JacksonSimpleBroadcastServerPolicy
-import qu.storage.ImmutableStorage
+
 
 //code posted on README.md. Put it here to leverage compile check.
 object UsageExampleCode extends App {
@@ -139,6 +133,17 @@ object UsageExampleCode extends App {
 
 
   //grpc aware
+
+
+  import qu.service.AbstractQuService.QuServiceBuilder
+  import qu.service.JwtAuthorizationServerInterceptor
+  import qu.service.quorum.JacksonSimpleBroadcastServerPolicy
+  import qu.storage.ImmutableStorage
+
+  import com.fasterxml.jackson.module.scala.JavaTypeable
+  import io.grpc.{Grpc, InsecureServerCredentials}
+  import presentation.CachingMethodDescriptorFactory
+  import qu.SocketAddress.id
   val quService = new QuServiceBuilder(
     methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
     policyFactory = JacksonSimpleBroadcastServerPolicy[Int](id(quReplica1Info), _, _),
@@ -153,7 +158,7 @@ object UsageExampleCode extends App {
   //in process:
 
   //normal:
-  Grpc.newServerBuilderForPort(quReplica1Info.port,
+   val o  = Grpc.newServerBuilderForPort(quReplica1Info.port,
     InsecureServerCredentials.create()) //ServerBuilder.forPort(port)
     .intercept(new JwtAuthorizationServerInterceptor())
     .addService(quService)

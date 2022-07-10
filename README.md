@@ -351,14 +351,24 @@ you can plug Q/U replicas functionalities into a gRPC server. First, create a Q/
 
 1. the MethodDescriptorFactory in charge of (de)serializing client-replicas and replicas-replicas messages. The lib leverages Jackson, but other can be easily used, as long as it is compatible with the one adopted at client side.
 2. the Higher-Order ServerQuorumPolicy used by the replica when performing object sync. The repo contains one implementation but new can be easily added.
-3. ip assigned to the server the replica will be running on
-4. port assigned to the server the replica will be running on
+3. ip assigned to the server the service will be running on
+4. port assigned to the server the service will be running on
 5. the private key by which to generate authenticators to check integrity of Replica Histories
 6. the initial state of the object to replicate
 7. the thresholds for the system
-8. the storage. The repo contains one in-memory implementation but new can be easily added.
+8. the storage for object versions. The repo contains one in-memory implementation but new (especially disk-backed) can be easily added.
 
 ```scala
+import qu.service.AbstractQuService.QuServiceBuilder
+import qu.service.JwtAuthorizationServerInterceptor
+import qu.service.quorum.JacksonSimpleBroadcastServerPolicy
+import qu.storage.ImmutableStorage
+
+import com.fasterxml.jackson.module.scala.JavaTypeable
+import io.grpc.{Grpc, InsecureServerCredentials}
+import presentation.CachingMethodDescriptorFactory
+import qu.SocketAddress.id
+
 val quService = new QuServiceBuilder(
   methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
   policyFactory = JacksonSimpleBroadcastServerPolicy[Int](id(quReplica1Info), _, _),

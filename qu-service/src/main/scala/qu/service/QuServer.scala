@@ -34,13 +34,12 @@ class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerIn
 
   private val logger = Logger.getLogger(classOf[QuServerImpl[Transportable, ObjectT]].getName)
 
-  private val grpcServer = {
+  private val grpcServer =
     Grpc.newServerBuilderForPort(port,
       credentials) //ServerBuilder.forPort(port)
       .intercept(authorizationInterceptor)
       .addService(quService)
       .build
-  }
 
   override def start(): Unit = {
     grpcServer.start

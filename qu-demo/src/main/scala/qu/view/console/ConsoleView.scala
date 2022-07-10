@@ -1,6 +1,5 @@
 package qu.view.console
 
-import qu.auth.common.WrongCredentialsException
 import qu.controller.Controller
 import qu.model.ConcreteQuModel.ServerId
 import qu.model.ServerStatus.ACTIVE
@@ -38,7 +37,7 @@ class ConsoleView extends View {
         case Decrement => observer.decrement()
         case Reset => observer.reset()
         case Value => observer.value()
-        case InvalidInput => result(Failure(UnrecognizedCommand()))
+        case InvalidInput | _ => result(Failure(UnrecognizedCommand()))
       }
     }
   }
