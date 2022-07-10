@@ -2,7 +2,7 @@ package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.QuServiceBuilder.JacksonServiceBuilderFactory
+import qu.service.AbstractQuService.QuServiceBuilder.JacksonBroadcastServiceBuilderFactory
 import scala.reflect.runtime.universe._
 
 import scala.concurrent.ExecutionContext
@@ -14,7 +14,7 @@ class JacksonServerBuilderFactory extends QuServerBuilderFactory[JavaTypeable] {
                                                      thresholds: QuorumSystemThresholds,
                                                      obj: ObjectT)(implicit ec: ExecutionContext)
   : QuServerBuilder[JavaTypeable, ObjectT] = new QuServerBuilder[JavaTypeable, ObjectT](
-    new JacksonServiceBuilderFactory(),
+    new JacksonBroadcastServiceBuilderFactory(),
     new JwtAuthorizationServerInterceptor(),
     ip,
     port,

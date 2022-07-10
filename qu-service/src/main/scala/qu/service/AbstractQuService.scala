@@ -165,7 +165,7 @@ object AbstractQuService {
                                 obj: ObjectT)(implicit ec: ExecutionContext): QuServiceBuilder[Transportable, ObjectT]
     }
 
-    class JacksonServiceBuilderFactory extends ServiceBuilderFactory[JavaTypeable] {
+    class JacksonBroadcastServiceBuilderFactory extends ServiceBuilderFactory[JavaTypeable] {
       override def gen[ObjectT: TypeTag](serverInfo: ServerInfo,
                                          thresholds: QuorumSystemThresholds,
                                          obj: ObjectT)

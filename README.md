@@ -40,10 +40,12 @@ The paper's provided features covered by the lib are (refer to the paper for the
 
 Additionally, the library features also:
 
-- async rivisitation of Q/U protocol, by proving a non blocking client and service APIs leveraging scala's Future
+- async ri-visitation of Q/U protocol, by proving a non blocking client and service APIs leveraging scala's Future
 - strong type check at compile time by leveraging scala's strong statically typed type system
 - Json Web Token (JWT) based authentication
 - JSON (de)serialization by Jackson
+- prototype implementations of ready-made remote data structures
+- gRPC-complain and -aware Q/U service APIs access for a more custom approach
 
 Refer to [issues page](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/issues) for a
 deeper overview of the main functionalities.
@@ -335,13 +337,60 @@ authServer.shutdown()
 quServer.shutdown()
 ```
 
+
+#### Ready-made remote data structures
+Although very prototypical, It's actually possible to leverage some ready-made remote data structures that allows you to avoid mst of the boilerplate. See []() and []() for how to use them.
+
+#### gRPC-aware Q/U services
+To:
+   1. reuse an existing gRPC server
+   2. ease the library APIs understanding by relying in already got know-how on gRPC
+   3. allow a higher level of customization
+
+you can plug Q/U replicas functionalities into a gRPC server. First, create a Q/U service by providing the builder factory the relevant configuration:
+
+1. the MethodDescriptorFactory in charge of (de)serializing client-replicas and replicas-replicas messages. The lib leverages Jackson, but other can be easily used, as long as it is compatible with the one adopted at client side.
+2. the Higher-Order ServerQuorumPolicy used by the replica when performing object sync. The repo contains one implementation but new can be easily added.
+3. ip assigned to the server the replica will be running on
+4. port assigned to the server the replica will be running on
+5. the private key by which to generate authenticators to check integrity of Replica Histories
+6. the initial state of the object to replicate
+7. the thresholds for the system
+8. the storage. The repo contains one in-memory implementation but new can be easily added.
+
+```scala
+val quService = new QuServiceBuilder(
+  methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
+  policyFactory = JacksonSimpleBroadcastServerPolicy[Int](id(quReplica1Info), _, _),
+  ip = quReplica1Info.ip,
+  port = quReplica1Info.port,
+  privateKey = quReplica1Info.keySharedWithMe,
+  obj = 0,
+  thresholds = thresholds,
+  storage = ImmutableStorage[Int]()).build
+```
+
+Then, inject it in the gRPC server by providing:
+1. the port to be listening on
+2. the ServerCredentials. Currently, only plain communication is implemented but it's easy to plug other gRPC already-provided mechanisms or even custom ones.
+3. the authorization interceptor in charge of checking the client authentication (a JWT-based is implied but new can be easily added as long as it is compatible with the one adopted by CallCredentials adopted at client side).
+4. the Q/U service just built
+```scala
+Grpc.newServerBuilderForPort(quReplica1Info.port, 
+  InsecureServerCredentials.create()) //ServerBuilder.forPort(port)
+        .intercept(new JwtAuthorizationServerInterceptor())
+        .addService(quService)
+        .build
+```
+
+It's also possible to plug a new authorization or serialization technology as well.
+
 For more insight on how to use the library
 see [client specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-client/src/test/scala/qu/client)
 , [service specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-service/src/test/scala/qu/service)
 , [overall system specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-system-testing/src/test/scala/qu)
 or [demo code](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-demo/src/main/scala/qu)
 .
-
 ### Demo
 
 The demo app allows the user to interact with a distributed counter backed by an already set cluster made of five Q/U
