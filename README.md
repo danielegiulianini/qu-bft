@@ -2,10 +2,9 @@
 
 ## Introduction
 
----------------	
 
 This repository contains an implementation of the Q/U protocol, a tool that enables construction of fault-scalable
-Byzantine fault tolerant services by an operations-based interface with a focus on fault-scalability, described by
+Byzantine fault-tolerant services by an operations-based interface with a focus on fault-scalability, described by
 authors in the
 paper [Fault-Scalable Byzantine Fault-Tolerant Services](https://cs.brown.edu/courses/csci2950-g/papers/qu.pdf).
 
@@ -40,8 +39,8 @@ The paper's provided features covered by the lib are (refer to the paper for the
 
 Additionally, the library features also:
 
-- async ri-visitation of Q/U protocol, by proving a non blocking client and service APIs leveraging scala's Future
-- strong type check at compile time by leveraging scala's strong statically typed type system
+- async ri-visitation of Q/U protocol, by proving a non-blocking client and service APIs leveraging scala's Future
+- strong type check at compile time by leveraging scala's strong statically typed type-system
 - Json Web Token (JWT) based authentication
 - JSON (de)serialization by Jackson
 - prototype implementations of ready-made remote data structures
@@ -51,7 +50,8 @@ Refer to [issues page](https://gitlab.com/pika-lab/courses/ds/projects/ds-projec
 deeper overview of the main functionalities.
 
 ## Project organization
----------------	
+
+
 To ease management and future extensions, the project is organized in the set of inter-dependent subprojects depicted in the following image and described below:
 
 ![repository structure in sub-projects](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/raw/demo/.img/subprojectsNew.png)
@@ -68,13 +68,13 @@ To ease management and future extensions, the project is organized in the set of
 
 
 ## How to deploy
----------------	
+
 
 ### Library
 
 #### For sbt users
 
-##### Prerequisities:
+##### Prerequisites:
 
 - Scala 2.13.8
 - Java 11
@@ -114,7 +114,7 @@ locally.
 
 ### Demo
 
-#### Prerequisities:
+#### Prerequisites:
 
 - Git
 - Docker
@@ -170,7 +170,7 @@ the repo so reuse it if actually needed.
 
 #### Replicated State Machine (RSM) Operations definition
 
-As Q/U follows a SMR approach, the first step to build up a service is to declare the operations of the RSM. Queries (
+As Q/U follows an SMR approach, the first step to build up a service is to declare the operations of the RSM. Queries (
 which does not modify the object state) must extend Query, while updates, Update.
 It's possible to reuse here some ready-made abstractions and utilities available on [Operations](...).
 
@@ -192,7 +192,7 @@ case class Reset() extends UpdateReturningUnit[Int] {
 
 #### Quorum thresholds setting
 
-Before running clients or replicas, the quorum thresholds needs to be set according to the worst-case faults scenario to
+Before running clients or replicas, the quorum thresholds needs to be set according to the worst-case faults' scenario to
 face in your distributed system. Here, we want to tolerate up to two replica fails, one of which of byzantine nature.
 
 ```scala
@@ -222,12 +222,12 @@ authServer.start()
 To process requests, a number of replicas coeherent with thresholds chosen must be setup and started.
 For each of them (in the following we do it for the first replica), configure a builder instance by specifying its port
 and address (either passed separately or inside a SocketAddress container) from which to receive requests, its private
-key to generate authenticators for Replica History intergity check, the thresholds and the initial object state.
+key to generate authenticators for Replica History integrity check, the thresholds and the initial object state.
 Then, plug the relevant info for all the replicas making up the cluster; namely, their:
 
 1. ip/port (or SocketAddress),
 1. the private key for RH integrity validation shared with the one under construction
-   Then, register the outputs of each operations to submit. It's to important to register all the operations at all the
+   Then, register the outputs of each operation to submit. It's important to register all the operations at all the
    replicas; otherwise, a client receives a OperationOutputNotRegisteredException when interacting with them.
 
 ```scala
@@ -258,7 +258,7 @@ quServer.start()
 
 The library splits authentication APIs from actual operations-submissions interface. So, let's register (if not done
 before) and authenticate by passing to the corresponding factory method the ip, port of the auth server, username and
-password and an impliciti ExecutionContext as well. Methods' Future's returns values enable monadic chaining so for
+password and an implicit ExecutionContext as well. Methods' Future's returns values enable monadic chaining so for
 comprehension can be exploited. Authorization will end up returning a builder for setting up the actual Q/U client.
 
 ```scala
@@ -304,7 +304,7 @@ for {
 
 #### Client shutdown
 
-After finishing submitting operations, QuClient, as well as AuthenticatingClient, must be shutdown to cleanup resources.
+After finishing submitting operations, QuClient, as well as AuthenticatingClient, must be shutdown to clean up resources.
 Be sure to wait until future completes before exiting application.
 
 ```scala
@@ -398,7 +398,7 @@ val quService = new QuServiceBuilder(
 
 Then, inject it in the gRPC server by providing:
 1. the port to be listening on
-2. the ServerCredentials. Currently, only plain communication is implemented but it's easy to plug other gRPC already-provided mechanisms or even custom ones.
+2. the ServerCredentials. Currently, only plain communication is implemented, but it's easy to plug other gRPC already-provided mechanisms or even custom ones.
 3. the authorization interceptor in charge of checking the client authentication (a JWT-based is implied but new can be easily added as long as it is compatible with the one adopted by CallCredentials adopted at client side).
 4. the Q/U service just built
 ```scala
