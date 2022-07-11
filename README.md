@@ -12,7 +12,7 @@ paper [Fault-Scalable Byzantine Fault-Tolerant Services](https://cs.brown.edu/co
 Developed in gRPC and scala with a strongly modular approach, it's available in this repo either as:
 
 - an extensible and reusable scala library, providing an access point to Q/U's client and service functionalities,
-- a console line, demo application for showcasing its potentialities and acting as an example for the construction of
+- a console line, demo application implementing a simple Replicated State Machine (RSM) for showcasing its potentialities and acting as an example for the construction of
   more complex services.
 
 ## Features
@@ -52,12 +52,22 @@ deeper overview of the main functionalities.
 
 ## Project organization
 ---------------	
-
+To ease management and future extensions, the project is organized in the set of inter-dependent subprojects depicted in the following image and described below:
 
 ![repository structure in sub-projects](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/raw/demo/.img/subprojectsNew.png)
 
-## How to deploy
+1. qu-core: it defines base entities, data structures and algorithms upon which the protocol is built.
+2. qu-presentation: it defines the (de)serialization logic corresponding to layer 5 of ISO-OSI stack for exchanging messages between clients and replicas involved by the protocol.
+3. auth: a simple and reusable token(jwt)-based authentication and authorization module, generically modelling a user info, its roles and its credentials and exposing client and server side APIs.
+4. qu-communication: it contains the common abstractions for communication and interaction between the clients and servers.
+5. qu-client: it contains Q/U client-side configuration and protocol-execution logic. It also hosts a prototype implementation of the client side of some reusable, distributed, data structures.
+6. qu-service: it holds the service-side logic of the protocol, together with the service counterpart of some common remote data structures.
+7. qu-storage: it isolates the storage-specific logic.
+8. qu-demo: it hosts RSM implementation accessible by a command-line interface.
+9. qu-system-testing: a module for the system testing (or specification) of the protocol in order to validate it.
 
+
+## How to deploy
 ---------------	
 
 ### Library
@@ -522,6 +532,6 @@ inc                                     increment the value of the distributed c
 Finally, to close the application releasing all the resources, digit `exit`.
 
 ```bash
-exit
+$ exit
 quitting...
 ```
