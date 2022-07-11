@@ -50,6 +50,12 @@ Additionally, the library features also:
 Refer to [issues page](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/issues) for a
 deeper overview of the main functionalities.
 
+## Project organization
+---------------	
+
+
+![repository structure in sub-projects](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/raw/demo/.img/subprojectsNew.png)
+
 ## How to deploy
 
 ---------------	

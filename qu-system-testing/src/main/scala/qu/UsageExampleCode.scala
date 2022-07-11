@@ -144,6 +144,7 @@ object UsageExampleCode extends App {
   import io.grpc.{Grpc, InsecureServerCredentials}
   import presentation.CachingMethodDescriptorFactory
   import qu.SocketAddress.id
+
   val quService = new QuServiceBuilder(
     methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
     policyFactory = JacksonSimpleBroadcastServerPolicy[Int](id(quReplica1Info), _, _),
@@ -158,9 +159,9 @@ object UsageExampleCode extends App {
   //in process:
 
   //normal:
-   val o  = Grpc.newServerBuilderForPort(quReplica1Info.port,
+  /*Grpc.newServerBuilderForPort(quReplica1Info.port,
     InsecureServerCredentials.create()) //ServerBuilder.forPort(port)
     .intercept(new JwtAuthorizationServerInterceptor())
     .addService(quService)
-    .build
+    .build*/
 }

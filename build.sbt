@@ -39,7 +39,7 @@ lazy val auth = (project in file("auth"))
     libraryDependencies ++= commonDependencies ++ jwtDep ++ Seq("io.grpc" % "grpc-netty" % "1.45.0",
       "com.thesamet.scalapb" %% "scalapb-runtime" % scalapb.compiler.Version.scalapbVersion, // % "protobuf",
       "org.scala-lang" % "scala-reflect" % "2.13.8",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.3",
+      //"com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.3",
       "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapb.compiler.Version.scalapbVersion
     )
   )
@@ -77,22 +77,25 @@ lazy val quCommunication = (project in file("qu-communication"))
 
 lazy val quClient = (project in file("qu-client"))
   .settings(
-    libraryDependencies ++= commonDependencies ++ Seq("io.grpc" % "grpc-netty" % "1.45.0",
+    libraryDependencies ++= commonDependencies ++ Seq(
+      //"io.grpc" % "grpc-netty" % "1.45.0",
       "org.scala-lang" % "scala-reflect" % "2.13.8",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2"
+     // "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2"
     )
   )
   .dependsOn(quCore % "compile->compile;test->test")
-  .dependsOn(auth)
+  //.dependsOn(auth)
   .dependsOn(quCommunication)
   .dependsOn(quPresentation)
 
 lazy val quService = (project in file("qu-service"))
   .settings(
-    libraryDependencies ++= commonDependencies ++ jwtDep ++
-      Seq("io.grpc" % "grpc-netty" % "1.45.0",
+    libraryDependencies ++= commonDependencies //++ jwtDep
+      ++
+      Seq(
+        //"io.grpc" % "grpc-netty" % "1.45.0",
       "org.scala-lang" % "scala-reflect" % "2.13.8",
-      "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2"
+      //"com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2"
     )
   )
   .dependsOn(quCore % "compile->compile;test->test")
@@ -122,7 +125,7 @@ lazy val quDemo = (project in file("qu-demo"))
     libraryDependencies ++= commonDependencies,
     Compile / mainClass := Some("qu.controller.Demo")
   )
-  .dependsOn(quPresentation)
+ //.dependsOn(quPresentation)
   .dependsOn(quClient)
   .dependsOn(quService % "compile->compile;test->test")
 
