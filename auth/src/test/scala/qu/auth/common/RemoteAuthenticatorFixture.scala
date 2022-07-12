@@ -7,19 +7,19 @@ import qu.auth.server.AuthServer
 import java.net.ServerSocket
 import java.util.concurrent.Executors
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutor}
 
 //to not be used with async *** spec
 trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
 
   self: Suite =>
 
-  implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
+  implicit val exec: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
   val ip = "localhost"
-  var port = new ServerSocket(0).getLocalPort //leveraging ServerSocket for getting the a free one
+  var port: Int = new ServerSocket(0).getLocalPort //leveraging ServerSocket with 0 parameter for getting the a free one
 
-  override def createAuthenticator = AuthClient(ip, port)
+  override def createAuthenticator(): AuthClient = AuthClient(ip, port)
 
   var authServer: AuthServer = _
 

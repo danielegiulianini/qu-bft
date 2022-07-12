@@ -17,15 +17,12 @@ case class AuthenticatingClient[U](ip: String,
                                    password: String)(implicit ec:ExecutionContext) extends Shutdownable {
   requireNonNullAsInvalid(username)
   requireNonNullAsInvalid(password)
-  println("new AuthenticatingClient (so new AuthClient)...")
 
   val authClient = AuthClient(ip, port)
 
   def register(): Future[Unit] = {
-    println("registering...")
     for {
       _ <- authClient.registerAsync(username, password)
-      _ <- Future(println("(AuthenticatingClient) adter registering!"))
     } yield ()
   }
 
@@ -33,7 +30,7 @@ case class AuthenticatingClient[U](ip: String,
   Future[QuClientBuilder[U, JavaTypeable]] = {
     for {
       token <- authClient.authorizeAsync(username, password)
-    } yield QuClient.defaultBuilder(token = token) //simpleJacksonQuClientBuilderInFunctionalStyle[U](token = token)
+    } yield QuClient.defaultBuilder(token = token)
   }
 
   override def shutdown(): Future[Unit] = authClient.shutdown()

@@ -134,7 +134,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     describe("when it is set up from a ohs with an established method as latest ") {
       val ohsClassifiedAsMethod = ohsWithMethodFor(serversKeys)
       val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsMethod, thresholds.q, thresholds.r, clientId.get)
-      val (latestLt, _) = latestCandidate(ohsClassifiedAsMethod, false, thresholds.r).get
+      val (latestLt, _) = latestCandidate(ohsClassifiedAsMethod, barrierFlag = false, thresholds.r).get
       it("should return a method as operation type") {
         opType should be(METHOD)
       }
@@ -158,7 +158,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
       val ohsClassifiedAsBarrier = ohsWithBarrierFor(serversKeys)
       val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsBarrier, thresholds.q, thresholds.r, clientId.get)
-      val (latestLt, _) = latestCandidate(ohsClassifiedAsBarrier, false, thresholds.r).get
+      val (latestLt, _) = latestCandidate(ohsClassifiedAsBarrier, barrierFlag = false, thresholds.r).get
 
       it("should return a method as operation type") {
         opType should be(BARRIER)
@@ -198,7 +198,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
       it("should return the latest barrier version lt as the current lt") {
         ltCur should be({
-          val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, true, thresholds.r).get
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, barrierFlag = true, thresholds.r).get
           latestLt
         })
       }
@@ -211,13 +211,13 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
       it("should return the correct lt as the new lt") {
         lt should be({
-          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineMethod, false, thresholds.r).get
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineMethod, barrierFlag = false, thresholds.r).get
           latestLt
         })
       }
       it("should return the latest object version lt as the ltCo") {
         ltCo should be({
-          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineMethod, false, thresholds.r).get
+          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineMethod, barrierFlag = false, thresholds.r).get
           latestCo
         })
       }
@@ -233,7 +233,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
       it("should return the correct lt as the new lt") {
         lt should be({
-          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineBarrier, true, thresholds.r).get
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineBarrier, barrierFlag = true, thresholds.r).get
           latestLt
         })
       }
@@ -395,7 +395,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     //latest_candidate
     describe("when queried for its latest object candidate") {
       it("should return the greatest, at least repairable, object candidate it contains") {
-        checkGreatestRepairableCandidate(ohsGen, false)
+        checkGreatestRepairableCandidate(ohsGen, barrierFlag = false)
       }
       it("should return a object candidate and not a barrier candidate") {
         val barrierFlag = false
@@ -408,7 +408,7 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     }
     describe("when queried for its latest barrier candidate") {
       it("should return the greatest, at least repairable, barrier candidate it contains") {
-        checkGreatestRepairableCandidate(ohsGen, true)
+        checkGreatestRepairableCandidate(ohsGen, barrierFlag = true)
       }
       it("should return a barrier candidate and not a object candidate") {
         val barrierFlag = true
@@ -448,10 +448,10 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       //latest candidate
       describe("when queried for its latest barrier candidate") {
         it("should return None") {
-          latestCandidate(emptyOhs(serversIds.toSet), true, thresholds.r) should be(Option.empty[Candidate])
+          latestCandidate(emptyOhs(serversIds.toSet), barrierFlag = true, thresholds.r) should be(Option.empty[Candidate])
         }
         it("should return the empty candidate as it latest objet candidate") {
-          latestCandidate(emptyOhs(serversIds.toSet), false, thresholds.r) should be(Some(emptyCandidate))
+          latestCandidate(emptyOhs(serversIds.toSet), barrierFlag = false, thresholds.r) should be(Some(emptyCandidate))
         }
       }
       //latest_time

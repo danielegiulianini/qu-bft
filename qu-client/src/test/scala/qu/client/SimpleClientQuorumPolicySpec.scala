@@ -9,15 +9,15 @@ import org.scalatest.concurrent.{PatienceConfiguration, ScalaFutures}
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
-import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
-import qu.model.ConcreteQuModel.{Request, _}
+import qu.client.quorum.JacksonBroadcastClientQuorumPolicy
+import qu.model.ConcreteQuModel._
 import qu.model.StatusCode.{FAIL, SUCCESS}
 import qu.model.examples.Commands.{GetObj, Increment}
 import qu.model.{FourServersScenario, KeysUtilities, OHSUtilities}
 import qu.stub.client.JwtAsyncClientStub
 
 import java.util.concurrent.Executors
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
 class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with ScalaFutures
   with FourServersScenario
@@ -28,9 +28,9 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
     serversIds.map(_ -> mock[JwtAsyncClientStub[JavaTypeable]]).toMap
 
   //determinism in tests
-  implicit val exec = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
+  implicit val exec: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
-  val policy = new JacksonSimpleBroadcastClientPolicy[Int](thresholds, mockedServersStubs)
+  val policy = new JacksonBroadcastClientQuorumPolicy[Int](thresholds, mockedServersStubs)
 
   def sendIncrementRequest(mockedStub: JwtAsyncClientStub[JavaTypeable]):
   MockFunction3[Request[Unit, Int], JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[Response[Option[Unit]]]] = sendReq[Unit, Int, Increment](mockedStub)
@@ -41,10 +41,10 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
   def sendReq[T, U, _ <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable]): MockFunction3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[Option[T]]], Future[Response[Option[T]]]]
   = mockedStub.send[Request[T, U], Response[Option[T]]](_: Request[T, U])(_: JavaTypeable[Request[T, U]], _: JavaTypeable[Response[Option[T]]])
 
-  val notSuccessfulGetObjResponse = Response[Option[Int]](FAIL, Some(1), emptyAuthenticatedRh)
-  val successfulGetObjResponse = Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)
-  val notSuccessfulIncResponse = Response[Option[Unit]](FAIL, Some(()), emptyAuthenticatedRh)
-  val successfulIncResponse = Response[Option[Unit]](SUCCESS, Some(()), emptyAuthenticatedRh)
+  private val notSuccessfulGetObjResponse = Response[Option[Int]](FAIL, Some(1), emptyAuthenticatedRh)
+  private val successfulGetObjResponse = Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)
+  /*private val notSuccessfulIncResponse = Response[Option[Unit]](FAIL, Some(()), emptyAuthenticatedRh)
+  private val successfulIncResponse = Response[Option[Unit]](SUCCESS, Some(()), emptyAuthenticatedRh)*/
 
   def expectRequestAndReturnResponse[T, U, Z <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable],
                                                                  req: Request[T, U],
@@ -57,11 +57,11 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
   JwtAsyncClientStub[JavaTypeable] => CallHandler3[Request[T, U], JavaTypeable[Request[T, U]], JavaTypeable[Response[Option[T]]], Future[Response[Option[T]]]] =
     (mockedStub: JwtAsyncClientStub[JavaTypeable]) => expectRequestAndReturnResponse[T, U, Z](mockedStub, req, res)
 
-  val expectGetObjAndReturnSuccessfulResponse =
+  private val expectGetObjAndReturnSuccessfulResponse =
     expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
       emptyOhs(serversIds.toSet)),
       Future.successful(successfulGetObjResponse))
-  val expectGetObjAndDoNotReturn: JwtAsyncClientStub[JavaTypeable] => CallHandler3[Request[Int, Int], JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[Response[Option[Int]]]] =
+  private val expectGetObjAndDoNotReturn: JwtAsyncClientStub[JavaTypeable] => CallHandler3[Request[Int, Int], JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[Response[Option[Int]]]] =
     expect2RequestAndReturnResponse[Int, Int, GetObj[Int]](Request(Some(GetObj()),
       emptyOhs(serversIds.toSet)),
       Future.never)
@@ -255,15 +255,12 @@ class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with Scal
       describe("when asked for finding a quorum with max t faulty servers " +
         "and receiving more than t exceptions") {
         it("should throw the corresponding exception to the caller") {
-          //get o inc è uguale...
-
           //cannot control over the order quorumPolicy stubs are called
           mockedServersStubs.values.take(thresholds.t + 1).foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
               .returning(Future.failed(new StatusRuntimeException(Status.UNAUTHENTICATED)))
           })
 
-          //queste non dovrebbero essere chiamate... (perché l'interceptor si ferma a t+1 e poi ritorna l'exception
           mockedServersStubs.values.takeRight(thresholds.n - thresholds.t - 1).foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
               .returning(Future.successful(Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)))

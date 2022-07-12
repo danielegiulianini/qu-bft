@@ -10,7 +10,7 @@ import qu.JacksonMethodDescriptorFactory
 import qu.SocketAddress.id
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractQuService.QuServiceBuilder
-import qu.service.quorum.JacksonSimpleBroadcastServerPolicy
+import qu.service.quorum.JacksonBroadcastBroadcastServerPolicy
 import qu.storage.ImmutableStorage
 
 import scala.concurrent.ExecutionContext
@@ -25,7 +25,7 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
 
   self: AsyncTestSuite with ServersFixture =>
 
-  val mockedQuorumPolicy: JacksonSimpleBroadcastServerPolicy[Int] = mock[JacksonSimpleBroadcastServerPolicy[Int]]
+  val mockedQuorumPolicy: JacksonBroadcastBroadcastServerPolicy[Int] = mock[JacksonBroadcastBroadcastServerPolicy[Int]]
 
   def freshService(): AbstractQuService[JavaTypeable, Int] = {
 

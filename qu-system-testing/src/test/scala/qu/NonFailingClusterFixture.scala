@@ -9,7 +9,7 @@ import qu.service.datastructures.RemoteCounterServer
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
-trait HealthyClusterFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
+trait NonFailingClusterFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
   self: AsyncTestSuite with ServersFixture =>
 

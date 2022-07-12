@@ -153,8 +153,6 @@ To ease the deployment of command line demo app a Dockerfile is provided. Theref
 
 ## How to use
 
----------------	
-
 ### Library
 
 To showcase the Q/U library APIs, in the following how to build up a fault-scalable and fault-tolerant service providing
@@ -192,7 +190,7 @@ case class Reset() extends UpdateReturningUnit[Int] {
 
 #### Quorum thresholds setting
 
-Before running clients or replicas, the quorum thresholds needs to be set according to the worst-case faults' scenario to
+Before running clients or replicas, the quorum thresholds need to be set according to the worst-case faults' scenario to
 face in your distributed system. Here, we want to tolerate up to two replica fails, one of which of byzantine nature.
 
 ```scala
@@ -377,7 +375,7 @@ you can plug Q/U replicas functionalities into a gRPC server. First, create a Q/
 ```scala
 import qu.service.AbstractQuService.QuServiceBuilder
 import qu.service.JwtAuthorizationServerInterceptor
-import qu.service.quorum.JacksonSimpleBroadcastServerPolicy
+import qu.service.quorum.JacksonBroadcastBroadcastServerPolicy
 import qu.storage.ImmutableStorage
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
@@ -387,7 +385,7 @@ import qu.SocketAddress.id
 
 val quService = new QuServiceBuilder(
   methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
-  policyFactory = JacksonSimpleBroadcastServerPolicy[Int](id(quReplica1Info), _, _),
+  policyFactory = JacksonBroadcastBroadcastServerPolicy[Int](id(quReplica1Info), _, _),
   ip = quReplica1Info.ip,
   port = quReplica1Info.port,
   privateKey = quReplica1Info.keySharedWithMe,

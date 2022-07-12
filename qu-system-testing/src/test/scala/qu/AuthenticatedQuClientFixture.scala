@@ -6,14 +6,14 @@ import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import org.scalatest.matchers.should.Matchers
 import qu.auth.server.AuthServer
 import qu.client.QuClientImpl
-import qu.service.ServersFixture
+import qu.service.{AbstractServersFixture, ServersFixture}
 
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 trait AuthenticatedQuClientFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
-  self: AsyncTestSuite with ServersFixture with AuthenticatingClientFixture with AuthServerFixture =>
+  self: AsyncTestSuite with AbstractServersFixture with AuthenticatingClientFixture with AuthServerFixture =>
 
   var quClientAsFuture: Future[QuClientImpl[Int, JavaTypeable]] = _
 

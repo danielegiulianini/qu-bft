@@ -9,15 +9,14 @@ import qu.service.ServersFixture
 
 import scala.concurrent.Future
 
-class NoFailingServersInteractionSpec extends AsyncFunSpec with Matchers
+class NonFailingServersInteractionSpec extends AsyncFunSpec with Matchers
   with ServersFixture
   with OHSUtilities
-  with HealthyClusterFixture
+  with NonFailingClusterFixture
   with AuthenticatedQuClientFixture
   with AuthenticatingClientFixture
   with AuthServerFixture {
 
-  //type information survives network transit
   describe("A Q/U protocol interaction with a quorum without failing servers") {
 
     describe("when a query is issued") {

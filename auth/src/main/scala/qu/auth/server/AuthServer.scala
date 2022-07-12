@@ -32,7 +32,7 @@ class AuthServer(port: Int) /*extends Shutdownable*/ {
 
   def shutdown()(implicit executionContext: ExecutionContext): Future[Unit] = {
     Future {
-      server.shutdown().awaitTermination(3, SECONDS)
+      server.shutdown().awaitTermination(5, SECONDS)
       logger.log(Level.INFO, "server shut down.")
     }
   }

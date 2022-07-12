@@ -30,7 +30,7 @@ trait AbstractAuthenticatorFixture extends BeforeAndAfterEach {
     super.beforeEach()
   }
 
-  override def afterEach() {
+  override def afterEach(): Unit = {
     try super.afterEach() // To be stackable, must call super.afterEach
     finally {
       shutdownAuthenticator()

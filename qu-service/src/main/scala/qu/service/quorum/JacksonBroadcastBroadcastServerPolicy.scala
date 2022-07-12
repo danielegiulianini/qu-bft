@@ -11,12 +11,12 @@ import qu.stub.client.{JacksonStubFactory, JwtAsyncClientStub}
 
 import scala.concurrent.ExecutionContext
 
-class JacksonSimpleBroadcastServerPolicy[ObjectT](private val thresholds: QuorumSystemThresholds,
-                                                  private val servers: Map[ServerId, JwtAsyncClientStub[JavaTypeable]])(implicit executor: ExecutionContext)
-  extends SimpleServerQuorumPolicy[JavaTypeable, ObjectT](servers, thresholds = thresholds) with Shutdownable
+class JacksonBroadcastBroadcastServerPolicy[ObjectT](private val thresholds: QuorumSystemThresholds,
+                                                     private val servers: Map[ServerId, JwtAsyncClientStub[JavaTypeable]])(implicit executor: ExecutionContext)
+  extends BroadcastServerQuorumPolicy[JavaTypeable, ObjectT](servers, thresholds = thresholds) with Shutdownable
 
 
-object JacksonSimpleBroadcastServerPolicy {
+object JacksonBroadcastBroadcastServerPolicy {
 
   //ALTRA POSSIBILITà
   //factory method
@@ -36,7 +36,7 @@ object JacksonSimpleBroadcastServerPolicy {
                thresholds: QuorumSystemThresholds)
               (implicit executor: ExecutionContext): ServerQuorumPolicy[JavaTypeable, U] = {
     val jacksonFactory = new JacksonStubFactory
-    new SimpleServerQuorumPolicy[JavaTypeable, U](
+    new BroadcastServerQuorumPolicy[JavaTypeable, U](
       servers = serversSet.map { recipientInfo => {
         println("creo usata da seerrvice " + sourceSid + ") stub verso  recipientInfo" + recipientInfo)
         id(recipientInfo) -> jacksonFactory.unencryptedDistributedStub(recipientInfo)

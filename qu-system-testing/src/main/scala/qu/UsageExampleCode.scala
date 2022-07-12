@@ -137,7 +137,7 @@ object UsageExampleCode extends App {
 
   import qu.service.AbstractQuService.QuServiceBuilder
   import qu.service.JwtAuthorizationServerInterceptor
-  import qu.service.quorum.JacksonSimpleBroadcastServerPolicy
+  import qu.service.quorum.JacksonBroadcastBroadcastServerPolicy
   import qu.storage.ImmutableStorage
 
   import com.fasterxml.jackson.module.scala.JavaTypeable
@@ -147,7 +147,7 @@ object UsageExampleCode extends App {
 
   val quService = new QuServiceBuilder(
     methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
-    policyFactory = JacksonSimpleBroadcastServerPolicy[Int](id(quReplica1Info), _, _),
+    policyFactory = JacksonBroadcastBroadcastServerPolicy[Int](id(quReplica1Info), _, _),
     ip = quReplica1Info.ip,
     port = quReplica1Info.port,
     privateKey = quReplica1Info.keySharedWithMe,

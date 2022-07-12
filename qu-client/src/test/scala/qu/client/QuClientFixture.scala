@@ -6,7 +6,7 @@ import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{TestSuite, TestSuiteMixin}
 import qu.client.backoff.BackOffPolicy
-import qu.client.quorum.JacksonSimpleBroadcastClientPolicy
+import qu.client.quorum.JacksonBroadcastClientQuorumPolicy
 import qu.model.ConcreteQuModel.{OHS, Operation, Request, Response}
 import qu.model.FourServersScenario
 
@@ -21,7 +21,7 @@ trait QuClientFixture extends TestSuiteMixin with Matchers with MockFactory {
   self: TestSuite with FourServersScenario =>
 
   var client: QuClient[Int, JavaTypeable] = _
-  val mockedQuorumPolicy = mock[JacksonSimpleBroadcastClientPolicy[Int]]
+  val mockedQuorumPolicy = mock[JacksonBroadcastClientQuorumPolicy[Int]]
   val mockedBackOffPolicy = mock[BackOffPolicy]
   val updateQuorum: MockFunction4[Option[Operation[Unit, Int]], OHS, JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[(Option[Unit], Int, OHS)]] = mockedQuorumPolicy.quorum[Unit](_: Option[Operation[Unit, Int]], _: OHS)(_: JavaTypeable[Request[Unit, Int]],
     _: JavaTypeable[Response[Option[Unit]]])

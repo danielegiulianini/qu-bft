@@ -9,7 +9,7 @@ import qu.SocketAddress.id
 import qu.model.QuorumSystemThresholds
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.{AbstractSocketAddress, JacksonMethodDescriptorFactory, SocketAddress, Shutdownable}
-import qu.service.quorum.{JacksonSimpleBroadcastServerPolicy, ServerQuorumPolicy}
+import qu.service.quorum.{JacksonBroadcastBroadcastServerPolicy, ServerQuorumPolicy}
 import qu.storage.ImmutableStorage
 import presentation.CachingMethodDescriptorFactory
 
@@ -173,7 +173,7 @@ object AbstractQuService {
       : QuServiceBuilder[JavaTypeable, ObjectT] = {
         new QuServiceBuilder(
           methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
-          policyFactory = JacksonSimpleBroadcastServerPolicy[ObjectT](id(serverInfo), _, _),
+          policyFactory = JacksonBroadcastBroadcastServerPolicy[ObjectT](id(serverInfo), _, _),
           ip = serverInfo.ip,
           port = serverInfo.port,
           privateKey = serverInfo.keySharedWithMe,

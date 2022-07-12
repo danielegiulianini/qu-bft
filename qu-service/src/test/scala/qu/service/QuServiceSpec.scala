@@ -208,7 +208,6 @@ class QuServiceSpec extends AsyncFunSpec with Matchers with AsyncMockFactory
                 responseForUpdate.map(_.authenticatedRh._1 should be(correctRh))
               }
               it("should update server authenticators correctly") {
-                println("at client side my keys are: " + keysByServer(id(quServer1)))
                 val updatedAuthenticator = authenticateRh(correctRh, keysByServer(id(quServer1)))
                 responseForUpdate.map(_.authenticatedRh._2 should be(updatedAuthenticator))
               }

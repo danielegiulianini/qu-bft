@@ -4,13 +4,13 @@ import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import qu.client.AuthenticatingClient
-import qu.service.ServersFixture
+import qu.service.{AbstractServersFixture, ServersFixture}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
 trait AuthenticatingClientFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
-  self: AsyncTestSuite with ServersFixture =>
+  self: AsyncTestSuite with AbstractServersFixture =>
 
   var authClient: AuthenticatingClient[Int] = _
 

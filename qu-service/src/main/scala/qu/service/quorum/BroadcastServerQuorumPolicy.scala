@@ -9,10 +9,10 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.collection.mutable.{Map => MutableMap}
 
-class SimpleServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId, AsyncClientStub[Transportable]],
-                                                          private val thresholds: QuorumSystemThresholds,
-                                                          private val retryingTime: FiniteDuration = 3.seconds)
-                                                         (implicit executor: ExecutionContext)
+class BroadcastServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId, AsyncClientStub[Transportable]],
+                                                             private val thresholds: QuorumSystemThresholds,
+                                                             private val retryingTime: FiniteDuration = 3.seconds)
+                                                            (implicit executor: ExecutionContext)
   extends ResponsesGatherer[Transportable](servers, retryingTime)
     with ServerQuorumPolicy[Transportable, ObjectT] with ExceptionsInspector[Transportable] {
 

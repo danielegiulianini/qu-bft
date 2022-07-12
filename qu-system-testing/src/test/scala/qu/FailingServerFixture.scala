@@ -1,61 +1,19 @@
-package qu.service
+package qu
 
-import qu.SocketAddress
 import qu.SocketAddress.id
 import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
 import qu.model.{ConcreteQuModel, OHSUtilities, QuorumSystemThresholds}
 import qu.service.AbstractQuService.ServerInfo
+import qu.service.AbstractServersFixture
 
-
-trait AbstractServersFixture {
-
-  self: OHSUtilities =>
-
-  val quServer1: SocketAddress
-  val quServer2: SocketAddress
-  val quServer3: SocketAddress
-  val quServer4: SocketAddress
-
-  var quServerIpPorts: Set[SocketAddress]
-
-  val authServerInfo: SocketAddress
-
-  def keysByServer: Map[ServerId, Map[ServerId, Key]]
-
-  val serverIds: Set[ConcreteQuModel.ServerId]
-
-  val quServer1WithKey: ServerInfo
-  val quServer2WithKey: ServerInfo
-  val quServer3WithKey: ServerInfo
-  val quServer4WithKey: ServerInfo
-
-  var quServersInfo: Set[ServerInfo]
-
-
-  val FaultyServersCount: Int
-  val MalevolentServersCount: Int
-  val thresholds: QuorumSystemThresholds
-  //ohs
-  val aOhsWithMethod: OHS
-  val aOhsWithInlineMethod: OHS
-  val aOhsWithInlineBarrier: OHS
-  val aOhsWithBarrier: OHS
-  val aOhsWithCopy: OHS
-
-  val InitialObject: Int
-}
-
-//"fixture-context objects" pattern from https://www.scalatest.org/user_guide/sharing_fixtures#fixtureContextObjects
-//(as don't need to clean up after.)
-trait ServersFixture extends AbstractServersFixture {
+trait FailingServerFixture extends AbstractServersFixture {
 
   self: OHSUtilities =>
 
-
-  val quServer1: SocketAddress = SocketAddress(ip = "localhost", port = 1000)
-  val quServer2: SocketAddress = SocketAddress(ip = "localhost", port = 1001)
-  val quServer3: SocketAddress = SocketAddress(ip = "localhost", port = 1002)
-  val quServer4: SocketAddress = SocketAddress(ip = "localhost", port = 1003)
+  val quServer1: SocketAddress = SocketAddress(ip = "localhost", port = 1010)
+  val quServer2: SocketAddress = SocketAddress(ip = "localhost", port = 1011)
+  val quServer3: SocketAddress = SocketAddress(ip = "localhost", port = 1012)
+  val quServer4: SocketAddress = SocketAddress(ip = "localhost", port = 1013)
 
   var quServerIpPorts: Set[SocketAddress] = Set[SocketAddress]()
   quServerIpPorts = quServerIpPorts + quServer1
@@ -63,7 +21,7 @@ trait ServersFixture extends AbstractServersFixture {
   quServerIpPorts = quServerIpPorts + quServer3
   quServerIpPorts = quServerIpPorts + quServer4
 
-  val authServerInfo: SocketAddress = SocketAddress(ip = "localhost", port = 1006)
+  val authServerInfo: SocketAddress = SocketAddress(ip = "localhost", port = 1016)
 
   val keysByServer: Map[ServerId, Map[ServerId, Key]] = Map(
     id(quServer1) -> Map(id(quServer1) -> "ks1s1",
@@ -110,5 +68,4 @@ trait ServersFixture extends AbstractServersFixture {
   val aOhsWithCopy: OHS = ohsWithCopyFor(serverKeys = keysByServer)
 
   val InitialObject = 2022
-
 }

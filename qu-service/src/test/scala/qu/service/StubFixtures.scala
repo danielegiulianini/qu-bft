@@ -1,18 +1,19 @@
 package qu.service
 
+import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.jsonwebtoken.{Jwts, SignatureAlgorithm}
 import org.scalatest._
 import qu.SocketAddress
 import qu.auth.Token
 import qu.auth.common.Constants
-import qu.stub.client.{JacksonAuthenticatedStubFactory, JacksonStubFactory}
+import qu.stub.client.{AsyncClientStub, JacksonAuthenticatedStubFactory, JacksonStubFactory, JwtAsyncClientStub}
 
 
 trait AuthStubFixture extends BeforeAndAfterAll {
   this: AsyncTestSuite => //AsyncTestSuite includes implicit executor needed
 
   //lazy val for dealing with initialization issues
-  lazy val authStub =
+  lazy val authStub: JwtAsyncClientStub[JavaTypeable] =
     new JacksonAuthenticatedStubFactory().inNamedProcessJwtStub(getJwt,
       serverInfo)
 
@@ -33,7 +34,7 @@ trait AuthStubFixture extends BeforeAndAfterAll {
 trait UnAuthStubFixture extends BeforeAndAfterAll {
   this: AsyncTestSuite =>
 
-  lazy val unAuthStub = {
+  lazy val unAuthStub: AsyncClientStub[JavaTypeable] = {
     new JacksonStubFactory().inNamedProcessStub(serverInfo)
   }
 

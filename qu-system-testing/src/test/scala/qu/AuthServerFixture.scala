@@ -4,14 +4,14 @@ import org.scalamock.scalatest.AsyncMockFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import qu.auth.server.AuthServer
-import qu.service.ServersFixture
+import qu.service.{AbstractServersFixture, ServersFixture}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 
 trait AuthServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
-  self: AsyncTestSuite with ServersFixture =>
+  self: AsyncTestSuite with AbstractServersFixture =>
 
 
   var authServer: AuthServer = _
@@ -29,7 +29,7 @@ trait AuthServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMock
       // Perform cleanup here
       authServer.shutdown()
       //can't wait the future here (see async***spec doc)
-      Thread.sleep(2000)
+      Thread.sleep(5000)
 
     }
   }

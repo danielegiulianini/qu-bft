@@ -12,7 +12,7 @@ import scala.concurrent.duration.DurationInt
 
 trait ClusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
-  self: AsyncTestSuite with ServersFixture =>
+  self: AsyncTestSuite with FailingServerFixture =>
 
 
   var clusterWithFailingServer: LocalQuServerCluster = _

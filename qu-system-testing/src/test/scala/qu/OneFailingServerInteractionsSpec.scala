@@ -10,7 +10,7 @@ import qu.service.ServersFixture
 import scala.concurrent.Future
 
 class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers
-  with ServersFixture
+  with FailingServerFixture
   with OHSUtilities
   with ClusterWithFailingServerFixture
   with AuthServerFixture
@@ -62,7 +62,7 @@ class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers
           val operations = List.fill(nIncrements)(Increment())
           for {
             authenticatedQuClient <- quClientAsFuture
-            _ <- seqFutures(operations)(op => authenticatedQuClient.submit(op))
+            _ <- seqFutures(operations)(authenticatedQuClient.submit(_))
             queryResult <- authenticatedQuClient.submit(GetObj())
           } yield queryResult should be(InitialObject + nIncrements)
 

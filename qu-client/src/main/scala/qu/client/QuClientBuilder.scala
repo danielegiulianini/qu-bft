@@ -5,7 +5,7 @@ import qu.SocketAddress
 import qu.SocketAddress.id
 import qu.auth.Token
 import qu.client.backoff.{BackOffPolicy, ExponentialBackOffPolicy}
-import qu.client.quorum.{ClientQuorumPolicy, JacksonSimpleBroadcastClientPolicy}
+import qu.client.quorum.{ClientQuorumPolicy, JacksonBroadcastClientQuorumPolicy}
 import qu.model.QuorumSystemThresholds
 
 import java.util.Objects

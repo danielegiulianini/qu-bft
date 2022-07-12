@@ -3,7 +3,7 @@ package qu.client
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.auth.Token
 import qu.client.backoff.{BackOffPolicy, ExponentialBackOffPolicy}
-import qu.client.quorum.{ClientQuorumPolicy, JacksonSimpleBroadcastClientPolicy}
+import qu.client.quorum.{ClientQuorumPolicy, JacksonBroadcastClientQuorumPolicy}
 
 import scala.concurrent.ExecutionContext
 

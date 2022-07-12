@@ -15,7 +15,7 @@ import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.collection.mutable.{Map => MutableMap}
 
 //basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
-class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
+class BroadcastClientQuorumPolicy[ObjectT, Transportable[_]](private val thresholds: QuorumSystemThresholds,
                                                              protected val servers: Map[ServerId,
                                                                JwtAsyncClientStub[Transportable]],
                                                              private val retryingTime: FiniteDuration = 3.seconds)
@@ -24,7 +24,7 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
     with ClientQuorumPolicy[ObjectT, Transportable]
     with ExceptionsInspector[Transportable] {
 
-  private val logger = Logger.getLogger(classOf[SimpleBroadcastClientPolicy[ObjectT, Transportable]].getName)
+  private val logger = Logger.getLogger(classOf[BroadcastClientQuorumPolicy[ObjectT, Transportable]].getName)
 
   override def quorum[AnswerT](operation: Option[Operation[AnswerT, ObjectT]],
                                ohs: OHS)
@@ -57,7 +57,6 @@ class SimpleBroadcastClientPolicy[ObjectT, Transportable[_]](private val thresho
 
       getMostFrequentElementWithOccurrences[(Option[AnswerT], ReplicaHistory)](responses
         .map(response => (response.answer, {
-          println("AAA la aswer: " + response.answer)
           val (rh, _) = response.authenticatedRh
           rh
         })))
