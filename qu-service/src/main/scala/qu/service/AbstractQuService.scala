@@ -42,43 +42,8 @@ abstract class AbstractQuService[Transportable[_], ObjectT](protected val thresh
 
 object AbstractQuService {
 
-
   //for reducing number of parameters
   case class ServerInfo(ip: String, port: Int, keySharedWithMe: String) extends AbstractSocketAddress
-  /*
-    //todo (if wanting to use named params for more readability)
-    def jacksonSimpleQuorumServiceFactoryWithServerInfo[U: TypeTag]()(serverInfo: ServerInfo,
-                                                                      obj: U,
-                                                                      quorumSystemThresholds: QuorumSystemThresholds)(implicit executor: ExecutionContext): QuServiceImpl[JavaTypeable, U] = {
-
-      new QuServiceImpl(
-        methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
-        policyFactory = JacksonSimpleBroadcastServerPolicy[U](id(serverInfo), _, _),
-        ip = serverInfo.ip,
-        port = serverInfo.port,
-        privateKey = serverInfo.keySharedWithMe,
-        obj = obj,
-        thresholds = quorumSystemThresholds,
-        storage = ImmutableStorage[U]()
-      )
-    }
-
-
-    //strange
-    def jacksonSimpleQuorumServiceFactory[U: TypeTag]()(implicit executor: ExecutionContext)
-    : ServiceFactory[JavaTypeable, U] =
-      (serverInfo, obj, quorumSystemThresholds) =>
-        new QuServiceImpl(
-          methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable],
-          policyFactory = JacksonSimpleBroadcastServerPolicy[U](id(serverInfo), _, _),
-          ip = serverInfo.ip,
-          port = serverInfo.port,
-          privateKey = serverInfo.keySharedWithMe,
-          obj = obj,
-          thresholds = quorumSystemThresholds,
-          storage = ImmutableStorage[U]()
-        )
-  */
 
   case class QuServiceBuilder[Transportable[_], ObjectT: TypeTag](private val methodDescriptorFactory: presentation.MethodDescriptorFactory[Transportable],
                                                                   private val policyFactory: ServerQuorumPolicyFactory[Transportable, ObjectT],
@@ -97,7 +62,7 @@ object AbstractQuService {
 
     insertKeyForServer(id(SocketAddress(ip, port)), privateKey)
 
-    //this precluded me the possibility of using scala name constr as builder
+    //this precluded me the possibility of using scala'a apply with name param as builder
     def addOperationOutput[OperationOutputT]()(implicit
                                                transportableRequest: Transportable[Request[OperationOutputT, ObjectT]],
                                                transportableResponse: Transportable[Response[Option[OperationOutputT]]],
@@ -155,10 +120,6 @@ object AbstractQuService {
 
   object QuServiceBuilder {
 
-    //for passing as parameter...
-    /*type ServiceBuilderFactory[Transportable[_], ObjectT:TypeTag] =
-      (ServerInfo, QuorumSystemThresholds, ObjectT) => ServiceBuilderFactory[Transportable, ObjectT]*/
-
     trait ServiceBuilderFactory[Transportable[_]] {
       def gen[ObjectT: TypeTag](serverInfo: ServerInfo,
                                 thresholds: QuorumSystemThresholds,
@@ -183,22 +144,7 @@ object AbstractQuService {
         )
       }
     }
-    /*
-        def jacksonSimpleQuorumServiceBuilderFactory[ObjectT: TypeTag](serverInfo: ServerInfo,
-                                                                       thresholds: QuorumSystemThresholds,
-                                                                       obj: ObjectT)
-                                                                      (implicit ec: ExecutionContext)
-        : QuServiceBuilder2[JavaTypeable, ObjectT] =
-          new QuServiceBuilder2(
-            methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
-            policyFactory = JacksonSimpleBroadcastServerPolicy[ObjectT](id(serverInfo), _, _),
-            ip = serverInfo.ip,
-            port = serverInfo.port,
-            privateKey = serverInfo.keySharedWithMe,
-            obj = obj,
-            thresholds = thresholds,
-            storage = ImmutableStorage[ObjectT]()
-          )*/
+
   }
 }
 

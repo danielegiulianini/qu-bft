@@ -20,7 +20,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AsyncC
 
   private val logger = Logger.getLogger(classOf[ResponsesGatherer[Transportable]].getName)
 
-  private def log(level: Level = Level.WARNING, msg: String, param1: Int = 2) =
+  private def log(level: Level = Level.WARNING, msg: String, param1: Int = 2): Unit =
     logger.log(level, msg)
 
   private val scheduler = new OneShotAsyncScheduler(1)
