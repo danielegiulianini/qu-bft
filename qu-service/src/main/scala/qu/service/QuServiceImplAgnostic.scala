@@ -39,7 +39,7 @@ class QuServiceImplAgnostic[Transportable[_], ObjectT:TypeTag](val ip: String,
   import qu.LoggingUtils._
 
   private val logger = Logger.getLogger(classOf[QuServiceImplAgnostic[Transportable, ObjectT]].getName)
-  implicit val Prefix = PrefixImpl(id(SocketAddress(ip, port))+" ")
+  implicit val Prefix = PrefixImpl(id(SocketAddress(ip, port)))
 
   import java.util.concurrent.Executors
 

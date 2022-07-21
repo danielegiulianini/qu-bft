@@ -52,7 +52,8 @@ class NonFailingServersInteractionSpec extends AsyncFunSpec with Matchers
         val operations = List.fill(incrementsCount)(Increment())
         for {
           authenticatedQuClient <- quClientAsFuture
-          value <- operations.foldLeft(Future.unit)((fut, operation) => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
+          value <- operations.foldLeft(Future.unit)((fut, operation) =>
+            fut.flatMap(_ => authenticatedQuClient.submit[Unit](operation)))
         } yield value should be(())
       }
     }
