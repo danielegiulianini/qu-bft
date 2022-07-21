@@ -29,7 +29,7 @@ trait NonFailingClusterFixture extends AsyncTestSuiteMixin with Matchers with As
     } lastly {
       // Perform cleanup here
       healthyCluster.shutdown()
-      Thread.sleep(10000)
+      Thread.sleep(3000)
     }
   }
 

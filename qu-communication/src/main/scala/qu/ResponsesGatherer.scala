@@ -2,7 +2,7 @@ package qu
 
 import qu.model.ConcreteQuModel.ServerId
 import qu.model.ValidationUtils
-import qu.stub.client.AsyncClientStub
+import qu.stub.client.AbstractAsyncClientStub
 
 import java.util.logging.{Level, Logger}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
@@ -11,7 +11,7 @@ import scala.util.{Failure, Success}
 import scala.collection.mutable.{Map => MutableMap}
 
 
-abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AsyncClientStub[Transportable]],
+abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AbstractAsyncClientStub[Transportable]],
                                                    private val retryingTime: FiniteDuration = 1.seconds)
                                                   (implicit ec: ExecutionContext)
   extends Shutdownable {

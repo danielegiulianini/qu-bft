@@ -3,13 +3,13 @@ package qu.service.quorum
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, ServerId}
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
 import qu.{ExceptionsInspector, ResponsesGatherer}
-import qu.stub.client.AsyncClientStub
+import qu.stub.client.AbstractAsyncClientStub
 
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.collection.mutable.{Map => MutableMap}
 
-class BroadcastServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId, AsyncClientStub[Transportable]],
+class BroadcastServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[ServerId, AbstractAsyncClientStub[Transportable]],
                                                              private val thresholds: QuorumSystemThresholds,
                                                              private val retryingTime: FiniteDuration = 3.seconds)
                                                             (implicit executor: ExecutionContext)

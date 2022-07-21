@@ -19,7 +19,7 @@ import qu.stub.client.JwtAsyncClientStub
 import java.util.concurrent.Executors
 import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, Future}
 
-class SimpleClientQuorumPolicySpec extends AnyFunSpec with MockFactory with ScalaFutures
+class BroadcastClientQuorumPolicySpec extends AnyFunSpec with MockFactory with ScalaFutures
   with FourServersScenario
   with OHSUtilities
   with KeysUtilities {

@@ -7,7 +7,7 @@ import scala.concurrent.ExecutionContext
 import scala.reflect.runtime.universe._
 
 trait QuServerBuilderFactory[Transportable[_]] {
-  def simpleBroadcastClientBuilder[ObjectT: TypeTag](ip: String,
+  def simpleBroadcastServerBuilder[ObjectT: TypeTag](ip: String,
                                                      port: Int,
                                                      privateKey: String,
                                                      thresholds: QuorumSystemThresholds,

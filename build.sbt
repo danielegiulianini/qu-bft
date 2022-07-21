@@ -20,7 +20,10 @@ lazy val jwtDep = Seq("io.jsonwebtoken" % "jjwt-api" % "0.11.5",
   "io.jsonwebtoken" % "jjwt-jackson" % "0.11.5"
 )
 
-Test / test / coverageEnabled := true //coverageEnabled.in(ThisBuild, Test, test) := true
+coverageEnabled in Test := true
+
+//this is needed in spite of warnings!
+//Test / test / coverageEnabled := true //coverageEnabled.in(ThisBuild, Test, test) := true
 
 lazy val commonDependencies = Seq(
   "org.scalamock" %% "scalamock" % "5.2.0" % Test,

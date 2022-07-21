@@ -5,8 +5,8 @@ import io.grpc.ServerInterceptor
 import qu.auth.Token
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, Request, Response}
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.QuServiceBuilder.ServiceBuilderFactory
-import qu.service.AbstractQuService.{QuServiceBuilder, ServerInfo}
+import qu.service.AbstractQuService2.QuServiceBuilder.ServiceBuilderFactory
+import qu.service.AbstractQuService2.{QuServiceBuilder, ServerInfo}
 
 import scala.reflect.runtime.universe._
 import scala.concurrent.ExecutionContext
@@ -66,7 +66,7 @@ object QuServerBuilder {
                         privateKey: String,
                         thresholds: QuorumSystemThresholds,
                         obj: U)(implicit ec: ExecutionContext): QuServerBuilder[JavaTypeable, U] =
-    new JacksonServerBuilderFactory().simpleBroadcastClientBuilder[U](ip = ip,
+    new JacksonServerBuilderFactory().simpleBroadcastServerBuilder[U](ip = ip,
       port = port,
       privateKey = privateKey,
       thresholds = thresholds,

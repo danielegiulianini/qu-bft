@@ -11,9 +11,13 @@ import scalapb.grpc.ClientCalls
 import java.util.concurrent.TimeUnit
 import scala.concurrent.{ExecutionContext, Future}
 
+trait AsyncClientStub[Transferable[_]] {
+  def send[InputT: Transferable, OutputT: Transferable](toBeSent: InputT):Future[OutputT]
+}
+
 //a stub reusable between client and server sides
-abstract class AsyncClientStub[Transferable[_]](val chan: ManagedChannel)(implicit executor: ExecutionContext)
-  extends MethodDescriptorFactory[Transferable] with MarshallerFactory[Transferable] with Shutdownable {
+abstract class AbstractAsyncClientStub[Transferable[_]](val chan: ManagedChannel)(implicit executor: ExecutionContext)
+  extends AsyncClientStub[Transferable] with MethodDescriptorFactory[Transferable] with MarshallerFactory[Transferable] with Shutdownable {
 
   protected val callOptions: CallOptions = CallOptions.DEFAULT
 
@@ -26,11 +30,8 @@ abstract class AsyncClientStub[Transferable[_]](val chan: ManagedChannel)(implic
   }
 
   override def shutdown(): Future[Unit] = Future {
-    println("shutting down channel " + this + "... (calling thread:" + Thread.currentThread().getName() + ")")
     chan.shutdown()
     chan.awaitTermination(30, TimeUnit.SECONDS)
-    println("channel " + this + "  shut down !" + chan.isShutdown)
-
   }
 
   override def isShutdown: Boolean = chan.isShutdown

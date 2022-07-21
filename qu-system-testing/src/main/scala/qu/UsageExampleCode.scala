@@ -40,7 +40,7 @@ object UsageExampleCode extends App {
   //qu server
 
   import qu.service.QuServerBuilder
-  import qu.service.AbstractQuService.ServerInfo
+  import qu.service.AbstractQuService2.ServerInfo
 
   val quReplica1Info = ServerInfo(ip = "localhost", port = 1001, "ks1s1")
   val quReplica2Info = ServerInfo(ip = "localhost", port = 1002, "ks1s2")
@@ -135,7 +135,7 @@ object UsageExampleCode extends App {
   //grpc aware
 
 
-  import qu.service.AbstractQuService.QuServiceBuilder
+  import qu.service.AbstractQuService2.QuServiceBuilder
   import qu.service.JwtAuthorizationServerInterceptor
   import qu.service.quorum.JacksonBroadcastBroadcastServerPolicy
   import qu.storage.ImmutableStorage

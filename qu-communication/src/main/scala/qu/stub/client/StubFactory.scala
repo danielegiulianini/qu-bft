@@ -1,11 +1,6 @@
 package qu.stub.client
 
-import com.fasterxml.jackson.module.scala.JavaTypeable
-import io.grpc.inprocess.InProcessChannelBuilder
-import io.grpc.{Grpc, InsecureChannelCredentials, ManagedChannel, ManagedChannelBuilder, TlsChannelCredentials}
 import qu.{AbstractSocketAddress, SocketAddress}
-import qu.SocketAddress.id
-import qu.auth.Token
 
 import scala.concurrent.ExecutionContext
 

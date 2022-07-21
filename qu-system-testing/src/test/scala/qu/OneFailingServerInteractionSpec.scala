@@ -9,7 +9,7 @@ import qu.service.ServersFixture
 
 import scala.concurrent.Future
 
-class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers
+class OneFailingServerInteractionSpec extends AsyncFunSpec with Matchers
   with FailingServerFixture
   with OHSUtilities
   with ClusterWithFailingServerFixture
@@ -45,12 +45,14 @@ class OneFailingServerInteractionsSpec extends AsyncFunSpec with Matchers
         } yield value should be(InitialObject + 1)
       }
     }
+
     describe("when multiple updates are issued") {
       it("should return to client the correct answer") {
         val operations = List.fill(3)(Increment())
         for {
           authenticatedQuClient <- quClientAsFuture
-          value <- operations.foldLeft(Future.unit)((fut, operation) => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
+          value <- operations.foldLeft(Future.unit)((fut, operation)
+          => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
         } yield value should be(())
       }
 

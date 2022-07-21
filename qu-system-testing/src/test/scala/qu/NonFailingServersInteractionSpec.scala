@@ -47,9 +47,9 @@ class NonFailingServersInteractionSpec extends AsyncFunSpec with Matchers
     }
     describe("when multiple updates are issued") {
       it("should return to client the correct answer") {
-        val nIncrements = 3
+        val incrementsCount = 3
 
-        val operations = List.fill(nIncrements)(Increment())
+        val operations = List.fill(incrementsCount)(Increment())
         for {
           authenticatedQuClient <- quClientAsFuture
           value <- operations.foldLeft(Future.unit)((fut, operation) => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
@@ -59,16 +59,14 @@ class NonFailingServersInteractionSpec extends AsyncFunSpec with Matchers
 
 
     describe("when multiple updates are issued followed by a query") {
-
       it("should return to client the correct answer") {
-        val nIncrements = 3
-        val operations = List.fill(nIncrements)(Increment())
+        val incrementsCount = 3
+        val operations = List.fill(incrementsCount)(Increment())
         for {
           authenticatedQuClient <- quClientAsFuture
-          _ <- seqFutures(operations)(op => authenticatedQuClient.submit(op))
+          _ <- seqFutures(operations)(authenticatedQuClient.submit(_))
           queryResult <- authenticatedQuClient.submit(GetObj())
-        } yield queryResult should be(InitialObject + nIncrements)
-
+        } yield queryResult should be(InitialObject + incrementsCount)
       }
     }
   }

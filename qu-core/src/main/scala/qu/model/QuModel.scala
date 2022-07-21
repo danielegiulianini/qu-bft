@@ -65,7 +65,7 @@ trait AbstractAbstractQuModel extends QuModel {
   override type OHS = Map[ServerId, AuthenticatedReplicaHistory]
 
   val startingTime = 0
-  val emptyLT: ConcreteLogicalTimestamp = ConcreteLogicalTimestamp(startingTime, false, Option.empty, Option.empty, Option.empty) //false because it must allow client to exit from repairing (if al servers sent the empty ohs)
+  val emptyLT: ConcreteLogicalTimestamp = ConcreteLogicalTimestamp(startingTime, barrierFlag = false, Option.empty, Option.empty, Option.empty) //false because it must allow client to exit from repairing (if al servers sent the empty ohs)
   val emptyCandidate: Candidate = (emptyLT, emptyLT)
   val emptyRh: ReplicaHistory = List(emptyCandidate)
 

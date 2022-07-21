@@ -8,6 +8,6 @@ import qu.JacksonMethodDescriptorFactory
 import scala.concurrent.ExecutionContext
 
 class UnauthenticatedJacksonAsyncClientStub(channel: ManagedChannel)(implicit executor: ExecutionContext)
-  extends AsyncClientStub[JavaTypeable](channel) with JacksonMethodDescriptorFactory
+  extends AbstractAsyncClientStub[JavaTypeable](channel) with JacksonMethodDescriptorFactory
     with CachingMethodDescriptorFactory[JavaTypeable]
 

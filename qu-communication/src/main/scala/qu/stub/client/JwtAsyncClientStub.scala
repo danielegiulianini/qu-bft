@@ -9,7 +9,7 @@ import scala.concurrent.ExecutionContext
 
 abstract class JwtAsyncClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)
                                                   (implicit executor: ExecutionContext)
-  extends AsyncClientStub[Transferable](chan) {
+  extends AbstractAsyncClientStub[Transferable](chan) {
   override val callOptions: CallOptions = CallOptions.DEFAULT.withCallCredentials(new AuthenticationCallCredentials(token))
     .withWaitForReady()
 }

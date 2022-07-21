@@ -24,27 +24,22 @@ import scala.util.{Failure, Success}
 //import that declares specific dependency
 import qu.model.ConcreteQuModel._
 
-/*
-class QauServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String,
-                                                        override val port: Int,
-                                                        override val privateKey: String,
-                                                        override val obj: ObjectT,
-                                                        override val thresholds: QuorumSystemThresholds,
-                                                        private var storage: Storage[ObjectT])
-                                                       (implicit executor: ExecutionContext)
-  extends AbstractQuService[Transportable, ObjectT](thresholds, ip, port, privateKey, obj) {
 
-  //si compone di un business server...??
+//ha bisogno di tutte le info che vengono settate al momento della istanziazione
+class QuServiceImplAgnostic[Transportable[_], ObjectT:TypeTag](val ip: String,
+                                                       val port: Int,
+                                                       val privateKey: String,
+                                                       val obj: ObjectT,
+                                                       val thresholds: QuorumSystemThresholds,
+                                                       var storage: Storage[ObjectT],
+                                                       val keysSharedWithMe: Map[ServerId, Key],
+                                                       var quorumPolicy: ServerQuorumPolicy[Transportable, ObjectT])
+                                                      (implicit executor: ExecutionContext) extends Shutdownable {
 
   import qu.LoggingUtils._
 
-  private val logger = Logger.getLogger(classOf[QuServiceImpl[Transportable, ObjectT]].getName)
-  implicit val Prefix = PrefixImpl(id(SocketAddress(ip, port)))
-
-  //must be protected from concurrent access
-  storage = storage.store[ObjectT](emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
-
-  val clientId: Context.Key[Key] = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
+  private val logger = Logger.getLogger(classOf[QuServiceImplAgnostic[Transportable, ObjectT]].getName)
+  implicit val Prefix = PrefixImpl(id(SocketAddress(ip, port))+" ")
 
   import java.util.concurrent.Executors
 
@@ -54,16 +49,12 @@ class QauServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String
 
   var authenticatedReplicaHistory: AuthenticatedReplicaHistory = emptyAuthenticatedRh
 
+  storage = storage.store[ObjectT](emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
 
-  override def sRequest[AnswerT: TypeTag](request: Request[AnswerT, ObjectT],
-                                          responseObserver: StreamObserver[Response[Option[AnswerT]]])(implicit objectSyncResponseTransportable: Transportable[ObjectSyncResponse[ObjectT]],
-                                                                                                       logicalTimestampTransportable: Transportable[LogicalTimestamp])
-  : Unit = {
+  def sRequest[AnswerT: TypeTag](request: Request[AnswerT, ObjectT], clientId:String)(implicit objectSyncResponseTransportable: Transportable[ObjectSyncResponse[ObjectT]],
+                                                                     logicalTimestampTransportable: Transportable[LogicalTimestamp])
+  : Future[Response[Option[AnswerT]]] = {
 
-
-    def replyWithResponse(response: Response[Option[AnswerT]]): Unit = {
-      replyWith(response, responseObserver)
-    }
 
     //todo not need to pass request if nested def
     def executeOperation(request: Request[AnswerT, ObjectT], obj: ObjectT): (ObjectT, AnswerT) = {
@@ -100,9 +91,7 @@ class QauServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String
     //culling invalid Replica histories
     val updatedOhs = cullRh(request.ohs)
 
-    logger.logWithPrefix(Level.INFO, "SEEEEEEEEERVERRRRRRRRRRR la ohs updated is: " + updatedOhs)
-    val (opType, (lt, ltCo), ltCurrent) = setup(request.operation, updatedOhs, thresholds.q, thresholds.r, clientId.get())
-    logger.logWithPrefix(msg = "(lt, ltCo) got by request " + request + " is: " + (lt, ltCo))
+    val (opType, (lt, ltCo), ltCurrent) = setup(request.operation, updatedOhs, thresholds.q, thresholds.r, clientId)
 
     logger.logWithPrefix(Level.INFO, "SEEEEEEEEERVERRRRRRRRRRR ltCo ritornato da setup is: " + ltCo)
 
@@ -119,8 +108,8 @@ class QauServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String
       val response = Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory)
       logger.log(Level.INFO, "repeated request detected! sending response" + response)
 
-      replyWithResponse(response)
-      return
+      //replyWithResponse(response)
+      return Future(response)
     }
 
     //validating if ohs current
@@ -141,8 +130,8 @@ class QauServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String
         }
       }
 
-      replyWithResponse(Response(StatusCode.FAIL, answerToReturn, authenticatedReplicaHistory))
-      return
+      //replyWithResponse(Response(StatusCode.FAIL, answerToReturn, authenticatedReplicaHistory))
+      return Future(Response(StatusCode.FAIL, answerToReturn, authenticatedReplicaHistory))
     }
 
     //Retrieve conditioned-on object so that method can be invoked
@@ -163,9 +152,7 @@ class QauServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String
       }
     }
 
-    onObjectRetrieved(objToWorkOn)
-
-    def onObjectRetrieved(retrievedObj: ObjectT): Unit = {
+    def onObjectRetrieved(retrievedObj: ObjectT): Future[Response[Option[AnswerT]]] = {
       objToWorkOn = retrievedObj
       if (opType == ConcreteOperationTypes.METHOD || opType == ConcreteOperationTypes.INLINE_METHOD) {
         val (newObj, newAnswer) = executeOperation(request, objToWorkOn)
@@ -173,8 +160,7 @@ class QauServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String
         answerToReturn = Some(newAnswer) //must overwrite
         //if method or inline method operation should not be empty
         if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) {
-          replyWithResponse(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
-          return //taking out of the method
+          return Future(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
         }
       }
 
@@ -203,23 +189,21 @@ class QauServiceImpl[Transportable[_], ObjectT: TypeTag](override val ip: String
           authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
           logger.logWithPrefix(msg = "Updated authenticated replica history is: " + authenticatedReplicaHistory)
         }
-        replyWithResponse(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
+        return Future(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
       }
     }
+
+    onObjectRetrieved(objToWorkOn)
   }
 
 
-  override def sObjectRequest(request: LogicalTimestamp, //or the wrapping class
-                              responseObserver: StreamObserver[ObjectSyncResponse[ObjectT]]): Unit = {
+  def sObjectRequest(request: LogicalTimestamp): Future[ObjectSyncResponse[ObjectT]] = {
     logger.log(Level.INFO, "object sync request received")
-    replyWith(ObjectSyncResponse(StatusCode.SUCCESS,
-      storage.retrieveObject(request)), responseObserver)
+    Future(ObjectSyncResponse(StatusCode.SUCCESS,
+      storage.retrieveObject(request)))
   }
 
-  private def replyWith[T](response: T, responseObserver: StreamObserver[T]): Unit = {
-    logger.log(Level.INFO, "server " + id(SocketAddress(ip, port)) + " sending response: " + response + ".")
-    responseObserver.onNext(response)
-    responseObserver.onCompleted()
-  }
+  override def shutdown(): Future[Unit] = quorumPolicy.shutdown()
+
+  override def isShutdown: Flag = quorumPolicy.isShutdown
 }
-*/
