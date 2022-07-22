@@ -7,32 +7,38 @@ import qu.SocketAddress.id
 import qu.service.{LocalQuServerCluster, ServersFixture}
 import qu.service.datastructures.RemoteCounterServer
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 trait ClusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
-  self: AsyncTestSuite with FailingServerFixture =>
-
+  self: OneFailingServersInfoFixture =>
 
   var clusterWithFailingServer: LocalQuServerCluster = _
 
-  override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
+  def setupClusterWithFailingServer(): Future[_] = {
     clusterWithFailingServer = LocalQuServerCluster[Int](quServerIpPorts,
       keysByServer,
       thresholds,
       RemoteCounterServer.builder,
       InitialObject)
 
-    complete {
-      clusterWithFailingServer.start()
-      clusterWithFailingServer.shutdownServer(id(quServer1))
-
-      super.withFixture(test) // To be stackable, must call super.withFixture
-    } lastly {
-      // Perform cleanup here
-      clusterWithFailingServer.shutdown()
-      Thread.sleep(2000)
-    }
+    for {
+      _ <- Future {
+        clusterWithFailingServer.start()
+      }
+      _ <- clusterWithFailingServer.shutdownServer(id(quServer1))
+    } yield ()
   }
+
+  def tearDownClusterWithFailingServer(): Future[_] =clusterWithFailingServer.shutdown()
+
+  abstract override def withFixture(test: NoArgAsyncTest) = {
+    new FutureOutcome(for {
+      _ <- setupClusterWithFailingServer()
+      result <- super.withFixture(test).toFuture
+      _ <- tearDownClusterWithFailingServer()
+    } yield result)
+  }
+
 }

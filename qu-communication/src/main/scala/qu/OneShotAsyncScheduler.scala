@@ -20,9 +20,9 @@ class OneShotAsyncScheduler(poolSize: Int) extends Shutdownable {
     scheduler.scheduleOnce(duration)(action)
   }
 
-  override def shutdown(): Future[Unit] = Future {
-    scheduler.shutdown(); scheduler.awaitTermination(5.seconds)
-  }
+  override def shutdown(): Future[Unit] = Future {}
+  /*  scheduler.shutdown(); scheduler.awaitTermination(5.seconds)
+  }*/
 
   override def isShutdown: Boolean = scheduler.isShutdown
 }

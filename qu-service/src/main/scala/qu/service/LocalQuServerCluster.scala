@@ -22,6 +22,7 @@ class LocalQuServerClusterImpl(override val servers: Map[ServerId, QuServer])
                               (implicit ec: ExecutionContext)
   extends LocalQuServerCluster {
 
+  import qu.LoggingUtils._
   private val logger = Logger.getLogger(classOf[LocalQuServerClusterImpl].getName)
 
   override def start(): Unit = {
@@ -29,9 +30,25 @@ class LocalQuServerClusterImpl(override val servers: Map[ServerId, QuServer])
     servers.values.foreach(_.start())
   }
 
-  override def shutdown(): Future[Unit] =
-    Future.reduceLeft[Unit, Unit](servers.values.toList.map(_.shutdown())
-    )((_, _) => ()).map(_ => logger.log(Level.INFO, "local cluster shut down."))
+  override def shutdown(): Future[Unit] = {
+    println("i server to shutdown are: " +servers.values.toList)
+   // Future.traverse(servers.values.toList)(_.shutdown()).flatMap(_ => logger.logAsync(Level.INFO, "local cluster shut down."))
+    def seqFutures[T, U](items: IterableOnce[T])(fun: T => Future[U])(implicit ec: ExecutionContext): Future[List[U]] = {
+      items.iterator.foldLeft(Future.successful[List[U]](Nil)) {
+        (f, item) =>
+          f.flatMap {
+            x => fun(item).map(_ :: x)
+          }
+      } map (_.reverse)
+    }
+    servers.values.toList.foldLeft(Future.unit)((fut, server) =>
+        fut.flatMap(_ => server.shutdown())).map(r => println("shutdown all the servers"))
+    //seqFutures(servers.values.toList)(_.shutdown()).map(a=>println(("custer shutodwn")))//.flatMap(_ => logger.logAsync(Level.INFO, "local cluster shut down."))
+    //seqFutures(servers.values.toList)(_.shutdown()).map(a=>println(("custer shutodwn")))//.flatMap(_ => logger.logAsync(Level.INFO, "local cluster shut down."))
+
+    /*Future.reduceLeft[Unit, Unit](servers.values.toList.map(_.shutdown())
+    )((_, _) => ()).flatMap(_ => logger.logAsync(Level.INFO, "local cluster shut down."))*/
+  }
 
 
   override def isShutdown: Boolean = servers.values.forall(_.isShutdown)

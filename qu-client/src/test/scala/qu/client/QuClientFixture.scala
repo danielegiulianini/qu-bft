@@ -30,8 +30,6 @@ trait QuClientFixture extends TestSuiteMixin with Matchers with MockFactory {
 
   abstract override def withFixture(test: NoArgTest) = {
     // Perform setup
-    println("setting up  clientFixture...")
-
     //using constructor (instead of builder) for wiring SUT with stubbed dependencies
     client = new QuClientImpl[Int, JavaTypeable](
       policy = mockedQuorumPolicy,

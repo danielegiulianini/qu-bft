@@ -6,31 +6,34 @@ import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import qu.auth.server.AuthServer
 import qu.service.{AbstractServersFixture, ServersFixture}
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
 trait AuthServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
-  self: AsyncTestSuite with AbstractServersFixture =>
+  self: AbstractServersFixture =>
 
 
   var authServer: AuthServer = _
 
-  override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
 
-    // Perform setup
+  def setupAuthServer(): Future[_] = {
     authServer = new AuthServer(authServerInfo.port)
 
-    complete {
-      println("starting auth server...")
+    Future {
       authServer.start()
-      super.withFixture(test) // To be stackable, must call super.withFixture
-    } lastly {
-      // Perform cleanup here
-      authServer.shutdown()
-      //can't wait the future here (see async***spec doc)
-      Thread.sleep(5000)
-
     }
+  }
+
+
+  def tearDownAuthServer(): Future[_] =
+    authServer.shutdown()
+
+  abstract override def withFixture(test: NoArgAsyncTest) = {
+    new FutureOutcome(for {
+      _ <- setupAuthServer()
+      result <- super.withFixture(test).toFuture
+      _ <- tearDownAuthServer()
+    } yield result)
   }
 }

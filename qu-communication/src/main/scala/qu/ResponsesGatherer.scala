@@ -95,8 +95,9 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, Abstra
                                              exceptionsByServerId: MutableMap[ServerId, Throwable]): Unit
 
   override def shutdown(): Future[Unit] = {
+    println("shutting down policys...")
     Future.reduceLeft[Unit, Unit](servers.values.toList.map(_.shutdown())
-    )((_, _) => ()).map(_ => scheduler.shutdown()) //Future.sequence(servers.values.map(s => s.shutdown()))
+    )((_, _) => ()).flatMap(_ => scheduler.shutdown()) //Future.sequence(servers.values.map(s => s.shutdown()))
   }
 
   override def isShutdown: Boolean = servers.values.forall(_.isShutdown) && scheduler.isShutdown

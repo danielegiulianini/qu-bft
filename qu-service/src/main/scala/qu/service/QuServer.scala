@@ -51,9 +51,18 @@ class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerIn
       _ <- quService.shutdown()
       _ <- Future {
         grpcServer.shutdown
+      }
+      _ <- Future {
         grpcServer.awaitTermination()
+      }
+      _ <- Future {
         logger.log(Level.INFO, "server shut down.")
       }
+      /*_ <- Future {
+        grpcServer.shutdown
+        grpcServer.awaitTermination()
+        logger.log(Level.INFO, "server shut down.")
+      }*/
 
     } yield ()
 

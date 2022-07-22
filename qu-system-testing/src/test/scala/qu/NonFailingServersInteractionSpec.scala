@@ -48,6 +48,7 @@ class NonFailingServersInteractionSpec extends AsyncFunSpec with Matchers
     describe("when multiple updates are issued") {
       it("should return to client the correct answer") {
         val incrementsCount = 3
+        println("threadId running tests: " + Thread.currentThread)
 
         val operations = List.fill(incrementsCount)(Increment())
         for {

@@ -9,13 +9,13 @@ import qu.service.ServersFixture
 
 import scala.concurrent.Future
 
-class OneFailingServerInteractionSpec extends AsyncFunSpec with Matchers
-  with FailingServerFixture
+class OneFailingServerInteractionSpec extends AsyncFunSpec with Matchers  with OneFailingServersInfoFixture
   with OHSUtilities
   with ClusterWithFailingServerFixture
-  with AuthServerFixture
   with AuthenticatedQuClientFixture
-  with AuthenticatingClientFixture {
+  with AuthenticatingClientFixture
+  with AuthServerFixture
+{
 
   describe("A Q/U protocol interaction with a quorum without failing servers") {
 
@@ -52,7 +52,7 @@ class OneFailingServerInteractionSpec extends AsyncFunSpec with Matchers
         for {
           authenticatedQuClient <- quClientAsFuture
           value <- operations.foldLeft(Future.unit)((fut, operation)
-          => fut.map(_ => authenticatedQuClient.submit[Unit](operation)))
+          => fut.flatMap(_ => authenticatedQuClient.submit[Unit](operation)))
         } yield value should be(())
       }
 

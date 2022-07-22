@@ -6,31 +6,34 @@ import org.scalatest.{AsyncTestSuite, AsyncTestSuiteMixin, FutureOutcome}
 import qu.service.{LocalQuServerCluster, ServersFixture}
 import qu.service.datastructures.RemoteCounterServer
 
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationInt
 
-trait NonFailingClusterFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFactory {
 
-  self: AsyncTestSuite with ServersFixture =>
+trait NonFailingClusterFixture extends Matchers with AsyncMockFactory {
+
+  self: ServersFixture =>
 
   var healthyCluster: LocalQuServerCluster = _
 
-  override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
-
+  def setupNonFailingCluster(): Future[_] = {
     healthyCluster = LocalQuServerCluster[Int](quServerIpPorts,
       keysByServer,
       thresholds,
       RemoteCounterServer.builder,
       InitialObject)
-
-    complete {
+    Future {
       healthyCluster.start()
-      super.withFixture(test) // To be stackable, must call super.withFixture
-    } lastly {
-      // Perform cleanup here
-      healthyCluster.shutdown()
-      Thread.sleep(3000)
     }
   }
 
+  def tearDownNonFailingCluster(): Future[_] = healthyCluster.shutdown()
+
+  abstract override def withFixture(test: NoArgAsyncTest) = {
+    new FutureOutcome(for {
+      _ <- setupNonFailingCluster()
+      result <- super.withFixture(test).toFuture
+      _ <- tearDownNonFailingCluster()
+    } yield result)
+  }
 }

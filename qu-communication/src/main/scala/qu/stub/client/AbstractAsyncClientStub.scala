@@ -1,6 +1,5 @@
 package qu.stub.client
 
-import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc._
 import presentation.{MarshallerFactory, MethodDescriptorFactory}
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
@@ -31,7 +30,7 @@ abstract class AbstractAsyncClientStub[Transferable[_]](val chan: ManagedChannel
 
   override def shutdown(): Future[Unit] = Future {
     chan.shutdown()
-    chan.awaitTermination(30, TimeUnit.SECONDS)
+    chan.awaitTermination(10, TimeUnit.SECONDS)
   }
 
   override def isShutdown: Boolean = chan.isShutdown

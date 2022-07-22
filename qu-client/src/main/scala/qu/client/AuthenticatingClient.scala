@@ -21,8 +21,12 @@ case class AuthenticatingClient[U](ip: String,
   val authClient = AuthClient(ip, port)
 
   def register(): Future[Unit] = {
+    println("registrering in AithenticatinCLint")
     for {
+
       _ <- authClient.registerAsync(username, password)
+      _ <- Future{println("finished registerting...")}
+
     } yield ()
   }
 
