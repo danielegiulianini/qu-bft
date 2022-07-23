@@ -75,7 +75,7 @@ object AbstractGrpcQuService {
 
       addMethod[Request[OperationOutputT, ObjectT], Response[Option[OperationOutputT]]]((request, obs) => quService.sRequest(request, obs))
       addMethod[LogicalTimestamp, ObjectSyncResponse[ObjectT]](quService.sObjectRequest(_, _))
-      //adding mds needed for handling barrier and copy requests
+      //adding method descriptors needed for handling barrier, inline barrier and copy requests too
       addMethod[Request[Object, ObjectT], Response[Option[Object]]](quService.sRequest(_, _))
       this
     }
@@ -87,7 +87,7 @@ object AbstractGrpcQuService {
     }
 
     def addServer(serverInfo: ServerInfo): QuServiceBuilder[Transportable, ObjectT] = {
-      Objects.requireNonNull(serverInfo) //require(serverInfo != null)
+      Objects.requireNonNull(serverInfo)
       insertKeyForServer(id(serverInfo), serverInfo.keySharedWithMe)
       addServer(serverInfo.ip, serverInfo.port, serverInfo.keySharedWithMe)
     }

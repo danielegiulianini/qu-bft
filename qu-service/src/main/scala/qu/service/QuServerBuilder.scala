@@ -72,21 +72,22 @@ case class QuServerBuilder[Transportable[_], ObjectT: TypeTag](
 
 object QuServerBuilder {
 
-  //choosing an implementation as the default (hiding programmer dependencies!)
-  def apply[U: TypeTag](ip: String,
-                        port: Int,
-                        privateKey: String,
-                        thresholds: QuorumSystemThresholds,
-                        obj: U)(implicit ec: ExecutionContext): QuServerBuilder[JavaTypeable, U] =
-    new JacksonServerBuilderFactory().simpleBroadcastServerBuilder[U](ip = ip,
+  //(GoF) factory method choosing an implementation as the default (hiding programmer dependencies)
+  def apply[ObjectT: TypeTag](ip: String,
+                              port: Int,
+                              privateKey: String,
+                              thresholds: QuorumSystemThresholds,
+                              obj: ObjectT)(implicit ec: ExecutionContext): QuServerBuilder[JavaTypeable, ObjectT] =
+    new JacksonServerBuilderFactory().simpleBroadcastServerBuilder[ObjectT](ip = ip,
       port = port,
       privateKey = privateKey,
       thresholds = thresholds,
       obj = obj)
 
-  def apply[U: TypeTag](serverInfo: ServerInfo,
-                        thresholds: QuorumSystemThresholds,
-                        obj: U)(implicit ec: ExecutionContext): QuServerBuilder[JavaTypeable, U] =
+  //(GoF) factory method reducing arguments required by leveraging ServerInfo.
+  def apply[ObjectT: TypeTag](serverInfo: ServerInfo,
+                              thresholds: QuorumSystemThresholds,
+                              obj: ObjectT)(implicit ec: ExecutionContext): QuServerBuilder[JavaTypeable, ObjectT] =
     QuServerBuilder(
       serverInfo.ip,
       serverInfo.port,

@@ -26,10 +26,10 @@ object QuServer {
 }
 
 /**
- * An implementation of a [[qu.service.QuServer]] realized as a (GoF) facade that hides gRPC internals
- * including repeated requests, inline repairing, compact timestamp, pruning of replica histories and optimistic query
- * execution optimizations. It is compatible (i.e. reusable) with different (de)serialization, authentication
- * technologies and with different object-syncing policies.
+ * An implementation of a [[qu.service.QuServer]] including repeated requests, inline repairing, compact timestamp,
+ * pruning of replica histories and optimistic query execution optimizations. It is compatible (i.e. reusable)
+ * with different (de)serialization, authentication technologies and with different object-syncing policies.
+ * It is realized as a (GoF) facade that hides gRPC internals.
  */
 class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerInterceptor, //this makes it pluggable a different auth technology (possibly not JWT-based)
                                               credentials: ServerCredentials = InsecureServerCredentials.create(),

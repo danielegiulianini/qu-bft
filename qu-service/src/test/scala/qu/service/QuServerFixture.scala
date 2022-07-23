@@ -29,7 +29,7 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
 
   def freshService(): AbstractGrpcQuService[JavaTypeable, Int] = {
 
-    //using constructor (instead of builder) for wiring SUT with stubbed dependencies
+    //using constructor (instead of builder) for wiring (System under test) SUT with stubbed dependencies
     val serviceBuilder = new QuServiceBuilder(
       methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
       policyFactory = (_, _) => mockedQuorumPolicy,
@@ -40,7 +40,6 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
       thresholds = QuorumSystemThresholds(t = FaultyServersCount, b = MalevolentServersCount),
       storage = ImmutableStorage[Int]())
 
-    //so simulating here una InProcessQuServer (could reify in (fixture) class)
     serviceBuilder.addServer(quServer2WithKey)
       .addServer(quServer3WithKey)
       .addServer(quServer4WithKey)
@@ -60,7 +59,6 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
       .build
 
     complete {
-
       server.start()
       super.withFixture(test) // To be stackable, must call super.withFixture
     } lastly {

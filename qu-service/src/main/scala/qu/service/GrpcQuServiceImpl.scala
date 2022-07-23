@@ -26,10 +26,10 @@ import scala.util.{Failure, Success}
 import qu.model.ConcreteQuModel._
 
 /**
- * A gPRC implementation of a Q/U service, compatible with different (se)serialization, authentication technologies
+ * A gPRC implementation of a Q/U service, compatible with different (de)serialization, authentication technologies
  * and with different object-syncing policies.
- * @tparam ObjectT type of the object replicated by Q/U servers on which operations are to be submitted.
- * @tparam Transportable higher-kinded type of the strategy responsible for protocol messages (de)serialization.
+ * @tparam ObjectT the type of the object replicated by Q/U servers on which operations are to be submitted.
+ * @tparam Transportable the higher-kinded type of the strategy responsible for protocol messages (de)serialization.
  */
 class GrpcQuServiceImpl[Transportable[_], ObjectT: TypeTag]()
                                                            (implicit executor: ExecutionContext)

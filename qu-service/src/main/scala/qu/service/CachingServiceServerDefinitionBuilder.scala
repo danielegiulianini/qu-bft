@@ -4,7 +4,8 @@ import io.grpc.{MethodDescriptor, ServerCallHandler, ServerServiceDefinition}
 
 
 /**
- * A [[io.grpc.ServerServiceDefinition]] capable of caching MethodDescriptor as to provide better performances.
+ * A [[io.grpc.ServerServiceDefinition]] capable of caching [[io.grpc.MethodDescriptor]]s as to provide better
+ * performances.
  * @param serviceName the name of the service to add [[io.grpc.MethodDescriptor]] to.
  */
 class CachingServiceServerDefinitionBuilder(private var serviceName: String) {

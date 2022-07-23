@@ -101,7 +101,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](val ip: String,
 
     val (opType, (lt, ltCo), ltCurrent) = setup(request.operation, updatedOhs, thresholds.q, thresholds.r, clientId)
 
-    //repeated request
+    //repeated request handling
     if (contains(myReplicaHistory, (lt, ltCo))) {
 
       val answer = if (opType != ConcreteOperationTypes.BARRIER && opType != ConcreteOperationTypes.INLINE_BARRIER) {
@@ -121,7 +121,8 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](val ip: String,
 
       // optimistic query execution
       if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) {
-        logger.logWithPrefix(Level.INFO, "Since query is required, optimistic query execution, retrieving obj with lt " + lt)
+        logger.logWithPrefix(Level.INFO, "Since query is required, optimistic query execution, " +
+          "retrieving obj with lt " + lt)
         val obj = storage.retrieveObject(latestTime(myReplicaHistory))
           .getOrElse(throw new Error("inconsistent protocol state: if replica history has lt " +
             "older than ltCur store must contain ltCur too."))
@@ -142,7 +143,7 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](val ip: String,
       if (retrievedObj.isEmpty && ltCo > emptyLT) {
         logger.logWithPrefix(Level.INFO, "object version NOT available, object-syncing for lt " + ltCo)
         quorumPolicy.objectSync(ltCo).onComplete({
-          case Success(obj) => onObjectRetrieved(obj) //here I know that a quorum is found...
+          case Success(obj) => onObjectRetrieved(obj) //here I know that object is found...
           case Failure(thr) => throw thr
         })
       } else {
@@ -176,7 +177,8 @@ class QuServiceImpl[Transportable[_], ObjectT: TypeTag](val ip: String,
           || opType == ConcreteOperationTypes.INLINE_METHOD
           || opType == ConcreteOperationTypes.COPY) {
 
-          logger.logWithPrefix(msg = "Storing updated (object, answer): (" + objToWorkOn + ", " + answerToReturn + ") with lt " + lt.time + " for request: " + request)
+          logger.logWithPrefix(msg = "Storing updated (object, answer): (" + objToWorkOn + ", " +
+            answerToReturn + ") with lt " + lt.time + " for request: " + request)
           storage = storage.store[AnswerT](lt, (objToWorkOn, answerToReturn))
         }
 
