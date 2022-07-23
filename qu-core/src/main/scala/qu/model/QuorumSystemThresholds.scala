@@ -12,11 +12,11 @@ case class QuorumSystemThresholds(t: Int, q: Int, b: Int, r: Int, n: Int) {
 
 object QuorumSystemThresholds {
 
-  //public factory for only 2 param (the other with default)
+  //public factory method for only 2 param (the other with default)
   def apply(t: Int, b: Int): QuorumSystemThresholds =
     QuorumSystemThresholds(t, getQFromTAndB(t, b), b, getRFromTAndB(t, b), getNFromTAndB(t = t, b = b))
 
-  //factory for only 3 param (the other with default)
+  //factory method for only 3 param (the other with default)
   def apply(t: Int, q: Int, b: Int): QuorumSystemThresholds =
     QuorumSystemThresholds(t, q, b, t + b + 1, getNFromTAndB(t = t, b = b))
 

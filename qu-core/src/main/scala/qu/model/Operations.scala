@@ -1,7 +1,7 @@
 package qu.model
 
 trait Operations {
-  self: AbstractAbstractQuModel =>
+  self: LessAbstractQuModel =>
 
   //GoF command pattern for operations modelling
   trait MyOperation[ReturnValueT, ObjectT] {

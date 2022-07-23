@@ -18,14 +18,10 @@ abstract class MutableStorage[U: TypeTag] {
 
 
   def retrieve[T: TypeTag](logicalTimestamp: LogicalTimestamp): Option[(U, Option[T])] = {
-    println("lo mutable storage is :" + storage)
     storage.get(implicitly[TypeTag[T]]).flatMap(_.get(logicalTimestamp).asInstanceOf[Option[(U, Option[T])]])
   }
 }
 
-
-
-//can also this be the default of qu.storage.StorageWithMutable
 class NonThreadSafeMutableStorage[U:TypeTag] extends MutableStorage[U] {
   override val storage: mutable.Map[universe.TypeTag[_], mutable.Map[ConcreteQuModel.ConcreteLogicalTimestamp, (U, Option[Any])]] = MutableMap[TypeTag[_], MutableMap[LogicalTimestamp, (U, Option[Any])]]()
 }

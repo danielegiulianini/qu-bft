@@ -46,13 +46,13 @@ trait ModelGenerators {
   val MaxLtTime = 2000
   val ltTimeGen: Gen[Int] = Gen.choose(0, MaxLtTime)
 
-  def arbitraryOptionOfStringGen = Gen.option(Gen.stringOfN(100, Gen.alphaChar))
+  def arbitraryOptionOfStringGen: Gen[Option[String]] = Gen.option(Gen.stringOfN(100, Gen.alphaChar))
 
-  def arbitraryClientIdGen = arbitraryOptionOfStringGen
+  def arbitraryClientIdGen: Gen[Option[String]] = arbitraryOptionOfStringGen
 
-  def arbitraryOpReprGen = arbitraryOptionOfStringGen
+  def arbitraryOpReprGen: Gen[Option[String]] = arbitraryOptionOfStringGen
 
-  def arbitraryOhsReprGen = arbitraryOptionOfStringGen //Gen.oneOf(Some("ohsRepr1"), Some("ohsRepr2"))
+  def arbitraryOhsReprGen: Gen[Option[String]] = arbitraryOptionOfStringGen //Gen.oneOf(Some("ohsRepr1"), Some("ohsRepr2"))
 
   def customArbitraryLtWithDefaults(timeGen: Gen[Int] = ltTimeGen, barrierGen: Gen[Boolean] = Arbitrary.arbitrary[Boolean], clientIdGen: Gen[Option[String]] = Gen.option(Gen.stringOfN(100, Gen.alphaChar)), opReprGen: Gen[Option[OperationRepresentation]] = Gen.option(Gen.stringOfN(100, Gen.alphaChar)), ohsReprGen: Gen[Option[OHSRepresentation]] = Gen.option(Gen.stringOfN(100, Gen.alphaChar))): Gen[ConcreteLogicalTimestamp] = {
     //constraining values 1. to ease finding them by scalacheck engine and 2. to respect comparison properties in inner for

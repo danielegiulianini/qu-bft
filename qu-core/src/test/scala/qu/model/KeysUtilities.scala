@@ -8,6 +8,5 @@ trait KeysUtilities {
   def generateKey(a: String, b: String): ServerId = "k" + a + b
 
   def keysForServer(serverId: ServerId, serversIds: Set[ServerId]): Map[ServerId, String] =
-    serversIds.map(otherServerId => otherServerId -> generateKey(serverId, otherServerId)).toMap //    serverId -> serversIds.map(otherServerId => serverId -> "k" + serverId + otherServerId).toMap
-
+    serversIds.map(otherServerId => otherServerId -> generateKey(serverId, otherServerId)).toMap
 }

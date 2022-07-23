@@ -7,8 +7,8 @@ trait OhsGenerators {
 
   self: OHSUtilities with FourServersScenario =>
 
-  //can be replaced with a more sophisticated generation approach (using generators so it's already set for it)
-  val ohsWithMethodGen =
+  //can be replaced with a more sophisticated generation approach (but using generators so it's already set for it)
+  val ohsWithMethodGen: Gen[Map[ConcreteQuModel.ServerId, (List[(ConcreteQuModel.ConcreteLogicalTimestamp, ConcreteQuModel.ConcreteLogicalTimestamp)], Map[ConcreteQuModel.ServerId, ConcreteQuModel.hMac])]] =
     Gen.oneOf(ohsWithMethodFor(serversKeys), emptyOhs(serversIds.toSet))
 
   val ohsWithInlineMethodGen: Gen[OHS] = Gen.const(ohsWithInlineMethodFor(serversKeys, thresholds.r))

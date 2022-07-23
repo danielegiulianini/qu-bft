@@ -3,7 +3,7 @@ package qu.model
 
 
 trait CryptoMd5Authenticator {
-  self: QuModel with AbstractAbstractQuModel => //needs the ordering defined by SortedSet
+  self: QuModel with LessAbstractQuModel => //needs the ordering defined by SortedSet
 
   override type hMac = String
 

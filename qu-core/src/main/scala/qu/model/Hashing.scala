@@ -1,7 +1,8 @@
 package qu.model
 
 trait Hashing {
-  self: QuModel with AbstractAbstractQuModel =>
+
+  self: QuModel with LessAbstractQuModel =>
 
   override type OperationRepresentation = String
 

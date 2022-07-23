@@ -41,8 +41,8 @@ import qu.model.ConcreteQuModel._
  * @param keysSharedWithMe the secret keys each of which shared with a different replica used to generate authenticators
  *                         for their Replica History integrity check.
  * @param quorumPolicy     the policy for responsible for interaction with other replicas for object syncing.
- * @tparam ObjectT       type of the object replicated by Q/U servers on which operations are to be submitted.
- * @tparam Transportable higher-kinded type of the strategy responsible for protocol messages (de)serialization.
+ * @tparam ObjectT       the type of the object replicated by Q/U servers on which operations are to be submitted.
+ * @tparam Transportable the higher-kinded type of the strategy responsible for protocol messages (de)serialization.
  */
 class QuServiceImpl[Transportable[_], ObjectT: TypeTag](val ip: String,
                                                         val port: Int,

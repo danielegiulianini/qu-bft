@@ -27,7 +27,7 @@ trait QuModel {
   //number of replica histories in the object history set in which it appears
   def order(candidate: Candidate, ohs: OHS): Int
 
-  //option since barrierFlag and repairableThreshold can be too restrictive
+  //returns option since barrierFlag and repairableThreshold can be too restrictive
   def latestCandidate(ohs: OHS, barrierFlag: Flag, repairableThreshold: Int): Option[Candidate]
 
   def latestTime(rh: ReplicaHistory): LogicalTimestamp
@@ -49,7 +49,7 @@ trait AbstractQuModel extends QuModel {
 }
 
 
-trait AbstractAbstractQuModel extends QuModel {
+trait LessAbstractQuModel extends QuModel {
   override type Time = Int
 
   override type ClientId = String
@@ -78,7 +78,7 @@ trait AbstractAbstractQuModel extends QuModel {
   def emptyOhs(serverIds: Set[ServerId]): OHS =
     serverIds.map(_ -> emptyAuthenticatedRh).toMap
 
-  override type LogicalTimestamp = ConcreteLogicalTimestamp //or as Ordering:   implicit val MyLogicalTimestampOrdering: Ordering[MyLogicalTimestamp] = (x: MyLogicalTimestamp, y: MyLogicalTimestamp) => x.toString compare y.toString
+  override type LogicalTimestamp = ConcreteLogicalTimestamp
 
   type OperationRepresentation = String
   type OHSRepresentation = String
@@ -106,9 +106,9 @@ trait AbstractAbstractQuModel extends QuModel {
 
   override def order(candidate: (ConcreteLogicalTimestamp, ConcreteLogicalTimestamp),
                      ohs: OHS): Int =
-    ohs.values.count(_._1.contains(candidate)) //foreach replicahistory count if it contains the given candidate
+    ohs.values.count(_._1.contains(candidate)) //foreach replica history count if it contains the given candidate
 
-  //it might not exist (if requesting latest barrier candidate on the emptyOhs)
+  //Option returned as it might not exist (if requesting latest barrier candidate on the emptyOhs)
   override def latestCandidate(ohs: OHS,
                                barrierFlag: Boolean,
                                repairableThreshold: Int):
@@ -200,7 +200,7 @@ trait AbstractAbstractQuModel extends QuModel {
         time = latestTime(ohs).time + 1,
         barrierFlag = true,
         clientId = Some(clientId),
-        operation = Option.empty, //Some(represent(operation)),
+        operation = Option.empty,
         ohs = Some(represent(ohs)))
       (opType,
         //candidate
@@ -236,8 +236,7 @@ trait AbstractAbstractQuModel extends QuModel {
 }
 
 
-//maybe more implementations (that with compact authenticators...)
-object ConcreteQuModel extends AbstractAbstractQuModel with CryptoMd5Authenticator with Operations with Hashing {
+object ConcreteQuModel extends LessAbstractQuModel with CryptoMd5Authenticator with Operations with Hashing {
 
   //final keyword removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
   case class Request[ReturnValueT, ObjectT](operation: Option[Operation[ReturnValueT, ObjectT]],
