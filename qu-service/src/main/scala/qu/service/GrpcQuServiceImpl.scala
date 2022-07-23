@@ -60,7 +60,8 @@ class GrpcQuServiceImpl[Transportable[_], ObjectT: TypeTag]()
   //      case Failure(cause) => Failure(exFact(cause))
   //    }
 
-  override def sObjectRequest(request: ConcreteLogicalTimestamp, responseObserver: StreamObserver[ObjectSyncResponse[ObjectT]]): Unit =
+  override def sObjectRequest(request: ConcreteLogicalTimestamp, responseObserver
+  : StreamObserver[ObjectSyncResponse[ObjectT]]): Unit =
     mapFutureToObserver(agnostic.sObjectRequest(request), responseObserver)
 
   //agnostic.sObjectRequest(request)

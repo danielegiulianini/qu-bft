@@ -26,7 +26,7 @@ case class Reset() extends UpdateReturningUnit[Int] {
   override def updateObject(obj: Int): Int = 0
 }
 
-class DistributedCounter(username: String,
+case class DistributedCounter(username: String,
                          password: String,
                          authServerIp: String,
                          authServerPort: Int,
@@ -62,7 +62,7 @@ class DistributedCounter(username: String,
   def incrementAsync(): Future[Unit] = submit[Unit](Increment())
 
   /** Decrement this counter. */
-  protected def decrementAsync(): Future[Unit] = submit[Unit](Decrement())
+  def decrementAsync(): Future[Unit] = submit[Unit](Decrement())
 
   def resetAsync(): Future[Unit] = submit[Unit](Reset())
 }

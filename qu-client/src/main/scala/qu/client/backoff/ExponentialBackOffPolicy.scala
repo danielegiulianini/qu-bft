@@ -2,17 +2,26 @@ package qu.client.backoff
 
 import qu.OneShotAsyncScheduler
 
-import scala.concurrent.duration.{DurationInt, FiniteDuration}
+import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS, SECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 
 class ExponentialBackOffPolicy(private var initialBackOffTime: FiniteDuration = 1000.millis,
                                private var scheduler: OneShotAsyncScheduler) extends BackOffPolicy {
 
-  def backOff()(implicit ec: ExecutionContext): Future[Unit] = {
+
+  def waitTime(): FiniteDuration = {
     initialBackOffTime *= 2
-    scheduler.scheduleOnceAsPromise(initialBackOffTime)
+    initialBackOffTime
+  }
+
+  def backOff()(implicit ec: ExecutionContext): Future[Unit] = {
+    scheduler.scheduleOnceAsPromise(waitTime())
   }
 }
+
+
+
+
 
 object ExponentialBackOffPolicy {
   def apply(initialBackOffTime: FiniteDuration = 1000.millis): ExponentialBackOffPolicy =

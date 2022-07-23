@@ -82,6 +82,7 @@ lazy val quClient = (project in file("qu-client"))
   .settings(
     libraryDependencies ++= commonDependencies ++ Seq(
       //"io.grpc" % "grpc-netty" % "1.45.0",
+      "org.springframework.retry" % "spring-retry" % "1.3.3",
       "org.scala-lang" % "scala-reflect" % "2.13.8",
      // "com.fasterxml.jackson.module" %% "jackson-module-scala" % "2.13.2"
     )

@@ -3,7 +3,7 @@ package qu
 import qu.client.datastructures.{Decrement, Increment, Reset, Value}
 
 //code posted on README.md. Put it here to leverage compile check.
-object UsageExampleCode extends App {
+object UsageExampleCodeGrpcUnaware extends App {
 
   import qu.model.QuorumSystemThresholds
 
@@ -21,7 +21,8 @@ object UsageExampleCode extends App {
 
 
   //operations
-  /*object Value extends QueryReturningObject[Int]
+  /*import qu.model.ConcreteQuModel._
+  object Value extends QueryReturningObject[Int]
 
   case class Increment() extends UpdateReturningUnit[Int] {
     override def updateObject(obj: Int): Int = obj + 1
@@ -160,4 +161,6 @@ object UsageExampleCode extends App {
     .intercept(new JwtAuthorizationServerInterceptor())
     .addService(quService)
     .build*/
+
+
 }

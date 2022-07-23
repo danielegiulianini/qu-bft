@@ -16,7 +16,6 @@ class Get[K, V](key: K) extends Query[Option[V], MutableMap[K, V]] {
   override def whatToReturn(obj: MutableMap[K, V]): Option[V] = obj.get(key)
 }
 
-//could refactor method that returns updated object
 class AddOne[K, V](elem: (K, V)) extends UpdateReturningUnUpdatedObject[MutableMap[K, V]] {
   override def updateObject(obj: MutableMap[K, V]): MutableMap[K, V] = obj.addOne(elem)
 }
@@ -26,8 +25,7 @@ class SubtractOne[K, V](key: K) extends UpdateReturningUnUpdatedObject[MutableMa
 }
 
 
-// exeriment with MutableMap
-class KeyValueStoreClient[K, V](username: String,
+case class KeyValueStoreClient[K, V](username: String,
                                 password: String,
                                 authServerIp: String,
                                 authServerPort: Int,

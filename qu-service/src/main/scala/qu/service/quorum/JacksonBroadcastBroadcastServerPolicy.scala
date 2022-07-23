@@ -38,7 +38,6 @@ object JacksonBroadcastBroadcastServerPolicy {
     val jacksonFactory = new JacksonStubFactory
     new BroadcastServerQuorumPolicy[JavaTypeable, U](
       servers = serversSet.map { recipientInfo => {
-        println("creo usata da seerrvice " + sourceSid + ") stub verso  recipientInfo" + recipientInfo)
         id(recipientInfo) -> jacksonFactory.unencryptedDistributedStub(recipientInfo)
       }
       }.toMap,

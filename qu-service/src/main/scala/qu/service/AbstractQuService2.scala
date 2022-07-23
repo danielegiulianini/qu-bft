@@ -116,6 +116,14 @@ object AbstractQuService2 {
 
   object QuServiceBuilder {
 
+    def apply[Transportable[_], ObjectT](methodDescriptorFactory: presentation.MethodDescriptorFactory[Transportable],
+                                         policyFactory: ServerQuorumPolicyFactory[Transportable, ObjectT],
+                                         thresholds: QuorumSystemThresholds,
+                                         serverInfo: ServerInfo,
+                                         obj: ObjectT,
+                                         storage: ImmutableStorage[ObjectT] = ImmutableStorage())
+                                        (implicit ec: ExecutionContext): QuServiceBuilder[Transportable, ObjectT] = QuServiceBuilder(methodDescriptorFactory, policyFactory, thresholds, serverInfo.ip, serverInfo.port, serverInfo.keySharedWithMe, obj, storage)
+
     trait ServiceBuilderFactory[Transportable[_]] {
       def gen[ObjectT: TypeTag](serverInfo: ServerInfo,
                                 thresholds: QuorumSystemThresholds,
