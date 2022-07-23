@@ -9,8 +9,14 @@ import qu.model.ValidationUtils.requireNonNullAsInvalid
 
 import java.util.Objects
 
-//client for providing username (or registering)
-//now modeled as normal class, then could think of a builder
+/**
+ * Provides authentication APIs for a Q/U client, separating them for the actual operations-submission ones.
+ * @param ip the ip address JWT-based auth server is listening on.
+ * @param port the port of JWT-based auth server is listening on.
+ * @param username the username of the Q/U client into the shoes of which requests will be performed.
+ * @param password the password of the Q/U client into the shoes of which requests will be performed.
+ * @tparam U type of the object replicated by Q/U servers on which operations are to be submitted.
+ */
 case class AuthenticatingClient[U](ip: String,
                                    port: Int,
                                    username: String,
@@ -21,12 +27,8 @@ case class AuthenticatingClient[U](ip: String,
   val authClient = AuthClient(ip, port)
 
   def register(): Future[Unit] = {
-    println("registrering in AithenticatinCLint")
     for {
-
       _ <- authClient.registerAsync(username, password)
-      _ <- Future{println("finished registerting...")}
-
     } yield ()
   }
 

@@ -29,7 +29,7 @@ object QuServer {
 
 class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerInterceptor, //this makes it pluggable a different auth technology (possibly not JWT-based)
                                               credentials: ServerCredentials = InsecureServerCredentials.create(),
-                                              quService: AbstractQuService2[Transportable, ObjectT],
+                                              quService: AbstractQuService[Transportable, ObjectT],
                                               port: Int)(implicit executor: ExecutionContext) extends QuServer {
 
   private val logger = Logger.getLogger(classOf[QuServerImpl[Transportable, ObjectT]].getName)

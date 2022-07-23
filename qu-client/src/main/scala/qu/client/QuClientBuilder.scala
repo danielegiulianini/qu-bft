@@ -11,7 +11,15 @@ import qu.model.QuorumSystemThresholds
 import java.util.Objects
 import scala.concurrent.ExecutionContext
 
-
+/**
+ * A (GoF) builder for QuClient instances.
+ * @param policyFactory the quorum policy policy to inject into the client instance.
+ * @param backOffPolicy the backoff policy to inject into the client instance.
+ * @param servers the ip and ports cluster replicas are listening on.
+ * @param thresholds the quorum system thresholds that guarantee protocol correct semantics.
+ * @tparam ObjectT the type of the object replicated by Q/U servers on which operations are to be submitted.
+ * @tparam Transportable the higher-kinded type of the strategy responsible for protocol messages (de)serialization.
+ */
 case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
                                                        private val policyFactory: ClientQuorumPolicy.ClientQuorumPolicyFactory[ObjectT, Transportable],
                                                        private val backOffPolicy: BackOffPolicy,

@@ -7,6 +7,9 @@ import qu.client.quorum.JacksonBroadcastClientQuorumPolicy
 
 import scala.concurrent.ExecutionContext
 
+/**
+ * A Jackson implementation for [[qu.client.QuClientBuilderFactory]].
+ */
 class JacksonQuClientBuilderFactory extends QuClientBuilderFactory[JavaTypeable] {
   override def simpleBroadcastClientBuilder[ObjectT](token: Token)(implicit ec: ExecutionContext)
   : QuClientBuilder[ObjectT, JavaTypeable] =

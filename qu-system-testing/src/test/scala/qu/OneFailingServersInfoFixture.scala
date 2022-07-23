@@ -3,7 +3,7 @@ package qu
 import qu.SocketAddress.id
 import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
 import qu.model.{ConcreteQuModel, OHSUtilities, QuorumSystemThresholds}
-import qu.service.AbstractQuService2.ServerInfo
+import qu.service.AbstractQuService.ServerInfo
 import qu.service.AbstractServersFixture
 
 trait OneFailingServersInfoFixture extends AbstractServersFixture {

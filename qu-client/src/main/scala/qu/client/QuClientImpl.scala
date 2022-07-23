@@ -13,9 +13,20 @@ import scala.concurrent.{ExecutionContext, Future}
 
 import qu.LoggingUtils.AsyncLogger
 
+/**
+ * An implementation of [[qu.client.QuClient]] compatible with different backoff and quorum strategies
+ * including inline repair, repeated requests, inline repairing, OHS caching and optimistic query
+ * execution optimizations.
+ * @param policy the quorum policy responsible for interaction with replicas.
+ * @param backoffPolicy the backoff policy used to face contention scenarios.
+ * @param serversIds the replicas ids.
+ * @param thresholds the quorum system thresholds that guarantee protocol correct semantics.
+ * @tparam ObjectT the type of the object replicated by Q/U servers on which operations are to be submitted.
+ * @tparam Transportable the higher-kinded type of the strategy responsible for protocol messages (de)serialization
+ */
 class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPolicy[ObjectT, Transportable],
                                               private var backoffPolicy: BackOffPolicy,
-                                              private val serversIds: Set[String], //only servers ids are actually required in this class
+                                              private val serversIds: Set[String],
                                               private val thresholds: QuorumSystemThresholds)
   extends QuClient[ObjectT, Transportable] {
 
@@ -77,7 +88,7 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
       _ <- backoffPolicy.backOff()
       //perform a barrier or a copy
       (_, _, ohs) <- policy.quorum(Option.empty[Operation[Object, ObjectT]],
-        ohs) //here Object is fundamental as server could return other than T (could use Any too??)
+        ohs) //here Object is fundamental as server could return other than T (could use Any too)
       (operationType, _, _) <- classifyAsync(ohs)
       ohs <- backOffAndRetryUntilMethod(operationType, ohs)
     } yield ohs

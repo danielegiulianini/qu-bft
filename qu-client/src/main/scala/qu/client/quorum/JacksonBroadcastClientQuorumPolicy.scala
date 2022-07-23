@@ -10,6 +10,13 @@ import qu.stub.client.{JacksonAuthenticatedStubFactory, JwtAsyncClientStub}
 
 import scala.concurrent.ExecutionContext
 
+/**
+ * Implementation of [[qu.client.quorum.BroadcastClientQuorumPolicy]] leveraging JSON and Jackson for
+ * (de)serialization of protocol messages.
+ * @param thresholds
+ * @param servers
+ * @tparam ObjectT the type of the object replicated by Q/U servers on which operations are to be submitted.
+ */
 class JacksonBroadcastClientQuorumPolicy[ObjectT](private val thresholds: QuorumSystemThresholds,
                                                   override protected val servers: Map[ServerId, JwtAsyncClientStub[JavaTypeable]])
                                                  (implicit ec: ExecutionContext)

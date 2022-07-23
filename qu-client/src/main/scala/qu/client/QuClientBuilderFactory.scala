@@ -7,6 +7,11 @@ import qu.client.quorum.{ClientQuorumPolicy, JacksonBroadcastClientQuorumPolicy}
 
 import scala.concurrent.ExecutionContext
 
+
+/**
+ * A GoF factory method for [[qu.client.QuClientBuilder]].
+ * @tparam Transportable the higher-kinded type of the strategy responsible for protocol messages (de)serialization.
+ */
 trait QuClientBuilderFactory[Transportable[_]] {
   def simpleBroadcastClientBuilder[ObjectT](token: Token)(implicit ec: ExecutionContext):
   QuClientBuilder[ObjectT, Transportable]

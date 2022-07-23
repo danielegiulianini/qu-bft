@@ -18,25 +18,23 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
 
 import qu.model.ConcreteQuModel._
-/*
-abstract class AbstractQuService[Transportable[_], ObjectT](protected val thresholds: QuorumSystemThresholds,
-                                                            protected val ip: String,
-                                                            protected val port: Int,
-                                                            protected val privateKey: String,
-                                                            protected val obj: ObjectT)
-                                                           (implicit executor: ExecutionContext)
-  extends BindableService with QuService[Transportable, ObjectT] with Shutdownable {
+
+abstract class AbstractQuService[Transportable[_], ObjectT:TypeTag]()
+                                                                   (implicit executor: ExecutionContext)
+  extends BindableService with GrpcQuService[Transportable, ObjectT] with Shutdownable {
 
   //stuff that cannot be passed at creation time but must be provided for QuServiceImpl to work
   protected var ssd: ServerServiceDefinition = _
-  protected var quorumPolicy: ServerQuorumPolicy[Transportable, ObjectT] = _
-  protected var keysSharedWithMe: Map[ServerId, Key] = _
+  protected var agnostic: QuServiceImpl[Transportable, ObjectT] = _
 
   override def bindService(): ServerServiceDefinition = ssd
 
-  override def shutdown(): Future[Unit] = quorumPolicy.shutdown()
+  //il resto delego tutto
 
-  override def isShutdown: Flag = quorumPolicy.isShutdown
+  override def shutdown(): Future[Unit] = agnostic.shutdown()
+
+  override def isShutdown: Flag = agnostic.isShutdown
+
 }
 
 
@@ -55,7 +53,7 @@ object AbstractQuService {
                                                                   protected val storage: ImmutableStorage[ObjectT] = ImmutableStorage())
                                                                  (implicit ec: ExecutionContext) {
 
-    private val quService = new QuServiceImpl[Transportable, ObjectT](ip, port, privateKey, obj, thresholds, storage)
+    private val quService = new GrpcQuServiceImpl[Transportable, ObjectT]()
     private val ssd = CachingServiceServerDefinitionBuilder(SERVICE_NAME)
     private var servers: Set[AbstractSocketAddress] = Set[AbstractSocketAddress]()
     private var keysSharedWithMe: Map[ServerId, Key] = Map[ServerId, String]() //this contains mykey too (needed)
@@ -78,7 +76,7 @@ object AbstractQuService {
 
 
       addMethod[Request[OperationOutputT, ObjectT], Response[Option[OperationOutputT]]]((request, obs) => quService.sRequest(request, obs))
-      addMethod[LogicalTimestamp, ObjectSyncResponse[ObjectT]](quService.sObjectRequest(_,_))
+      addMethod[LogicalTimestamp, ObjectSyncResponse[ObjectT]](quService.sObjectRequest(_, _))
       //adding mds needed for handling barrier and copy requests
       addMethod[Request[Object, ObjectT], Response[Option[Object]]](quService.sRequest(_, _))
       this
@@ -111,14 +109,20 @@ object AbstractQuService {
     def build(): AbstractQuService[Transportable, ObjectT] = {
       //validation
       quService.ssd = ssd.build()
-      quService.keysSharedWithMe = keysSharedWithMe
-      quService.quorumPolicy = policyFactory(servers, thresholds)
+      quService.agnostic = new QuServiceImpl(ip, port, privateKey, obj, thresholds, storage, keysSharedWithMe, policyFactory(servers, thresholds))
       quService
     }
-
   }
 
   object QuServiceBuilder {
+
+    def apply[Transportable[_], ObjectT:TypeTag](methodDescriptorFactory: presentation.MethodDescriptorFactory[Transportable],
+                                         policyFactory: ServerQuorumPolicyFactory[Transportable, ObjectT],
+                                         thresholds: QuorumSystemThresholds,
+                                         serverInfo: ServerInfo,
+                                         obj: ObjectT,
+                                         storage: ImmutableStorage[ObjectT])
+                                        (implicit ec: ExecutionContext): QuServiceBuilder[Transportable, ObjectT] = QuServiceBuilder(methodDescriptorFactory, policyFactory, thresholds, serverInfo.ip, serverInfo.port, serverInfo.keySharedWithMe, obj, storage)
 
     trait ServiceBuilderFactory[Transportable[_]] {
       def gen[ObjectT: TypeTag](serverInfo: ServerInfo,
@@ -522,4 +526,4 @@ class qu.service.QuServiceImpl[U, Marshallable[_]]( //strategy
   //todo this is not needed here!
   //override protected var stubs: Map[String, qu.GrpcClientStub[Marshallable]] = _
 }
-*/*/
+*/

@@ -4,7 +4,7 @@ import qu.SocketAddress
 import qu.SocketAddress.id
 import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
 import qu.model.{ConcreteQuModel, OHSUtilities, QuorumSystemThresholds}
-import qu.service.AbstractQuService2.ServerInfo
+import qu.service.AbstractQuService.ServerInfo
 
 
 trait AbstractServersFixture {

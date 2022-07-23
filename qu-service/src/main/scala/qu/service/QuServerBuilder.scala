@@ -5,8 +5,8 @@ import io.grpc.ServerInterceptor
 import qu.auth.Token
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, Request, Response}
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService2.QuServiceBuilder.ServiceBuilderFactory
-import qu.service.AbstractQuService2.{QuServiceBuilder, ServerInfo}
+import qu.service.AbstractQuService.QuServiceBuilder.ServiceBuilderFactory
+import qu.service.AbstractQuService.{QuServiceBuilder, ServerInfo}
 
 import scala.reflect.runtime.universe._
 import scala.concurrent.ExecutionContext
@@ -82,20 +82,3 @@ object QuServerBuilder {
       thresholds = thresholds,
       obj = obj)
 }
-
-
-/*
-object QuServerBuilder {
-  //hided builder implementations (injecting dependencies)
-  def jacksonSimpleServerBuilder[U: TypeTag](myServerInfo: RecipientInfo,
-                                             thresholds: QuorumSystemThresholds,
-                                             obj: U,
-                                             port: Int) =
-    new QuServerBuilder[JavaTypeable, U](
-      jacksonSimpleQuorumServiceFactory(),
-      new JwtAuthorizationServerInterceptor(),
-      myServerInfo,
-      thresholds,
-      obj,
-      port)
-*/

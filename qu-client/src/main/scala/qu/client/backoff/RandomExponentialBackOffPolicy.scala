@@ -6,6 +6,15 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration, MILLISECONDS}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.Random.nextFloat
 
+
+/**
+ * Implements [[qu.client.backoff.BackOffPolicy]] by increasing backoff interval exponentially and multiplying it
+ * by a random factor for purposes of collision avoidance.
+ * @param initialBackOffTime starting backoff interval
+ * @param maxDelay maximum backoff interval
+ * @param multiplier
+ * @param scheduler scheduler for intervals to be scheduled
+ */
 class RandomExponentialBackOffPolicy(private var initialBackOffTime: FiniteDuration = 1000.millis,
                                      private var maxDelay: FiniteDuration = 5000.millis,
                                      private val multiplier: Double = 2.0,

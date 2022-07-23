@@ -29,7 +29,7 @@ import qu.model.ConcreteQuModel._
 class GrpcQuServiceImpl[Transportable[_], ObjectT: TypeTag]()
                                                            (implicit executor: ExecutionContext)
 //devo fare in modo che qui abbia già tutto
-  extends AbstractQuService2[Transportable, ObjectT]() {
+  extends AbstractQuService[Transportable, ObjectT]() {
 
   //si compone di un business server già settato (dal builder)...
 

@@ -19,7 +19,7 @@ case object Mode {
   object ALREADY_REGISTERED extends Mode
 }
 
-//come utilities for refactoring behaviour common to datastructures
+//some utilities for refactoring behaviour common to datastructures
 class AuthenticatedQuClient[ObjectT](username: String,
                                      password: String,
                                      authServerIp: String,

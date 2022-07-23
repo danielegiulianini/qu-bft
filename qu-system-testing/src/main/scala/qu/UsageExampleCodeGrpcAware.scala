@@ -5,7 +5,7 @@ import io.grpc.inprocess.InProcessServerBuilder
 import presentation.CachingMethodDescriptorFactory
 import qu.SocketAddress.id
 import qu.UsageExampleCodeGrpcUnaware.{quReplica1Info, thresholds}
-import qu.service.AbstractQuService2.QuServiceBuilder
+import qu.service.AbstractQuService.QuServiceBuilder
 import qu.service.JwtAuthorizationServerInterceptor
 import qu.service.quorum.JacksonBroadcastBroadcastServerPolicy
 import qu.storage.ImmutableStorage

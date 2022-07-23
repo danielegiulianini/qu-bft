@@ -5,7 +5,7 @@ import qu.SocketAddress.id
 import qu.model.ConcreteQuModel.ServerId
 import qu.model.QuorumSystemThresholds
 import qu.{AbstractSocketAddress, SocketAddress, Shutdownable}
-import qu.service.AbstractQuService2.ServerInfo
+import qu.service.AbstractQuService.ServerInfo
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.stub.client.{JacksonStubFactory, JwtAsyncClientStub}
 
