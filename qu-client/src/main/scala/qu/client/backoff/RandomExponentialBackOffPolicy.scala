@@ -10,9 +10,9 @@ import scala.util.Random.nextFloat
 /**
  * Implements [[qu.client.backoff.BackOffPolicy]] by increasing backoff interval exponentially and multiplying it
  * by a random factor for purposes of collision avoidance.
- * @param initialBackOffTime starting backoff interval
- * @param maxDelay maximum backoff interval
- * @param multiplier
+ * @param initialBackOffTime starting backoff interval.
+ * @param maxDelay maximum backoff interval.
+ * @param multiplier factor applied to the interval at every new invocation.
  * @param scheduler scheduler for intervals to be scheduled
  */
 class RandomExponentialBackOffPolicy(private var initialBackOffTime: FiniteDuration = 1000.millis,

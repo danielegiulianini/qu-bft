@@ -30,28 +30,29 @@ import qu.model.ConcreteQuModel._
  * inline repairing, compact timestamp, pruning of replica histories and optimistic query
  * execution optimizations. It is compatible (i.e. reusable) with different (de)serialization, authentication
  * technologies and with different object-syncing policies.
- * @param ip the ip address this replica will be listening on.
- * @param port the port address this replica will be listening on.
- * @param privateKey the secret key used by this replica to generate authenticators for its Replica History
- *                   integrity check.
- * @param obj the object replicated by Q/U servers on which operations are to be submitted.
- * @param thresholds the quorum system thresholds that guarantee protocol correct semantics.
- * @param storage the storage to be used to store object versions.
+ *
+ * @param ip               the ip address this replica will be listening on.
+ * @param port             the port address this replica will be listening on.
+ * @param privateKey       the secret key used by this replica to generate authenticators for its Replica History
+ *                         integrity check.
+ * @param obj              the object replicated by Q/U servers on which operations are to be submitted.
+ * @param thresholds       the quorum system thresholds that guarantee protocol correct semantics.
+ * @param storage          the storage to be used to store object versions.
  * @param keysSharedWithMe the secret keys each of which shared with a different replica used to generate authenticators
  *                         for their Replica History integrity check.
- * @param quorumPolicy the policy for responsible for interaction with other replicas for object syncing.
- * @tparam ObjectT type of the object replicated by Q/U servers on which operations are to be submitted.
+ * @param quorumPolicy     the policy for responsible for interaction with other replicas for object syncing.
+ * @tparam ObjectT       type of the object replicated by Q/U servers on which operations are to be submitted.
  * @tparam Transportable higher-kinded type of the strategy responsible for protocol messages (de)serialization.
  */
-class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
-                                                       val port: Int,
-                                                       val privateKey: String,
-                                                       val obj: ObjectT,
-                                                       val thresholds: QuorumSystemThresholds,
-                                                       var storage: Storage[ObjectT],
-                                                       val keysSharedWithMe: Map[ServerId, Key],
-                                                       var quorumPolicy: ServerQuorumPolicy[Transportable, ObjectT])
-                                                      (implicit executor: ExecutionContext) extends Shutdownable {
+class QuServiceImpl[Transportable[_], ObjectT: TypeTag](val ip: String,
+                                                        val port: Int,
+                                                        val privateKey: String,
+                                                        val obj: ObjectT,
+                                                        val thresholds: QuorumSystemThresholds,
+                                                        var storage: Storage[ObjectT],
+                                                        val keysSharedWithMe: Map[ServerId, Key],
+                                                        var quorumPolicy: ServerQuorumPolicy[Transportable, ObjectT])
+                                                       (implicit executor: ExecutionContext) extends Shutdownable {
 
   import qu.LoggingUtils._
 
@@ -61,14 +62,16 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
   import java.util.concurrent.Executors
 
   //scheduler for io-bound (callbacks from other servers)
-  val ec: ExecutionContextExecutorService = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors + 1)) //or MoreExecutors.newDirectExecutorService
+  val ec: ExecutionContextExecutorService = ExecutionContext.fromExecutorService(
+    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors + 1)) //or MoreExecutors.newDirectExecutorService
 
   var authenticatedReplicaHistory: AuthenticatedReplicaHistory = emptyAuthenticatedRh
 
   storage = storage.store[ObjectT](emptyLT, (obj, Option.empty))
 
-  def sRequest[AnswerT: TypeTag](request: Request[AnswerT, ObjectT], clientId:String)(implicit objectSyncResponseTransportable: Transportable[ObjectSyncResponse[ObjectT]],
-                                                                     logicalTimestampTransportable: Transportable[LogicalTimestamp])
+  def sRequest[AnswerT: TypeTag](request: Request[AnswerT, ObjectT], clientId: String)
+                                (implicit objectSyncResponseTransportable: Transportable[ObjectSyncResponse[ObjectT]],
+                                 logicalTimestampTransportable: Transportable[LogicalTimestamp])
   : Future[Response[Option[AnswerT]]] = {
 
     def executeOperation(request: Request[AnswerT, ObjectT], obj: ObjectT): (ObjectT, AnswerT) = {
@@ -82,21 +85,14 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
     var objToWorkOn = obj
 
     def cullRh(ohs: OHS): OHS = {
-      ohs. //todo map access like this (to authenticator) could raise exception
+      ohs.
         //if there's not the authenticator or if it is invalid the corresponding rh is culled
         map { case (serverId, (rh, authenticator)) =>
-
-
-
           if ((!authenticator.contains(id(SocketAddress(ip, port))) ||
-            authenticator(id(SocketAddress(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) && rh != emptyRh) { //mut use rh here! (not replicahistory)
-            println("CULLLLLEDDDD, reason: not contained? " + (!authenticator.contains(id(SocketAddress(ip, port)))) + "(rh is: " + rh + ").")
-            if (authenticator.contains(id(SocketAddress(ip, port))))
-              println("or auth differs? " + (authenticator(id(SocketAddress(ip, port))) != hmac(keysSharedWithMe(serverId), rh)))
-
+            authenticator(id(SocketAddress(ip, port))) != hmac(keysSharedWithMe(serverId), rh)) && rh != emptyRh) {
             (serverId, (emptyRh, authenticator))
           }
-          else (serverId, (rh, authenticator)) //keep authentictor untouched (as in paper)
+          else (serverId, (rh, authenticator)) //keep authenticator untouched (as in paper)
         }
     }
 
@@ -108,7 +104,6 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
     //repeated request
     if (contains(myReplicaHistory, (lt, ltCo))) {
 
-
       val answer = if (opType != ConcreteOperationTypes.BARRIER && opType != ConcreteOperationTypes.INLINE_BARRIER) {
         val (_, answer) = storage.retrieve[AnswerT](lt).getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
         answer
@@ -117,7 +112,6 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
       val response = Response(StatusCode.SUCCESS, answer, authenticatedReplicaHistory)
       logger.log(Level.INFO, "repeated request detected! sending response" + response)
 
-      //replyWithResponse(response)
       return Future(response)
     }
 
@@ -134,12 +128,8 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
         val (newObj, opAnswer) = executeOperation(request, obj)
         objToWorkOn = newObj
         answerToReturn = Some(opAnswer)
-        if (newObj != obj) {
-          //no need to check for a update passed as query (since checked at the first time)
-        }
       }
 
-      //replyWithResponse(Response(StatusCode.FAIL, answerToReturn, authenticatedReplicaHistory))
       return Future(Response(StatusCode.FAIL, answerToReturn, authenticatedReplicaHistory))
     }
 
@@ -166,8 +156,7 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
       if (opType == ConcreteOperationTypes.METHOD || opType == ConcreteOperationTypes.INLINE_METHOD) {
         val (newObj, newAnswer) = executeOperation(request, objToWorkOn)
         objToWorkOn = newObj
-        answerToReturn = Some(newAnswer) //must overwrite
-        //if method or inline method operation should not be empty
+        answerToReturn = Some(newAnswer)
         if (request.operation.getOrElse(false).isInstanceOf[Query[_, _]]) {
           return Future(Response(StatusCode.SUCCESS, answerToReturn, authenticatedReplicaHistory))
         }
@@ -175,8 +164,8 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
 
       this.synchronized {
         logger.log(Level.INFO, "updating ohs and authenticator...")
-        var updatedReplicaHistory: ReplicaHistory = myReplicaHistory.appended(lt -> ltCo) //with rh as sortedset: replicaHistory + (lt -> ltCo)
-        var updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe) //updateAuthenticatorFor(keysSharedWithMe)(ip)(updatedReplicaHistory)
+        var updatedReplicaHistory: ReplicaHistory = myReplicaHistory.appended(lt -> ltCo)
+        var updatedAuthenticator = authenticateRh(updatedReplicaHistory, keysSharedWithMe)
         authenticatedReplicaHistory = (updatedReplicaHistory, updatedAuthenticator)
 
         //overriding answer since it's ignored at client side
@@ -207,7 +196,7 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
 
 
   def sObjectRequest(request: LogicalTimestamp): Future[ObjectSyncResponse[ObjectT]] = {
-    logger.log(Level.INFO, "object sync request received")
+    logger.log(Level.INFO, "object sync request received.")
     Future(ObjectSyncResponse(StatusCode.SUCCESS,
       storage.retrieveObject(request)))
   }

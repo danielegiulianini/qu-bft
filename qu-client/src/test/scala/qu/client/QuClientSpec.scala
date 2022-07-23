@@ -25,12 +25,15 @@ class QuClientSpec extends AnyFunSpec
   describe("A client") {
 
     //UPDATE
-    describe("when requesting an update operation and receiving a response with order >= q and an ohs with method") {
+    describe("when requesting an update operation and receiving a response with order >= q and an ohs" +
+      " with method") {
       it("should return the correct answer in a single round of communication") {
         val expectedResponse: Unit = ()
 
-        updateQuorum.expects(Some(IncrementAsObj), emptyOhs(serversIdsAsSet), *, *).noMoreThanOnce().returning(Future.successful(
-          (Some(expectedResponse), thresholds.q, ohsWithMethodFor(serversKeys))))
+        updateQuorum.expects(Some(IncrementAsObj), emptyOhs(serversIdsAsSet), *, *)
+          .noMoreThanOnce()
+          .returning(Future.successful(
+            (Some(expectedResponse), thresholds.q, ohsWithMethodFor(serversKeys))))
         (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).never()
 
         whenReady(client.submit[Unit](IncrementAsObj)) {
@@ -51,7 +54,9 @@ class QuClientSpec extends AnyFunSpec
               thresholds.q - 1, //less than q
               ohsWithInlineMethod)))
 
-          (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).returning(Future.successful()) //must return a value (null pointer ex instead)!
+          (mockedBackOffPolicy.backOff()(_: ExecutionContext))
+            .expects(*)
+            .returning(Future.successful()) //must return a value (null pointer exception instead)!
 
           //--possibly many of these...
           updateQuorum.expects(Option.empty, ohsWithInlineMethodFor(serversKeys, thresholds.r), *, *).returning(
@@ -95,7 +100,9 @@ class QuClientSpec extends AnyFunSpec
       it("should return the correct answer in a single round of communication") {
         val expectedResponse = initialValue + 1
 
-        queryQuorum.expects(Some(queryOp), emptyOhs(serversIdsAsSet), *, *).noMoreThanOnce().returning(Future.successful(
+        queryQuorum.expects(Some(queryOp), emptyOhs(serversIdsAsSet), *, *)
+          .noMoreThanOnce()
+          .returning(Future.successful(
           (Some(expectedResponse), thresholds.q, ohsWithMethodFor(serversKeys))))
         (mockedBackOffPolicy.backOff()(_: ExecutionContext)).expects(*).never()
 

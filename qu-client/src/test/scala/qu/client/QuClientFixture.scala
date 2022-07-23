@@ -4,7 +4,7 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import org.scalamock.function.MockFunction4
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.{TestSuite, TestSuiteMixin}
+import org.scalatest.{Outcome, TestSuite, TestSuiteMixin}
 import qu.client.backoff.BackOffPolicy
 import qu.client.quorum.JacksonBroadcastClientQuorumPolicy
 import qu.model.ConcreteQuModel.{OHS, Operation, Request, Response}
@@ -21,16 +21,16 @@ trait QuClientFixture extends TestSuiteMixin with Matchers with MockFactory {
   self: TestSuite with FourServersScenario =>
 
   var client: QuClient[Int, JavaTypeable] = _
-  val mockedQuorumPolicy = mock[JacksonBroadcastClientQuorumPolicy[Int]]
-  val mockedBackOffPolicy = mock[BackOffPolicy]
+  val mockedQuorumPolicy: JacksonBroadcastClientQuorumPolicy[Int] = mock[JacksonBroadcastClientQuorumPolicy[Int]]
+  val mockedBackOffPolicy: BackOffPolicy = mock[BackOffPolicy]
   val updateQuorum: MockFunction4[Option[Operation[Unit, Int]], OHS, JavaTypeable[Request[Unit, Int]], JavaTypeable[Response[Option[Unit]]], Future[(Option[Unit], Int, OHS)]] = mockedQuorumPolicy.quorum[Unit](_: Option[Operation[Unit, Int]], _: OHS)(_: JavaTypeable[Request[Unit, Int]],
     _: JavaTypeable[Response[Option[Unit]]])
   val queryQuorum: MockFunction4[Option[Operation[Int, Int]], OHS, JavaTypeable[Request[Int, Int]], JavaTypeable[Response[Option[Int]]], Future[(Option[Int], Int, OHS)]] = mockedQuorumPolicy.quorum[Int](_: Option[Operation[Int, Int]], _: OHS)(_: JavaTypeable[Request[Int, Int]],
     _: JavaTypeable[Response[Option[Int]]])
 
-  abstract override def withFixture(test: NoArgTest) = {
+  abstract override def withFixture(test: NoArgTest): Outcome = {
     // Perform setup
-    //using constructor (instead of builder) for wiring SUT with stubbed dependencies
+    //using constructor (instead of builder) for wiring System under test (SUT) with stubbed dependencies
     client = new QuClientImpl[Int, JavaTypeable](
       policy = mockedQuorumPolicy,
       backoffPolicy = mockedBackOffPolicy,

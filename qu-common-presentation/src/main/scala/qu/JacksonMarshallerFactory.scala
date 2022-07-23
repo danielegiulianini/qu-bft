@@ -15,6 +15,10 @@ import scala.runtime.BoxedUnit
 //import that declares specific dependency
 import qu.model.ConcreteQuModel._
 
+
+/**
+ * An implementation of [[presentation.MarshallerFactory]] leveraging Jackson for (de)serialization technology.
+ */
 trait JacksonMarshallerFactory extends MarshallerFactory[JavaTypeable] {
 
   @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "type")

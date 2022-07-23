@@ -5,6 +5,10 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import presentation.MethodDescriptorFactory
 
 //family polymorphism:
+
+/**
+ * An implementation of [[presentation.MethodDescriptorFactory]] leveraging Jackson for (de)serialization technology.
+ */
 trait JacksonMethodDescriptorFactory extends MethodDescriptorFactory[JavaTypeable] with JacksonMarshallerFactory {
   override def genericTypesIdentifier[ReqT: JavaTypeable, RespT: JavaTypeable]: String =
     (typeIdentifier[ReqT]() + typeIdentifier[RespT]()).replace("/", "")

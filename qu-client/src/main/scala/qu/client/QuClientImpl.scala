@@ -17,11 +17,12 @@ import qu.LoggingUtils.AsyncLogger
  * An implementation of [[qu.client.QuClient]] compatible with different backoff and quorum strategies and
  * including inline repair, repeated requests, inline repairing, OHS caching and optimistic query
  * execution optimizations.
- * @param policy the quorum policy responsible for interaction with replicas.
+ *
+ * @param policy        the quorum policy responsible for interaction with replicas.
  * @param backoffPolicy the backoff policy used to face contention scenarios.
- * @param serversIds the replicas ids.
- * @param thresholds the quorum system thresholds that guarantee protocol correct semantics.
- * @tparam ObjectT the type of the object replicated by Q/U servers on which operations are to be submitted.
+ * @param serversIds    the replicas ids.
+ * @param thresholds    the quorum system thresholds that guarantee protocol correct semantics.
+ * @tparam ObjectT       the type of the object replicated by Q/U servers on which operations are to be submitted.
  * @tparam Transportable the higher-kinded type of the strategy responsible for protocol messages (de)serialization
  */
 class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPolicy[ObjectT, Transportable],
@@ -49,10 +50,12 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
         answer <- if (order < thresholds.q) for {
           (opType, _, _) <- classifyAsync(updatedOhs)
           optimisticAnswer <- if (opType == METHOD) for {
-            _ <- logger.logAsync(msg = "returning value of query executed optimistically (as type is METHOD but responses' order less than q (" + order + ").")
+            _ <- logger.logAsync(msg = "returning value of query executed optimistically (as type is METHOD but " +
+              "responses' order less than q (" + order + ").")
             optimisticAnswer <- Future(
               answer.getOrElse(
-                throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None answer")))
+                throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a " +
+                  "None answer")))
           } yield optimisticAnswer else for {
             _ <- logger.logAsync(msg = "opType: " + opType + ", so repairing.")
             repairedOhs <- repair(updatedOhs)
@@ -60,7 +63,8 @@ class QuClientImpl[ObjectT, Transportable[_]](private var policy: ClientQuorumPo
             _ <- updateCachedOhs(updatedOhs)
           } yield newAnswer
         } yield optimisticAnswer else Future(answer.getOrElse(
-          throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None answer")))
+          throw new RuntimeException("illegal quorum policy behaviour: user provided operations cannot have a None " +
+            "answer")))
       } yield answer
     }
 

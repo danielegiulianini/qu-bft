@@ -43,8 +43,6 @@ class BroadcastClientQuorumPolicySpec extends AnyFunSpec with MockFactory with S
 
   private val notSuccessfulGetObjResponse = Response[Option[Int]](FAIL, Some(1), emptyAuthenticatedRh)
   private val successfulGetObjResponse = Response[Option[Int]](SUCCESS, Some(1), emptyAuthenticatedRh)
-  /*private val notSuccessfulIncResponse = Response[Option[Unit]](FAIL, Some(()), emptyAuthenticatedRh)
-  private val successfulIncResponse = Response[Option[Unit]](SUCCESS, Some(()), emptyAuthenticatedRh)*/
 
   def expectRequestAndReturnResponse[T, U, Z <: Operation[T, U]](mockedStub: JwtAsyncClientStub[JavaTypeable],
                                                                  req: Request[T, U],
@@ -75,8 +73,7 @@ class BroadcastClientQuorumPolicySpec extends AnyFunSpec with MockFactory with S
   val multiStepsScenarioInterval: PatienceConfiguration.Interval = interval(500.millis)
 
 
-  //sends to all servers
-  describe("a Simple quorum policy") {
+  describe("a Broadcast quorum policy") {
     describe("when asked for finding a quorum") {
       describe("and receiving it in a single round of communication") {
         it("should not ask servers any more") {
@@ -87,7 +84,7 @@ class BroadcastClientQuorumPolicySpec extends AnyFunSpec with MockFactory with S
 
           policy.quorum[Int](Some(GetObj()), emptyOhs(serversIds.toSet))
         }
-        //should return answer correctly
+
         it("should return the answer received") {
           mockedServersStubs.values.foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
@@ -99,7 +96,7 @@ class BroadcastClientQuorumPolicySpec extends AnyFunSpec with MockFactory with S
             _._1 should be(Some(1))
           }
         }
-        //should return count correctly
+
         it("should return the actual count of the most voted response") {
           mockedServersStubs.values.foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
@@ -111,7 +108,7 @@ class BroadcastClientQuorumPolicySpec extends AnyFunSpec with MockFactory with S
             _._2 should be(thresholds.q)
           }
         }
-        //should return ohs correctly
+
         it("should return the ohs correctly updated after the communications with servers") {
           mockedServersStubs.values.foreach(mockedStub => {
             sendGetObjRequest(mockedStub).expects(*, *, *).noMoreThanOnce()
@@ -210,7 +207,7 @@ class BroadcastClientQuorumPolicySpec extends AnyFunSpec with MockFactory with S
 
       describe("while less than q servers are responding with success") {
 
-        //continuous with fail
+
         it("should keep broadcasting to all servers until receiving responses with SUCCESS by q servers") {
 
           inSequence {
@@ -225,7 +222,7 @@ class BroadcastClientQuorumPolicySpec extends AnyFunSpec with MockFactory with S
           whenReady(policy.quorum[Int](Some(GetObj[Int]()), emptyOhs(serversIds.toSet)),
             multiStepsScenarioTimeout,
             multiStepsScenarioInterval) {
-            //not the ony
+
             _._3 should be(emptyOhs(serversIds.toSet -- serversIds.takeRight(thresholds.n - thresholds.q).toSet))
           }
         }

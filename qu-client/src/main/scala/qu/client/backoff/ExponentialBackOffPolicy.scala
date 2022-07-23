@@ -11,11 +11,12 @@ import scala.concurrent.{ExecutionContext, Future}
  * @param scheduler scheduler for intervals to be scheduled
  */
 class ExponentialBackOffPolicy(private var initialBackOffTime: FiniteDuration = 1000.millis,
-                               private var scheduler: OneShotAsyncScheduler) extends BackOffPolicy {
+                               private val scheduler: OneShotAsyncScheduler,
+                               private val multiplier: Int = 2) extends BackOffPolicy {
 
 
   def waitTime(): FiniteDuration = {
-    initialBackOffTime *= 2
+    initialBackOffTime *= multiplier
     initialBackOffTime
   }
 

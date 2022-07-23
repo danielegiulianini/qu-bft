@@ -25,7 +25,7 @@ class JacksonBroadcastClientQuorumPolicy[ObjectT](private val thresholds: Quorum
 
 object JacksonBroadcastClientQuorumPolicy {
 
-  //factory method
+  //GoF factory method
   def apply[U](token: Token)(servers: Set[SocketAddress], thresholds: QuorumSystemThresholds)
               (implicit ec: ExecutionContext)
   : JacksonBroadcastClientQuorumPolicy[U] = {

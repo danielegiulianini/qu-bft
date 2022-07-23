@@ -1,8 +1,6 @@
 package qu.client.datastructures
 
 
-//this packages contains some data structures implementations built over Qu core
-
 import qu.client.datastructures.Mode.ALREADY_REGISTERED
 import qu.{SocketAddress, Shutdownable}
 import qu.model.ConcreteQuModel._

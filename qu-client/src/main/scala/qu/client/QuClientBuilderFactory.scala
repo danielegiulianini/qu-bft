@@ -9,8 +9,8 @@ import scala.concurrent.ExecutionContext
 
 
 /**
- * A GoF factory method for [[qu.client.QuClientBuilder]] that generates a [[qu.client.QuClient]] broadcasts when
- * asking for a quorum.
+ * A GoF factory method for [[qu.client.QuClientBuilder]] that generates [[qu.client.QuClient]]s that broadcast when
+ * looking for a quorum of replicas.
  * @tparam Transportable the higher-kinded type of the strategy responsible for protocol messages (de)serialization.
  */
 trait QuClientBuilderFactory[Transportable[_]] {

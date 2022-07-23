@@ -32,8 +32,6 @@ class BroadcastClientQuorumPolicy[ObjectT, Transportable[_]](private val thresho
     with ClientQuorumPolicy[ObjectT, Transportable]
     with ExceptionsInspector[Transportable] {
 
-  private val logger = Logger.getLogger(classOf[BroadcastClientQuorumPolicy[ObjectT, Transportable]].getName)
-
   override def quorum[AnswerT](operation: Option[Operation[AnswerT, ObjectT]],
                                ohs: OHS)
                               (implicit
@@ -68,30 +66,13 @@ class BroadcastClientQuorumPolicy[ObjectT, Transportable[_]](private val thresho
           val (rh, _) = response.authenticatedRh
           rh
         })))
-        .map { e => {
-          println("oooo, la e: " + e);
-          val a = e /*match {
-            case ((answer2, _), order) => {
-              System.exit(1)
-              println("beccatooooo!!!")
-              (answer2, order)
-            }
-            case a => System.exit(1);println("ciao");* a
-          }*/
-          println("il case returns : " + a)
-          e
-        }
-        }
-        .map(kv => (kv._1._1, kv._2)) //case ((answer, _), order) => (answer, order) }
-        //.map { case ((answer, _), order) => (answer, order) }
+        .map(kv => (kv._1._1, kv._2)) //more readable:         //.map { case ((answer, _), order) => (answer, order) }
         .getOrElse(throw new Error("inconsistent client protocol state"))
-      //.getOrE
     }
 
     for {
       (responses, ohs) <- gatherResponsesAndOhs()
       (answer, voteCount) <- scrutinize(responses)
-      _ <- Future.successful(println("la answer is: " + answer + "il votecount: " + voteCount))
     } yield (answer, voteCount, ohs)
   }
 

@@ -57,11 +57,10 @@ case class QuClientBuilder[ObjectT, Transportable[_]]( //programmer dependencies
   }
 }
 
-//builder companion object specific builder instance-related utility
 object QuClientBuilder {
 
-  //choosing an implementation as the default
-  def apply[U](token: Token)(implicit ec: ExecutionContext): QuClientBuilder[U, JavaTypeable] =
+  //(Gof) factory method choosing an implementation as the default
+  def apply[ObjectT](token: Token)(implicit ec: ExecutionContext): QuClientBuilder[ObjectT, JavaTypeable] =
     new JacksonQuClientBuilderFactory().simpleBroadcastClientBuilder(token)
 
 }

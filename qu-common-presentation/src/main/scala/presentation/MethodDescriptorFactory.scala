@@ -2,13 +2,17 @@ package presentation
 
 import io.grpc.MethodDescriptor
 
-trait MethodDescriptorFactory[Transferable[_]] {
-  self: MarshallerFactory[Transferable] =>
+/**
+ * A (GoF) factory for easing unary [[io.grpc.MethodDescriptor]] creation.
+ * @tparam Transportable the higher-kinded type of the strategy responsible for messages (de)serialization.
+ */
+trait MethodDescriptorFactory[Transportable[_]] {
+  self: MarshallerFactory[Transportable] =>
 
-  //a deterministic function on parameter types
-  def genericTypesIdentifier[ReqT: Transferable, RespT: Transferable]: String
+  //a deterministic function on parameter types used to identify method descriptors
+  def genericTypesIdentifier[ReqT: Transportable, RespT: Transportable]: String
 
-  def generateMethodDescriptor[ReqT: Transferable, RespT: Transferable](methodName: String, serviceName: String):
+  def generateMethodDescriptor[ReqT: Transportable, RespT: Transportable](methodName: String, serviceName: String):
   MethodDescriptor[ReqT, RespT] = {
     MethodDescriptor.newBuilder(
       marshallerFor[ReqT],

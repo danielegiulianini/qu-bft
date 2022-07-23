@@ -19,7 +19,7 @@ object BoxedUnitSerializer {
     .addDeserializer(classOf[Unit], new UnitDeserializer)
 }
 
-//always used (instead of UniSerializer) as automating boxing is performed by scala compiler
+//used (instead of UnitSerializer) as automating boxing is performed by scala compiler
 class BoxedUnitSerializer extends StdSerializer[BoxedUnit](classOf[BoxedUnit]) {
 
   import com.fasterxml.jackson.core.JsonGenerator

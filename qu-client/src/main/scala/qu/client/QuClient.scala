@@ -13,8 +13,8 @@ import qu.model.ConcreteQuModel._
 /**
  * An abstract, technology-unaware, Q/U-protocol client for single-object update (see Q/U paper).
  * Allows to submit operations to a cluster in a fault-tolerant and fault-scalable fashion.
- * @tparam ObjectT type of the object replicated by Q/U servers on which operations are to be submitted.
- * @tparam Transportable higher-kinded type of the strategy responsible for protocol messages (de)serialization.
+ * @tparam ObjectT the ype of the object replicated by Q/U servers on which operations are to be submitted.
+ * @tparam Transportable the higher-kinded type of the strategy responsible for protocol messages (de)serialization.
  */
 trait QuClient[ObjectT, Transportable[_]] extends Shutdownable {
   def submit[ReturnValueT](op: Operation[ReturnValueT, ObjectT])(implicit executionContext: ExecutionContext,
