@@ -9,6 +9,11 @@ import qu.{AbstractSocketAddress, SocketAddress}
 
 import scala.concurrent.ExecutionContext
 
+
+/**
+ * An implementation of [[qu.stub.client.AuthenticatedStubFactory]] leveraging Jackson (so, JSON)
+ * as (de)serialization technology.
+ */
 class JacksonAuthenticatedStubFactory extends AuthenticatedStubFactory[JavaTypeable] {
   override def inNamedProcessJwtStub(token: Token, ip: String, port: Int)
                                     (implicit ec: ExecutionContext): JwtAsyncClientStub[JavaTypeable] =
@@ -16,7 +21,7 @@ class JacksonAuthenticatedStubFactory extends AuthenticatedStubFactory[JavaTypea
 
   override def inNamedProcessJwtStub(token: Token, recInfo: AbstractSocketAddress)
                                     (implicit ec: ExecutionContext): JwtAsyncClientStub[JavaTypeable] =
-    new JwtJacksonAsyncClientStub(InProcessChannelBuilder.forName(id(recInfo)).build, token)
+    new JacksonJwtAsyncClientStub(InProcessChannelBuilder.forName(id(recInfo)).build, token)
 
   override def unencryptedDistributedJwtStub(token: Token, ip: String, port: Int)
                                             (implicit ec: ExecutionContext): JwtAsyncClientStub[JavaTypeable] =
@@ -24,7 +29,7 @@ class JacksonAuthenticatedStubFactory extends AuthenticatedStubFactory[JavaTypea
 
   override def unencryptedDistributedJwtStub(token: Token, recInfo: AbstractSocketAddress)
                                             (implicit ec: ExecutionContext): JwtAsyncClientStub[JavaTypeable] =
-    new JwtJacksonAsyncClientStub(ManagedChannelBuilder.forAddress(recInfo.ip, recInfo.port).usePlaintext().build //Grpc.newChannelBuilder(id(recInfo),InsecureChannelCredentials.create()).build
+    new JacksonJwtAsyncClientStub(ManagedChannelBuilder.forAddress(recInfo.ip, recInfo.port).usePlaintext().build //Grpc.newChannelBuilder(id(recInfo),InsecureChannelCredentials.create()).build
       , token
     ) //TlsChannelCredentials.create()).build, token)
 }

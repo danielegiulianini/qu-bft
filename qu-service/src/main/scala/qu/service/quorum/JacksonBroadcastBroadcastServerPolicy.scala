@@ -7,7 +7,7 @@ import qu.model.QuorumSystemThresholds
 import qu.{AbstractSocketAddress, SocketAddress, Shutdownable}
 import qu.service.AbstractGrpcQuService.ServerInfo
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
-import qu.stub.client.{JacksonStubFactory, JwtAsyncClientStub}
+import qu.stub.client.{JacksonUnauthenticatedAsyncStubFactory, JwtAsyncClientStub}
 
 import scala.concurrent.ExecutionContext
 
@@ -28,7 +28,7 @@ object JacksonBroadcastBroadcastServerPolicy {
   def apply[U](serversSet: Set[AbstractSocketAddress],
                thresholds: QuorumSystemThresholds)
               (implicit executor: ExecutionContext): ServerQuorumPolicy[JavaTypeable, U] = {
-    val jacksonFactory = new JacksonStubFactory
+    val jacksonFactory = new JacksonUnauthenticatedAsyncStubFactory
     new BroadcastServerQuorumPolicy[JavaTypeable, U](
       servers = serversSet.map { recipientInfo => {
         id(recipientInfo) -> jacksonFactory.unencryptedDistributedStub(recipientInfo)

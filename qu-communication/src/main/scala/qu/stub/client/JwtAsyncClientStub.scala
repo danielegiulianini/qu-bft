@@ -7,6 +7,10 @@ import qu.auth.common.Constants
 import java.util.concurrent.Executor
 import scala.concurrent.ExecutionContext
 
+
+/**
+ * An implementation of [[qu.stub.client.AsyncClientStub]] authenticated by means of a JWT-token.
+ */
 abstract class JwtAsyncClientStub[Transferable[_]](override val chan: ManagedChannel, val token: Token)
                                                   (implicit executor: ExecutionContext)
   extends AbstractAsyncClientStub[Transferable](chan) {

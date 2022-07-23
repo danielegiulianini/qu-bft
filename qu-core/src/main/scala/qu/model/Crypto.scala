@@ -1,12 +1,11 @@
 package qu.model
 
-import javax.crypto.{KeyGenerator, Mac, SecretKey}
 
 
 trait CryptoMd5Authenticator {
   self: QuModel with AbstractAbstractQuModel => //needs the ordering defined by SortedSet
 
-  override type hMac = String //so authenticator is a map[ServerId, String]
+  override type hMac = String
 
   override def nullAuthenticator: authenticator = Map[String, String]()
 

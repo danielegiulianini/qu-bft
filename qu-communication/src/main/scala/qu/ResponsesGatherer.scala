@@ -16,12 +16,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, Abstra
                                                   (implicit ec: ExecutionContext)
   extends Shutdownable {
 
-  //  ValidationUtils.requireNonNullAsInvalid(servers) breaks scalamock
-
   private val logger = Logger.getLogger(classOf[ResponsesGatherer[Transportable]].getName)
-
-  private def log(level: Level = Level.WARNING, msg: String, param1: Int = 2): Unit =
-    logger.log(level, msg)
 
   private val scheduler = new OneShotAsyncScheduler(1)
 
@@ -39,7 +34,7 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, Abstra
                             successResponseFilter: ResponseT => Boolean)(implicit transportableRequest: Transportable[RequestT],
                                                                          transportableResponse: Transportable[ResponseT]):
     Future[Map[ServerId, ResponseT]] = {
-      log(msg = "broadcasting to: " + servers + ".")
+      logger.log(Level.INFO, "broadcasting to: " + servers + ".")
       var currentResponseSet = responseSet
 
       //not requires lock here as 1. cancelable val is not shared at this moment and 2. scheduler scheduleOnceAsCallback being thread-safe
@@ -59,18 +54,18 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, Abstra
         }
         .foreach { case (serverId, stubToServer) => stubToServer.onComplete({
           case Success(response) if successResponseFilter(response) =>
-            log(msg = "received response: " + response)
+            logger.log(Level.INFO, "received response: " + response)
             this.synchronized { //mutex needed because of possible multithreaded ex context (user provided)
               currentResponseSet = currentResponseSet + (serverId -> response)
               //if a request from the same server arrives 2 times, could complete 2 times if not checking
               if (currentResponseSet.size == responsesQuorum && !completionPromise.isCompleted) {
-                log(msg = "quorum obtained, so completing promise.")
+                logger.log(Level.INFO, "quorum obtained, so completing promise.")
                 cancelable.cancel()
                 completionPromise success currentResponseSet
               }
             }
           case Failure(ex) =>
-            log(msg = "received exception by " + serverId + ".")
+            logger.log(Level.INFO,"received exception by " + serverId + ".")
             this.synchronized(
               inspectExceptions[ResponseT](completionPromise, {
                 exceptionsByServerId.put(serverId, ex);
@@ -95,9 +90,8 @@ abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, Abstra
                                              exceptionsByServerId: MutableMap[ServerId, Throwable]): Unit
 
   override def shutdown(): Future[Unit] = {
-    println("shutting down policys...")
     Future.reduceLeft[Unit, Unit](servers.values.toList.map(_.shutdown())
-    )((_, _) => ()).flatMap(_ => scheduler.shutdown()) //Future.sequence(servers.values.map(s => s.shutdown()))
+    )((_, _) => ()).flatMap(_ => scheduler.shutdown())
   }
 
   override def isShutdown: Boolean = servers.values.forall(_.isShutdown) && scheduler.isShutdown

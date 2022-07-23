@@ -6,7 +6,7 @@ import org.scalatest._
 import qu.SocketAddress
 import qu.auth.Token
 import qu.auth.common.Constants
-import qu.stub.client.{AbstractAsyncClientStub, JacksonAuthenticatedStubFactory, JacksonStubFactory, JwtAsyncClientStub}
+import qu.stub.client.{AbstractAsyncClientStub, JacksonAuthenticatedStubFactory, JacksonUnauthenticatedAsyncStubFactory, JwtAsyncClientStub}
 
 
 trait AuthStubFixture extends BeforeAndAfterAll {
@@ -35,7 +35,7 @@ trait UnAuthStubFixture extends BeforeAndAfterAll {
   this: AsyncTestSuite =>
 
   lazy val unAuthStub: AbstractAsyncClientStub[JavaTypeable] = {
-    new JacksonStubFactory().inNamedProcessStub(serverInfo)
+    new JacksonUnauthenticatedAsyncStubFactory().inNamedProcessStub(serverInfo)
   }
 
   override def afterAll(): Unit = {

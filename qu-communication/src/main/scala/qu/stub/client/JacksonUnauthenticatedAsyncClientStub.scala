@@ -7,7 +7,12 @@ import qu.JacksonMethodDescriptorFactory
 
 import scala.concurrent.ExecutionContext
 
-class UnauthenticatedJacksonAsyncClientStub(channel: ManagedChannel)(implicit executor: ExecutionContext)
+
+/**
+ * An implementation of [[qu.stub.client.AsyncClientStub]] leveraging Jackson (so, JSON)
+ * as (de)serialization technology.
+ */
+class JacksonUnauthenticatedAsyncClientStub(channel: ManagedChannel)(implicit executor: ExecutionContext)
   extends AbstractAsyncClientStub[JavaTypeable](channel) with JacksonMethodDescriptorFactory
     with CachingMethodDescriptorFactory[JavaTypeable]
 

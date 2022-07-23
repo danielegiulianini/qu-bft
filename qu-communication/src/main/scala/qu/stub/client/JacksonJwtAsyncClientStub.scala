@@ -8,7 +8,10 @@ import qu.auth.Token
 
 import scala.concurrent.ExecutionContext
 
-
-class JwtJacksonAsyncClientStub(channel: ManagedChannel, token: Token)(implicit executor: ExecutionContext)
+/**
+ * An implementation of [[qu.stub.client.AsyncClientStub]] authenticated by means of a JWT-token and leveraging
+ * Jackson (so, JSON) as (de)serialization technology.
+ */
+class JacksonJwtAsyncClientStub(channel: ManagedChannel, token: Token)(implicit executor: ExecutionContext)
   extends JwtAsyncClientStub[JavaTypeable](channel, token) with JacksonMethodDescriptorFactory
     with CachingMethodDescriptorFactory[JavaTypeable]

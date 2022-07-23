@@ -5,7 +5,7 @@ import qu.SocketAddress.id
 import qu._
 import qu.model.ConcreteQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
-import qu.stub.client.JacksonStubFactory
+import qu.stub.client.JacksonUnauthenticatedAsyncStubFactory
 
 import scala.concurrent.{ExecutionContext, Future}
 
