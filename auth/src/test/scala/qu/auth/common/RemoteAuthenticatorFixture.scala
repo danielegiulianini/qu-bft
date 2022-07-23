@@ -24,21 +24,15 @@ trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
   var authServer: AuthServer = _
 
   override def beforeCreatingAuthenticator(): Unit = {
-    println("beforeCreatingAuthenticator: ip and port: " + ip + port)
-    //authenticator = AuthClient(ip, port)
     authServer = AuthServer(port)
     authServer.start()
   }
 
   protected def shutdownAuthenticator(): Unit = {
-    println("shutdownAuthenticator")
-
     authenticator match {
-      case a: AuthClient => println("shutdown .. client"); Await.ready(a.shutdown(), 5.seconds)
+      case a: AuthClient => Await.ready(a.shutdown(), 5.seconds)
     }
-    println("shutdown .. server...")
     Await.ready(authServer.shutdown(), 3.seconds)
-
   }
 
 }
