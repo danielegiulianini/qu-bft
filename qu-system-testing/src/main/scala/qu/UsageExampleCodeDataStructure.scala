@@ -1,7 +1,7 @@
 package qu
 
-import qu.UsageExampleCodeGrpcUnaware.{quReplica1Info, quReplica2Info, quReplica6Info}
 import qu.client.datastructures.DistributedCounter
+import qu.service.AbstractGrpcQuService.ServerInfo
 import qu.service.datastructures.RemoteCounterServer
 
 object UsageExampleCodeDataStructure extends App {
@@ -43,6 +43,12 @@ object UsageExampleCodeDataStructure extends App {
   } yield println("distributed counter value is:" + value)
 
   //replica configuration
+  val quReplica1Info = ServerInfo(ip = "localhost", port = 1001, "ks1s1")
+  val quReplica2Info = ServerInfo(ip = "localhost", port = 1002, "ks1s2")
+  //...
+  val quReplica6Info = ServerInfo(ip = "localhost", port = 1006, "ks1s6")
+
+
   RemoteCounterServer.builder(quReplica1Info.ip, quReplica1Info.port, quReplica1Info.keySharedWithMe, thresholds)
     .addServer(quReplica2Info)
     //…

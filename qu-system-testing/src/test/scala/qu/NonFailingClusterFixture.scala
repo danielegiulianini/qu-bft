@@ -29,7 +29,7 @@ trait NonFailingClusterFixture extends Matchers with AsyncMockFactory {
 
   def tearDownNonFailingCluster(): Future[_] = healthyCluster.shutdown()
 
-  abstract override def withFixture(test: NoArgAsyncTest) = {
+  abstract override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
     new FutureOutcome(for {
       _ <- setupNonFailingCluster()
       result <- super.withFixture(test).toFuture

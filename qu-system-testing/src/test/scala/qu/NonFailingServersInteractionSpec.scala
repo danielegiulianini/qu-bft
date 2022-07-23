@@ -33,7 +33,7 @@ class NonFailingServersInteractionSpec extends AsyncFunSpec with Matchers
         for {
           authenticatedQuClient <- quClientAsFuture
           value <- authenticatedQuClient.submit[Unit](Increment())
-        } yield value should be(()) //already out of future (no need for Future.successful(...))
+        } yield value should be(())
       }
     }
     describe("when an update is issued followed by a query") {

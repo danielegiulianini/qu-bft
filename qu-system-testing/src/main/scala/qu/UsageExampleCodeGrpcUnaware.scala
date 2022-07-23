@@ -137,7 +137,6 @@ object UsageExampleCodeGrpcUnaware extends App {
 
   import com.fasterxml.jackson.module.scala.JavaTypeable
   import presentation.CachingMethodDescriptorFactory
-  import qu.SocketAddress.id
   import qu.service.AbstractGrpcQuService.QuServiceBuilder
   import qu.service.quorum.JacksonBroadcastBroadcastServerPolicy
   import qu.storage.ImmutableStorage

@@ -5,7 +5,6 @@ import org.scalatest.matchers.should.Matchers
 import qu.FutureUtils.seqFutures
 import qu.model.OHSUtilities
 import qu.model.examples.Commands.{GetObj, Increment}
-import qu.service.ServersFixture
 
 import scala.concurrent.Future
 
@@ -33,7 +32,7 @@ class OneFailingServerInteractionSpec extends AsyncFunSpec with Matchers  with O
         for {
           authenticatedQuClient <- quClientAsFuture
           value <- authenticatedQuClient.submit[Unit](Increment())
-        } yield value should be(()) //already out of future (no need for Future.successful)
+        } yield value should be(())
       }
     }
     describe("when an update is issued followed by a query") {

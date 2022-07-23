@@ -18,7 +18,6 @@ trait AuthenticatedQuClientFixture extends AsyncTestSuiteMixin with Matchers wit
 
   var quClientAsFuture: Future[QuClientImpl[Int, JavaTypeable]] = _
 
-  // Do whatever setup you need here.
   def setupAuthenticatedQuClient(): Future[_] = {
     quClientAsFuture = for {
       quClientAsFuture <- for {
@@ -34,8 +33,6 @@ trait AuthenticatedQuClientFixture extends AsyncTestSuiteMixin with Matchers wit
     quClientAsFuture
   }
 
-
-  // Cleanup whatever you need here.
   def tearDownAuthenticatedQuClient(): Future[_] = for {
     quClient <- quClientAsFuture
     _ <- quClient.shutdown()

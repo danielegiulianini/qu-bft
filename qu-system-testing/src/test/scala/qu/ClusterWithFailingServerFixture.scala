@@ -33,7 +33,7 @@ trait ClusterWithFailingServerFixture extends AsyncTestSuiteMixin with Matchers 
 
   def tearDownClusterWithFailingServer(): Future[_] =clusterWithFailingServer.shutdown()
 
-  abstract override def withFixture(test: NoArgAsyncTest) = {
+  abstract override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
     new FutureOutcome(for {
       _ <- setupClusterWithFailingServer()
       result <- super.withFixture(test).toFuture
