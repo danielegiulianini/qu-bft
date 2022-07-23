@@ -2,6 +2,11 @@ package qu.service
 
 import io.grpc.{MethodDescriptor, ServerCallHandler, ServerServiceDefinition}
 
+
+/**
+ * A [[io.grpc.ServerServiceDefinition]] capable of caching MethodDescriptor as to provide better performances.
+ * @param serviceName the name of the service to add [[io.grpc.MethodDescriptor]] to.
+ */
 class CachingServiceServerDefinitionBuilder(private var serviceName: String) {
   private val builder = ServerServiceDefinition.builder(serviceName)
   private var mds = Set[String]()
@@ -17,7 +22,9 @@ class CachingServiceServerDefinitionBuilder(private var serviceName: String) {
   def build(): ServerServiceDefinition = builder.build
 }
 
+
 object CachingServiceServerDefinitionBuilder {
+
   def apply(serviceName: String) =
     new CachingServiceServerDefinitionBuilder(serviceName)
 }

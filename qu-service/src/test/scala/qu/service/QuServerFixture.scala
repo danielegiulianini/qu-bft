@@ -9,7 +9,7 @@ import presentation.CachingMethodDescriptorFactory
 import qu.JacksonMethodDescriptorFactory
 import qu.SocketAddress.id
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.QuServiceBuilder
+import qu.service.AbstractGrpcQuService.QuServiceBuilder
 import qu.service.quorum.JacksonBroadcastBroadcastServerPolicy
 import qu.storage.ImmutableStorage
 
@@ -27,7 +27,7 @@ trait QuServerFixture extends AsyncTestSuiteMixin with Matchers with AsyncMockFa
 
   val mockedQuorumPolicy: JacksonBroadcastBroadcastServerPolicy[Int] = mock[JacksonBroadcastBroadcastServerPolicy[Int]]
 
-  def freshService(): AbstractQuService[JavaTypeable, Int] = {
+  def freshService(): AbstractGrpcQuService[JavaTypeable, Int] = {
 
     //using constructor (instead of builder) for wiring SUT with stubbed dependencies
     val serviceBuilder = new QuServiceBuilder(

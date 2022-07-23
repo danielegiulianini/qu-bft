@@ -39,7 +39,7 @@ object UsageExampleCodeGrpcUnaware extends App {
 
   //qu server
 
-  import qu.service.AbstractQuService.ServerInfo
+  import qu.service.AbstractGrpcQuService.ServerInfo
   import qu.service.QuServerBuilder
 
   val quReplica1Info = ServerInfo(ip = "localhost", port = 1001, "ks1s1")
@@ -138,13 +138,13 @@ object UsageExampleCodeGrpcUnaware extends App {
   import com.fasterxml.jackson.module.scala.JavaTypeable
   import presentation.CachingMethodDescriptorFactory
   import qu.SocketAddress.id
-  import qu.service.AbstractQuService.QuServiceBuilder
+  import qu.service.AbstractGrpcQuService.QuServiceBuilder
   import qu.service.quorum.JacksonBroadcastBroadcastServerPolicy
   import qu.storage.ImmutableStorage
 
   val quService = new QuServiceBuilder(
     methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
-    policyFactory = JacksonBroadcastBroadcastServerPolicy[Int](id(quReplica1Info), _, _),
+    policyFactory = JacksonBroadcastBroadcastServerPolicy[Int](_, _),
     ip = quReplica1Info.ip,
     port = quReplica1Info.port,
     privateKey = quReplica1Info.keySharedWithMe,

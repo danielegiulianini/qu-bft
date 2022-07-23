@@ -14,7 +14,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import qu.LoggingUtils.AsyncLogger
 
 /**
- * An implementation of [[qu.client.QuClient]] compatible with different backoff and quorum strategies
+ * An implementation of [[qu.client.QuClient]] compatible with different backoff and quorum strategies and
  * including inline repair, repeated requests, inline repairing, OHS caching and optimistic query
  * execution optimizations.
  * @param policy the quorum policy responsible for interaction with replicas.

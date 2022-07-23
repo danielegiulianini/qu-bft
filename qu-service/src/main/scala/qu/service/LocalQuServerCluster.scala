@@ -9,6 +9,9 @@ import qu.{SocketAddress, Shutdownable, Startable}
 import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, Future}
 
+/**
+ * A local Q/U cluster of replicas for local-execution of Q/U protocol.
+ */
 trait LocalQuServerCluster extends Startable with Shutdownable {
 
   val servers: Map[ServerId, QuServer]
@@ -18,6 +21,11 @@ trait LocalQuServerCluster extends Startable with Shutdownable {
   def serversStatuses(): Map[ServerId, Boolean]
 }
 
+
+/**
+ *
+ * @param servers
+ */
 class LocalQuServerClusterImpl(override val servers: Map[ServerId, QuServer])
                               (implicit ec: ExecutionContext)
   extends LocalQuServerCluster {

@@ -14,13 +14,11 @@ import scala.concurrent.duration.{DurationInt, FiniteDuration}
 import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.collection.mutable.{Map => MutableMap}
 
-//basic policy (maybe some logic could be shared by subclasses... in the case can be converted to trait)
-
 /**
  * Implements [[qu.client.quorum.ClientQuorumPolicy]] by keeping broadcasting to replicas the client request
  * until a quorum of responses is found.
  * @param thresholds the quorum system thresholds that guarantee protocol correct semantics.
- * @param servers the replicas info.
+ * @param servers the client stubs by which to communicate to replicas.
  * @param retryingTime the interval after which a new broadcast is issued.
  * @tparam ObjectT type of the object replicated by Q/U servers on which operations are to be submitted.
  * @tparam Transportable higher-kinded type of the strategy responsible for protocol messages (de)serialization.

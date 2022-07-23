@@ -13,8 +13,8 @@ import scala.concurrent.ExecutionContext
 /**
  * Implementation of [[qu.client.quorum.BroadcastClientQuorumPolicy]] leveraging JSON and Jackson for
  * (de)serialization of protocol messages.
- * @param thresholds
- * @param servers
+ * @param thresholds the quorum system thresholds that guarantee protocol correct semantics.
+ * @param servers the client stubs by which to communicate to replicas.
  * @tparam ObjectT the type of the object replicated by Q/U servers on which operations are to be submitted.
  */
 class JacksonBroadcastClientQuorumPolicy[ObjectT](private val thresholds: QuorumSystemThresholds,

@@ -1,10 +1,9 @@
 package qu.model
 
-//inheritance and command pattern...
 trait Operations {
   self: AbstractAbstractQuModel =>
 
-
+  //GoF command pattern for operations modelling
   trait MyOperation[ReturnValueT, ObjectT] {
     def compute(obj: ObjectT): (ObjectT, ReturnValueT)
   }
@@ -13,7 +12,7 @@ trait Operations {
   override type Operation[ReturnValueT, ObjectT] = MyOperation[ReturnValueT, ObjectT]
 
   trait AbstractOperation[ReturnValueT, ObjectT] extends Operation[ReturnValueT, ObjectT] {
-    //template method pattern
+    //GoF template method pattern
     override def compute(obj: ObjectT): (ObjectT, ReturnValueT) = (updateObject(obj), whatToReturn(obj))
 
     def updateObject(obj: ObjectT): ObjectT

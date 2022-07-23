@@ -10,9 +10,10 @@ import qu.stub.client.JacksonStubFactory
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
- * 
- * @tparam Transportable
- * @tparam ObjectT
+ * Strategy (GoF pattern) responsible for object syncing, namely for: selecting replicas to contact
+ * and actuating retransmission logic, so managing all the server-server interaction logic.
+ * @tparam ObjectT type of the object replicated by Q/U servers on which operations are to be submitted.
+ * @tparam Transportable higher-kinded type of the strategy responsible for protocol messages (de)serialization.
  */
 trait ServerQuorumPolicy[Transportable[_], ObjectT] extends Shutdownable {
   def objectSync(lt: LogicalTimestamp)(implicit

@@ -2,11 +2,16 @@ package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.QuServiceBuilder.JacksonBroadcastServiceBuilderFactory
+import qu.service.AbstractGrpcQuService.QuServiceBuilder.JacksonBroadcastServiceBuilderFactory
 import scala.reflect.runtime.universe._
 
 import scala.concurrent.ExecutionContext
 
+
+/**
+ * A Jackson implementation for [[qu.service.QuServerBuilderFactory]] which creates Q/U servers that
+ * broadcasts to other replicas when object-syncing.
+ */
 class JacksonServerBuilderFactory extends QuServerBuilderFactory[JavaTypeable] {
   override def simpleBroadcastServerBuilder[ObjectT:TypeTag](ip: String,
                                                              port: Int,

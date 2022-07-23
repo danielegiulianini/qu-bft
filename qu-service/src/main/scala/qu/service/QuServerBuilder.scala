@@ -5,14 +5,27 @@ import io.grpc.ServerInterceptor
 import qu.auth.Token
 import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, Request, Response}
 import qu.model.QuorumSystemThresholds
-import qu.service.AbstractQuService.QuServiceBuilder.ServiceBuilderFactory
-import qu.service.AbstractQuService.{QuServiceBuilder, ServerInfo}
+import qu.service.AbstractGrpcQuService.QuServiceBuilder.ServiceBuilderFactory
+import qu.service.AbstractGrpcQuService.{QuServiceBuilder, ServerInfo}
 
 import scala.reflect.runtime.universe._
 import scala.concurrent.ExecutionContext
 import scala.reflect.runtime.universe._
 
-//alternative to QuServer apply in companion object
+/**
+ * A (GoF) builder for [[qu.service.QuServer]] instances.
+ * @param serviceBuilderFactory the factory of Q/U service to inject into the replica under construction.
+ * @param authorizationInterceptor the interceptor responsible for authorization check for the replica under
+ *                                 construction
+ * @param ip the ip the replica under construction will be listening on.
+ * @param port the ip the replica under construction will be listening on.
+ * @param privateKey the secret key used by this replica to generate authenticators for its Replica History
+ *                   integrity check.
+ * @param quorumSystemThresholds the quorum system thresholds that guarantee protocol correct semantics.
+ * @param obj the object replicated by Q/U servers on which operations are to be submitted.
+ * @tparam ObjectT the type of the object replicated by Q/U servers on which operations are to be submitted.
+ * @tparam Transportable the higher-kinded type of the strategy responsible for protocol messages (de)serialization.
+ */
 case class QuServerBuilder[Transportable[_], ObjectT: TypeTag](
                                                                 //programmer (injected dependencies):
                                                                 private val serviceBuilderFactory: ServiceBuilderFactory[Transportable],
@@ -52,7 +65,6 @@ case class QuServerBuilder[Transportable[_], ObjectT: TypeTag](
   }
 
   def build(): QuServer =
-  //todo validation missing
     new QuServerImpl(authorizationInterceptor,
       quService = serviceBuilder.build(),
       port = port)

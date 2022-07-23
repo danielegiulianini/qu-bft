@@ -9,7 +9,7 @@ import qu.auth.common.Constants
 import qu.{AbstractSocketAddress, SocketAddress, Shutdownable}
 import qu.model.ConcreteQuModel.hmac
 import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
-import qu.service.AbstractQuService.ServerInfo
+import qu.service.AbstractGrpcQuService.ServerInfo
 import qu.service.quorum.ServerQuorumPolicy
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.storage.{ImmutableStorage, Storage}
@@ -25,7 +25,24 @@ import scala.util.{Failure, Success}
 import qu.model.ConcreteQuModel._
 
 
-//ha bisogno di tutte le info che vengono settate al momento della istanziazione
+/**
+ * A technology-unaware, Q/U-protocol service for single-object update (see Q/U paper) including repeated requests,
+ * inline repairing, compact timestamp, pruning of replica histories and optimistic query
+ * execution optimizations. It is compatible (i.e. reusable) with different (de)serialization, authentication
+ * technologies and with different object-syncing policies.
+ * @param ip the ip address this replica will be listening on.
+ * @param port the port address this replica will be listening on.
+ * @param privateKey the secret key used by this replica to generate authenticators for its Replica History
+ *                   integrity check.
+ * @param obj the object replicated by Q/U servers on which operations are to be submitted.
+ * @param thresholds the quorum system thresholds that guarantee protocol correct semantics.
+ * @param storage the storage to be used to store object versions.
+ * @param keysSharedWithMe the secret keys each of which shared with a different replica used to generate authenticators
+ *                         for their Replica History integrity check.
+ * @param quorumPolicy the policy for responsible for interaction with other replicas for object syncing.
+ * @tparam ObjectT type of the object replicated by Q/U servers on which operations are to be submitted.
+ * @tparam Transportable higher-kinded type of the strategy responsible for protocol messages (de)serialization.
+ */
 class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
                                                        val port: Int,
                                                        val privateKey: String,
@@ -45,24 +62,19 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
 
   //scheduler for io-bound (callbacks from other servers)
   val ec: ExecutionContextExecutorService = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors + 1)) //or MoreExecutors.newDirectExecutorService
-  //scheduler for cpu-bound (computing hmac, for now not used)?
 
   var authenticatedReplicaHistory: AuthenticatedReplicaHistory = emptyAuthenticatedRh
 
-  storage = storage.store[ObjectT](emptyLT, (obj, Option.empty)) //must add to store the initial object (passed by param)
+  storage = storage.store[ObjectT](emptyLT, (obj, Option.empty))
 
   def sRequest[AnswerT: TypeTag](request: Request[AnswerT, ObjectT], clientId:String)(implicit objectSyncResponseTransportable: Transportable[ObjectSyncResponse[ObjectT]],
                                                                      logicalTimestampTransportable: Transportable[LogicalTimestamp])
   : Future[Response[Option[AnswerT]]] = {
 
-
-    //todo not need to pass request if nested def
     def executeOperation(request: Request[AnswerT, ObjectT], obj: ObjectT): (ObjectT, AnswerT) = {
-      //todo can actually happen that a malevolent client can make this exception
-      // happen and break the server? no, it's not breaking it!
       request.operation.getOrElse(throw new RuntimeException("inconsistent protocol state: if " +
         "classify returns a (inline) method operation should be defined (not none)")
-      ).compute(obj) //for {operation <- request.operation} operation.compute(obj)
+      ).compute(obj)
     }
 
     val (myReplicaHistory, _) = authenticatedReplicaHistory
@@ -93,12 +105,9 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
 
     val (opType, (lt, ltCo), ltCurrent) = setup(request.operation, updatedOhs, thresholds.q, thresholds.r, clientId)
 
-    logger.logWithPrefix(Level.INFO, "SEEEEEEEEERVERRRRRRRRRRR ltCo ritornato da setup is: " + ltCo)
-
     //repeated request
     if (contains(myReplicaHistory, (lt, ltCo))) {
 
-      logger.logWithPrefix(msg = "repeated request detected! from request: " + request + " (opType:  " + opType + "), operation: " + request.operation)
 
       val answer = if (opType != ConcreteOperationTypes.BARRIER && opType != ConcreteOperationTypes.INLINE_BARRIER) {
         val (_, answer) = storage.retrieve[AnswerT](lt).getOrElse(throw new Error("inconsistent protocol state: if in replica history must be in store too."))
@@ -144,7 +153,7 @@ class QuServiceImpl[Transportable[_], ObjectT:TypeTag](val ip: String,
         logger.logWithPrefix(Level.INFO, "object version NOT available, object-syncing for lt " + ltCo)
         quorumPolicy.objectSync(ltCo).onComplete({
           case Success(obj) => onObjectRetrieved(obj) //here I know that a quorum is found...
-          case Failure(thr) => throw thr //what can actually happen here? (malformed json, bad url) those must be notified to server user!
+          case Failure(thr) => throw thr
         })
       } else {
         objToWorkOn = retrievedObj.getOrElse(throw new Exception("just checked if it was not none!"))

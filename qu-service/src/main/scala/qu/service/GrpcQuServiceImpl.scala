@@ -25,24 +25,26 @@ import scala.util.{Failure, Success}
 //import that declares specific dependency
 import qu.model.ConcreteQuModel._
 
-//questo è il GRPC service
+/**
+ * A gPRC implementation of a Q/U service, compatible with different (se)serialization, authentication technologies
+ * and with different object-syncing policies.
+ * @tparam ObjectT type of the object replicated by Q/U servers on which operations are to be submitted.
+ * @tparam Transportable higher-kinded type of the strategy responsible for protocol messages (de)serialization.
+ */
 class GrpcQuServiceImpl[Transportable[_], ObjectT: TypeTag]()
                                                            (implicit executor: ExecutionContext)
-//devo fare in modo che qui abbia già tutto
-  extends AbstractQuService[Transportable, ObjectT]() {
-
-  //si compone di un business server già settato (dal builder)...
+  extends AbstractGrpcQuService[Transportable, ObjectT]() {
 
   val clientId: Context.Key[Key] = Constants.CLIENT_ID_CONTEXT_KEY //plugged by context (server interceptor)
 
   import java.util.concurrent.Executors
 
   //scheduler for io-bound (callbacks from other servers)
-  val ec: ExecutionContextExecutorService = ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors + 1)) //or MoreExecutors.newDirectExecutorService
+  val ec: ExecutionContextExecutorService = ExecutionContext.fromExecutorService(
+    Executors.newFixedThreadPool(Runtime.getRuntime.availableProcessors + 1)) //or MoreExecutors.newDirectExecutorService
 
-  //scheduler for cpu-bound (computing hmac, for now not used)?
   override def sRequest[T: universe.TypeTag](request: Request[T, ObjectT], responseObserver: StreamObserver[Response[Option[T]]])(implicit objectSyncResponseTransportable: Transportable[ObjectSyncResponse[ObjectT]], logicalTimestampTransportable: Transportable[ConcreteLogicalTimestamp]): Unit = {
-    mapFutureToObserver(agnostic.sRequest(request, clientId.get()), responseObserver)
+    mapFutureToObserver(agnosticService.sRequest(request, clientId.get()), responseObserver)
   }
 
   def mapFutureToObserver[T](fut: Future[T], responseObserver: StreamObserver[T]): Unit =
@@ -55,26 +57,8 @@ class GrpcQuServiceImpl[Transportable[_], ObjectT: TypeTag]()
         responseObserver.onCompleted()
     }
 
-  //f transform {
-  //      case s@Success(a) => s
-  //      case Failure(cause) => Failure(exFact(cause))
-  //    }
-
   override def sObjectRequest(request: ConcreteLogicalTimestamp, responseObserver
   : StreamObserver[ObjectSyncResponse[ObjectT]]): Unit =
-    mapFutureToObserver(agnostic.sObjectRequest(request), responseObserver)
-
-  //agnostic.sObjectRequest(request)
-
-  //f transform {
-  //      case s@Success(_) => s
-  //      case Failure(cause) => Failure(exFact(cause))
-  //    }
-
-
-  /*.onComplete {
-  case s@Success(a) => responseObserver.onNext(a)
-  case Failure(cause) => responseObserver.onError(cause)
-}*/
+    mapFutureToObserver(agnosticService.sObjectRequest(request), responseObserver)
 
 }

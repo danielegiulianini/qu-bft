@@ -230,7 +230,7 @@ Then, plug the relevant info for all the replicas making up the cluster; namely,
 
 ```scala
 import qu.service.QuServerBuilder
-import qu.service.AbstractQuService.ServerInfo
+import qu.service.AbstractGrpcQuService.ServerInfo
 
 val quReplica1Info = ServerInfo(ip = "localhost", port = 1001, "ks1s1")
 val quReplica2Info = ServerInfo(ip = "localhost", port = 1002, "ks1s2")
@@ -373,7 +373,7 @@ you can plug Q/U replicas functionalities into a gRPC server. First, create a Q/
 8. the storage for object versions. The repo contains one in-memory implementation but new (especially disk-backed) can be easily added.
 
 ```scala
-import qu.service.AbstractQuService.QuServiceBuilder
+import qu.service.AbstractGrpcQuService.QuServiceBuilder
 import qu.service.JwtAuthorizationServerInterceptor
 import qu.service.quorum.JacksonBroadcastBroadcastServerPolicy
 import qu.storage.ImmutableStorage
@@ -385,7 +385,7 @@ import qu.SocketAddress.id
 
 val quService = new QuServiceBuilder(
   methodDescriptorFactory = new JacksonMethodDescriptorFactory with CachingMethodDescriptorFactory[JavaTypeable] {},
-  policyFactory = JacksonBroadcastBroadcastServerPolicy[Int](id(quReplica1Info), _, _),
+  policyFactory = JacksonBroadcastBroadcastServerPolicy[Int](_, _),
   ip = quReplica1Info.ip,
   port = quReplica1Info.port,
   privateKey = quReplica1Info.keySharedWithMe,

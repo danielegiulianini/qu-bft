@@ -10,15 +10,14 @@ import java.util.logging.{Level, Logger}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
 
-
-//a facade that hides grpc internals
+/**
+ * A deployable Q/U replica containing the Q/U service-side logic.
+**/
 trait QuServer extends Startable with Shutdownable
 
-//companion object
-object QuServer {
-  // creation by builder, not factory: def apply()
 
-  //could use builder factory instead of defaultBuilder
+object QuServer {
+
   def builder[U: TypeTag](ip: String, port: Int, privateKey: String,
                           thresholds: QuorumSystemThresholds,
                           obj: U)
@@ -26,10 +25,15 @@ object QuServer {
     QuServerBuilder[U](ip, port, privateKey, thresholds, obj)
 }
 
-
+/**
+ * An implementation of a [[qu.service.QuServer]] realized as a (GoF) facade that hides gRPC internals
+ * including repeated requests, inline repairing, compact timestamp, pruning of replica histories and optimistic query
+ * execution optimizations. It is compatible (i.e. reusable) with different (de)serialization, authentication
+ * technologies and with different object-syncing policies.
+ */
 class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerInterceptor, //this makes it pluggable a different auth technology (possibly not JWT-based)
                                               credentials: ServerCredentials = InsecureServerCredentials.create(),
-                                              quService: AbstractQuService[Transportable, ObjectT],
+                                              quService: AbstractGrpcQuService[Transportable, ObjectT],
                                               port: Int)(implicit executor: ExecutionContext) extends QuServer {
 
   private val logger = Logger.getLogger(classOf[QuServerImpl[Transportable, ObjectT]].getName)
@@ -58,12 +62,6 @@ class QuServerImpl[Transportable[_], ObjectT](authorizationInterceptor: ServerIn
       _ <- Future {
         logger.log(Level.INFO, "server shut down.")
       }
-      /*_ <- Future {
-        grpcServer.shutdown
-        grpcServer.awaitTermination()
-        logger.log(Level.INFO, "server shut down.")
-      }*/
-
     } yield ()
 
   override def isShutdown: Flag = grpcServer.isShutdown
