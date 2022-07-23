@@ -14,11 +14,7 @@ import scala.concurrent.duration.{Duration, DurationInt}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
 /**
- *  jwt token based authentication...//todo
- * @param channel
- * @param futureStub
- * @param maxTimeout
- * @param ec
+ *  A client for a JWT-based authentication service.
  */
 class AuthClient private(private val channel: ManagedChannel,
                          private val futureStub: AuthStub,
