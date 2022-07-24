@@ -2,6 +2,9 @@ package qu.view.console
 
 import qu.model.QuorumSystemThresholdQuModel.ServerId
 
+/**
+ * Abstract modelling of a command submittable to a [[ConsoleView]].
+ */
 sealed trait AbstractCliCmd {
   def command: String
 
@@ -18,6 +21,9 @@ case class CliCmdWithArg[T](command: String,
                             arguments: String,
                             descriptions: String, args: T*) extends AbstractCliCmd
 
+/**
+ * It defines all the commands by which to interact with a [[ConsoleView]].
+ */
 object AbstractCliCmd {
 
   object Exit extends CliCmdWithoutArg("exit", "", "shutdown the SMR system.")

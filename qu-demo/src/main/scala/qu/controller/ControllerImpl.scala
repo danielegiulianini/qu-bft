@@ -1,23 +1,14 @@
 package qu.controller
 
-import qu.client.datastructures.DistributedCounter
-import qu.model.QuorumSystemThresholdQuModel.{Key, Query, Request, Response, ServerId, emptyAuthenticatedRh, emptyOhs, emptyRh, nullAuthenticator}
-import qu.model.{IncResult, QuorumSystemThresholds, ResetResult, SmrEventResult, SmrSystem, SmrSystemImpl, ValueResult}
-import io.grpc.inprocess.InProcessServerBuilder
-import qu.SocketAddress
-import qu.model.examples.Commands.Increment
-import qu.service.datastructures.RemoteCounterServer
+import qu.model.{SmrSystem, SmrSystemImpl}
 import qu.view.View
 import qu.view.console.ConsoleView
 
-import java.util.Scanner
-import scala.collection.immutable.Map
-import scala.concurrent.ExecutionContext
-import scala.util.{Success, Try}
-import scala.concurrent.ExecutionContext.Implicits.global
 
-//object as it's a singleton
-class ControllerImpl extends Controller {
+/**
+ * An simple implementation of [[Controller]].
+ */
+class ControllerImpl extends Controller { //could be a singleton
 
   private val model: SmrSystem = new SmrSystemImpl()
   private val view: View = new ConsoleView
@@ -25,11 +16,9 @@ class ControllerImpl extends Controller {
   view.setObserver(this)
   view.start()
 
-  //todo really needed?
-  override def start(): Unit = {} //model.
+  override def start(): Unit = {}
 
   override def quit(): Unit = {
-    //avvisa di chiudere tutto e poi chiude il programma
     model.stop()
   }
 

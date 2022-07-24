@@ -9,10 +9,12 @@ import scala.reflect.runtime.universe._
 /**
  * A heterogeneous, type-safe, immutable implementation of [[qu.storage.Storage]], realized by rethinking in scala the
  * "Item 33: Consider typesafe heterogeneous containers" from Effective Java book.
+ *
  * @param storage the heterogeneous map containing objects and answers.
  * @tparam ObjectT the type of the object to be stored.
  */
-case class ImmutableStorage[ObjectT: TypeTag] private(private var storage: Map[TypeTag[_], Map[LogicalTimestamp, (ObjectT, Option[Any])]] = Map())
+case class ImmutableStorage[ObjectT: TypeTag] private(private var storage: Map[TypeTag[_],
+  Map[LogicalTimestamp, (ObjectT, Option[Any])]] = Map())
   extends Storage[ObjectT] {
 
   //Option[AnswerT] because when QU service is initialized ... the initial object must be persisted but
@@ -36,7 +38,7 @@ case class ImmutableStorage[ObjectT: TypeTag] private(private var storage: Map[T
   override def retrieve[T: TypeTag](logicalTimestamp: LogicalTimestamp): Option[(ObjectT, Option[T])] = {
     val tmp = storage.get(implicitly[TypeTag[T]])
     tmp.flatMap(_.get(logicalTimestamp)
-      .asInstanceOf[Option[(ObjectT, Option[T])]])  //type safe cast!
+      .asInstanceOf[Option[(ObjectT, Option[T])]]) //type safe cast!
     /*with for-comprehension:
     for {
       map <- storage.get(implicitly[TypeTag[T]])
@@ -45,3 +47,11 @@ case class ImmutableStorage[ObjectT: TypeTag] private(private var storage: Map[T
   }
 
 }
+
+object ImmutableStorage {
+  //public factory
+  def apply[ObjectT: TypeTag]() = new ImmutableStorage[ObjectT](Map())
+
+}
+
+

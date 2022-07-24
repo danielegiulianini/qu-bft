@@ -1,7 +1,10 @@
 package qu.view
 
+/**
+ * Represents a (Gof) observer for a [[View]].
+ */
 trait ViewObserver {
-  def start()
+  def start(): Unit
 
-  def quit()
+  def quit(): Unit
 }

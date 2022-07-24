@@ -2,22 +2,20 @@ package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.stub.ServerCalls
-import io.grpc.{BindableService, MethodDescriptor, ServerCallHandler, ServerMethodDefinition, ServerServiceDefinition}
-import presentation.MethodDescriptorFactory
+import io.grpc.{BindableService, ServerServiceDefinition}
+import presentation.CachingMethodDescriptorFactory
 import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu.SocketAddress.id
+import qu.model.QuorumSystemThresholdQuModel._
 import qu.model.QuorumSystemThresholds
+import qu.service.quorum.JacksonBroadcastBroadcastServerPolicy
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
-import qu.{AbstractSocketAddress, JacksonMethodDescriptorFactory, SocketAddress, Shutdownable}
-import qu.service.quorum.{JacksonBroadcastBroadcastServerPolicy, ServerQuorumPolicy}
 import qu.storage.ImmutableStorage
-import presentation.CachingMethodDescriptorFactory
+import qu.{AbstractSocketAddress, JacksonMethodDescriptorFactory, Shutdownable, SocketAddress}
 
 import java.util.Objects
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
-
-import qu.model.QuorumSystemThresholdQuModel._
 
 abstract class AbstractGrpcQuService[Transportable[_], ObjectT: TypeTag]()
                                                                         (implicit executor: ExecutionContext)
@@ -107,7 +105,14 @@ object AbstractGrpcQuService {
     def build(): AbstractGrpcQuService[Transportable, ObjectT] = {
       //validation
       quService.ssd = ssd.build()
-      quService.agnosticService = new QuServiceImpl(ip, port, privateKey, obj, thresholds, storage, keysSharedWithMe, policyFactory(servers, thresholds))
+      quService.agnosticService = new QuServiceImpl(ip,
+        port,
+        privateKey,
+        obj,
+        thresholds,
+        storage,
+        keysSharedWithMe,
+        policyFactory(servers, thresholds))
       quService
     }
   }
@@ -120,7 +125,15 @@ object AbstractGrpcQuService {
                                                   serverInfo: ServerInfo,
                                                   obj: ObjectT,
                                                   storage: ImmutableStorage[ObjectT])
-                                                 (implicit ec: ExecutionContext): QuServiceBuilder[Transportable, ObjectT] = QuServiceBuilder(methodDescriptorFactory, policyFactory, thresholds, serverInfo.ip, serverInfo.port, serverInfo.keySharedWithMe, obj, storage)
+                                                 (implicit ec: ExecutionContext)
+    : QuServiceBuilder[Transportable, ObjectT] = QuServiceBuilder(methodDescriptorFactory,
+      policyFactory,
+      thresholds,
+      serverInfo.ip,
+      serverInfo.port,
+      serverInfo.keySharedWithMe,
+      obj,
+      storage)
 
     trait ServiceBuilderFactory[Transportable[_]] {
       def gen[ObjectT: TypeTag](serverInfo: ServerInfo,

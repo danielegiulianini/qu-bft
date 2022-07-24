@@ -1,6 +1,5 @@
 package qu.model
 
-import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.SocketAddress
 import qu.SocketAddress.id
 import qu.auth.server.AuthServer
@@ -8,19 +7,21 @@ import qu.client.datastructures.DistributedCounter
 import qu.client.datastructures.Mode.NOT_REGISTERED
 import qu.model.QuorumSystemThresholdQuModel.{Key, ServerId}
 import qu.model.ServerStatus._
-import qu.service.LocalQuServerCluster.buildServersFromRecipientInfoAndKeys
-import qu.service.{LocalQuServerCluster, QuServer, QuServerBuilder}
 import qu.service.datastructures.RemoteCounterServer
+import qu.service.{LocalQuServerCluster, LocalQuServerClusterImpl}
 
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration.DurationInt
-import scala.concurrent.{Await, Future}
-import scala.util.{Failure, Success, Try}
-//import qu.service.ServersFixture
+import scala.util.{Failure, Try}
 
-class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
 
-  val authServerInfo = SocketAddress(ip = "localhost", port = 1000)
+/**
+ * An implementation of [[SmrSystem]] based on a local cluster of Q/U replicas.
+ */
+class SmrSystemImpl extends SmrSystem {
+
+  val authServerInfo: SocketAddress = SocketAddress(ip = "localhost", port = 1000)
   val quServer1 = SocketAddress(ip = "localhost", port = 1001)
   val quServer2 = SocketAddress(ip = "localhost", port = 1002)
   val quServer3 = SocketAddress(ip = "localhost", port = 1003)
@@ -57,7 +58,7 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
 
   val authServer = new AuthServer(authServerInfo.port)
 
-  val cluster =
+  val cluster: LocalQuServerClusterImpl =
     LocalQuServerCluster[Int](quServerIpPorts,
       keysByServer,
       thresholds,
@@ -68,7 +69,7 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
   authServer.start()
   cluster.start()
 
-  val distributedClient = new DistributedCounter(
+  val distributedClient = DistributedCounter(
     "username",
     "password",
     authServerInfo.ip,
@@ -85,9 +86,9 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
     else if (cluster.servers(sid).isShutdown) {
       Failure(ServerAlreadyKilledException())
     }
-    //if the shut down would exceed the maximum tolerated by the thresholds chosen must notify problem to user and prevent the killing
-    //+ 1 is for the upcoming kill
-    else if (cluster.servers.values.filter(_.isShutdown).size + 1 > thresholds.t) {
+    //if the shut down would exceed the maximum tolerated by the thresholds chosen then
+    // must notify problem to user and prevent the killing
+    else if (cluster.servers.values.count(_.isShutdown) + 1 > thresholds.t) {    //+ 1 is for the upcoming kill
       Failure(ThresholdsExceededException())
     }
     else {
@@ -130,11 +131,3 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
   private def getStatus: Map[QuorumSystemThresholdQuModel.ServerId, ServerStatus] =
     cluster.serversStatuses().view.mapValues(serverStatus => if (serverStatus) SHUTDOWN else ACTIVE).toMap
 }
-
-
-/*if model returning booleans instead of directly statuses:
-override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = Try {
-    Await.ready(cluster.killServer(sid), atMost = 5.seconds)
-    ServerKilled(sid, cluster.serversStatuses().view.mapValues(server => if (server) SHUTDOWN else ACTIVE).toMap)
-  }
-* */

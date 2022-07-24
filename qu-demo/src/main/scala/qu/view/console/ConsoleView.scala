@@ -13,6 +13,9 @@ import qu.view.console.StringUtils.{concatenateByNewLine, padRight}
 import java.util.Scanner
 import scala.util.{Failure, Success, Try}
 
+/**
+ * A command-line implementation of [[View]].
+ */
 class ConsoleView extends View {
 
   var observer: Controller = _
