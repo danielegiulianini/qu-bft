@@ -10,7 +10,7 @@ import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers._
 import org.scalatest.time.SpanSugar.convertIntToGrainOfTime
 import qu.client.quorum.JacksonBroadcastClientQuorumPolicy
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 import qu.model.StatusCode.{FAIL, SUCCESS}
 import qu.model.examples.Commands.{GetObj, Increment}
 import qu.model.{FourServersScenario, KeysUtilities, OHSUtilities}

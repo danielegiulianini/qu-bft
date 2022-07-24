@@ -1,8 +1,8 @@
 package qu
 
 import qu.SocketAddress.id
-import qu.model.ConcreteQuModel.{Key, OHS, ServerId}
-import qu.model.{ConcreteQuModel, OHSUtilities, QuorumSystemThresholds}
+import qu.model.QuorumSystemThresholdQuModel.{Key, OHS, ServerId}
+import qu.model.{QuorumSystemThresholdQuModel, OHSUtilities, QuorumSystemThresholds}
 import qu.service.AbstractGrpcQuService.ServerInfo
 import qu.service.AbstractServersFixture
 
@@ -41,7 +41,7 @@ trait OneFailingServersInfoFixture extends AbstractServersFixture {
       id(quServer3) -> "ks3s4",
       id(quServer4) -> "ks4s4"))
 
-  val serverIds: Set[ConcreteQuModel.ServerId] = keysByServer.keys.toSet
+  val serverIds: Set[QuorumSystemThresholdQuModel.ServerId] = keysByServer.keys.toSet
 
   val quServer1WithKey: ServerInfo = ServerInfo(ip = quServer1.ip,
     port = quServer1.port,

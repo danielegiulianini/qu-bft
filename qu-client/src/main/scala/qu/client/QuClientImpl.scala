@@ -4,8 +4,8 @@ package qu.client
 import qu.client.QuClient
 import qu.client.backoff.BackOffPolicy
 import qu.client.quorum.ClientQuorumPolicy
-import qu.model.ConcreteQuModel._
-import qu.model.ConcreteQuModel.ConcreteOperationTypes._
+import qu.model.QuorumSystemThresholdQuModel._
+import qu.model.QuorumSystemThresholdQuModel.ConcreteOperationTypes._
 import qu.model.QuorumSystemThresholds
 
 import java.util.logging.{Level, Logger}

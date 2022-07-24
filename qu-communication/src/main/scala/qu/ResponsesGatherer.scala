@@ -1,6 +1,6 @@
 package qu
 
-import qu.model.ConcreteQuModel.ServerId
+import qu.model.QuorumSystemThresholdQuModel.ServerId
 import qu.model.ValidationUtils
 import qu.stub.client.AbstractAsyncClientStub
 

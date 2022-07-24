@@ -1,7 +1,7 @@
 package qu.service.quorum
 
-import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, ServerId}
-import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
+import qu.model.QuorumSystemThresholdQuModel.{LogicalTimestamp, ObjectSyncResponse, ServerId}
+import qu.model.{QuorumSystemThresholdQuModel, QuorumSystemThresholds, StatusCode}
 import qu.{ExceptionsInspector, ResponsesGatherer}
 import qu.stub.client.AbstractAsyncClientStub
 
@@ -37,7 +37,7 @@ class BroadcastServerQuorumPolicy[Transportable[_], ObjectT](servers: Map[Server
     ).map(_.values.head.answer.getOrElse(throw new Exception(" inconsistent...")))
   }
 
-  override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId, ResponseT]],
-                                                      exceptionsByServerId: MutableMap[ConcreteQuModel.ServerId, Throwable])
+  override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[QuorumSystemThresholdQuModel.ServerId, ResponseT]],
+                                                      exceptionsByServerId: MutableMap[QuorumSystemThresholdQuModel.ServerId, Throwable])
   : Unit = inspectExceptions(completionPromise, exceptionsByServerId, thresholds)
 }

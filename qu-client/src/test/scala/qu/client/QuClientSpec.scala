@@ -3,7 +3,7 @@ package qu.client
 import org.scalamock.scalatest.MockFactory
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.funspec.AnyFunSpec
-import qu.model.ConcreteQuModel.emptyOhs
+import qu.model.QuorumSystemThresholdQuModel.emptyOhs
 import qu.model.examples.Commands.{GetObj, IncrementAsObj}
 import qu.model.{FourServersScenario, KeysUtilities, OHSUtilities}
 

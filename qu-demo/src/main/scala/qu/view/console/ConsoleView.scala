@@ -1,7 +1,7 @@
 package qu.view.console
 
 import qu.controller.Controller
-import qu.model.ConcreteQuModel.ServerId
+import qu.model.QuorumSystemThresholdQuModel.ServerId
 import qu.model.ServerStatus.ACTIVE
 import qu.model._
 import qu.view.View

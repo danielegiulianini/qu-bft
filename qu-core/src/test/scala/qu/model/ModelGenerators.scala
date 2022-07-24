@@ -1,7 +1,7 @@
 package qu.model
 
 import org.scalacheck.{Arbitrary, Gen}
-import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp, Flag, OHSRepresentation, OperationRepresentation, emptyLT}
+import qu.model.QuorumSystemThresholdQuModel.{ConcreteLogicalTimestamp, Flag, OHSRepresentation, OperationRepresentation, emptyLT}
 
 import scala.math.Ordered.orderingToOrdered
 

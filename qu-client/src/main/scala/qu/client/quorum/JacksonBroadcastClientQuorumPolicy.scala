@@ -4,7 +4,7 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.SocketAddress
 import qu.SocketAddress.id
 import qu.auth.Token
-import qu.model.ConcreteQuModel.ServerId
+import qu.model.QuorumSystemThresholdQuModel.ServerId
 import qu.model.QuorumSystemThresholds
 import qu.stub.client.{JacksonAuthenticatedStubFactory, JwtAsyncClientStub}
 

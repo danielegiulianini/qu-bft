@@ -2,12 +2,10 @@ package qu.service.quorum
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.SocketAddress.id
-import qu.model.ConcreteQuModel.ServerId
+import qu.model.QuorumSystemThresholdQuModel.ServerId
 import qu.model.QuorumSystemThresholds
-import qu.{AbstractSocketAddress, SocketAddress, Shutdownable}
-import qu.service.AbstractGrpcQuService.ServerInfo
-import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
 import qu.stub.client.{JacksonUnauthenticatedAsyncStubFactory, JwtAsyncClientStub}
+import qu.{AbstractSocketAddress, Shutdownable}
 
 import scala.concurrent.ExecutionContext
 

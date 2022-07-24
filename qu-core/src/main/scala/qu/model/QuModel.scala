@@ -1,37 +1,80 @@
 package qu.model
 
-import qu.model.ConcreteQuModel.ConcreteLogicalTimestamp
+import qu.model.QuorumSystemThresholdQuModel.ConcreteLogicalTimestamp
 import qu.model.StatusCode.StatusCode
 
 import scala.collection.SortedSet
 import scala.math.Ordered.orderingToOrdered
 
-
+/**
+ * Completely abstract definition of Q/U model core functions and data structures.
+ * The final model is a progressive refinement of this model making it more and more
+ * complete by leveraging "gradual interface-implementation pattern". To
+ * 1. reuse base behaviours and abstractions and
+ * 2. provide type safety by preventing that different implementations are mixed
+ * it is applied not just to classes but to the whole Q/U system containing abstract types too,
+ * exploiting the so called "family polymorphism" that scala enables.
+ */
 trait QuModel {
   type Operation[T, U]
+
+  /**
+   * Replicated-object' versions history, made up of candidates.
+   */
   type ReplicaHistory
+  /**
+   * A collection of [[ReplicaHistory]] indexed by server. It represents the client's partial observation
+   * of global system state at some point in time.
+   */
   type OHS
   type ClientId
   type ServerId = String
   type Time
   type Flag = Boolean
 
+  /**
+   * The representation of a [[Operation]] to be put inside a [[LogicalTimestamp]].
+   */
   type OperationRepresentation
+
+  /**
+   * The representation of a [[OHS]] to be put inside a [[LogicalTimestamp]].
+   */
   type OHSRepresentation
+  /**
+   * The logical timestamp defining the ordering between operation invocations and corresponding object versions.
+   */
   type LogicalTimestamp <: {val time: Int; val barrierFlag: Flag; val clientId: Option[ClientId]; val operation: Option[OperationRepresentation]; val ohs: Option[OHSRepresentation]} // this causes cyc dep: type LogicalTimestamp = (Time, Boolean, String, ClientId, OHS)
 
   type OperationType
   type authenticator
   type Candidate = (LogicalTimestamp, LogicalTimestamp)
 
-  //number of replica histories in the object history set in which it appears
+  /**
+   * The occurrences of a candidate in the object history set in which it appears.
+   * @param candidate the candidate whose order is to be compute.
+   * @param ohs the object history set containing the candidate.
+   * @return the occurrences of the candidate.
+   */
   def order(candidate: Candidate, ohs: OHS): Int
 
-  //returns option since barrierFlag and repairableThreshold can be too restrictive
-  def latestCandidate(ohs: OHS, barrierFlag: Flag, repairableThreshold: Int): Option[Candidate]
+
+  /**
+   * The latest, i.e., most recent candidate in the logical time, of type barrier or not, contained in the OHS.
+   * @param ohs the OHS to classify.
+   * @param barrierFlag the flag indicating if the latest barrier candidate must be returned.
+   * @param repairableThreshold size of "repairable" set.
+   */
+  def latestCandidate(ohs: OHS, barrierFlag: Flag, repairableThreshold: Int): Option[Candidate]  //returns option since barrierFlag and repairableThreshold can be too restrictive
 
   def latestTime(rh: ReplicaHistory): LogicalTimestamp
 
+  /**
+   * Contains the classification logic based on a recursive Quorum thresholds systems.
+   * @param ohs the OHS to classify.
+   * @param repairableThreshold size of "repairable" set.
+   * @param quorumThreshold quorum size, i.e. the count of replicas that makes up a quorum.
+   */
   def classify(ohs: OHS,
                repairableThreshold: Int,
                quorumThreshold: Int): (OperationType, Option[Candidate], Option[Candidate])
@@ -54,7 +97,7 @@ trait LessAbstractQuModel extends QuModel {
 
   override type ClientId = String
 
-  override type ReplicaHistory = List[Candidate] //SortedSet[Candidate] for avoid hitting bug https://github.com/FasterXML/jackson-module-scala/issues/410
+  override type ReplicaHistory = List[Candidate]
 
   type hMac
 
@@ -235,17 +278,40 @@ trait LessAbstractQuModel extends QuModel {
   }
 }
 
+/**
+ * A [[QuModel]] implementation with compact timestamp optimization and leveraging HMAC for replica History integrity.
+ */
+object QuorumSystemThresholdQuModel extends LessAbstractQuModel with CryptoMd5Authenticator with Operations with Hashing {
 
-object ConcreteQuModel extends LessAbstractQuModel with CryptoMd5Authenticator with Operations with Hashing {
-
+  /**
+   * A client request for performing operations on the replicated object.
+   * @param operation the operation the client wants to perform on the replicated object.
+   * @param ohs the operation's conditioned-on object history set.
+   * @tparam ReturnValueT the type of the value returned by the operation invocation.
+   * @tparam ObjectT the ype of the object replicated by Q/U servers on which operations are to be submitted.
+   */
   //final keyword removed to avoid https://github.com/scala/bug/issues/4440 (solved in dotty)
   case class Request[ReturnValueT, ObjectT](operation: Option[Operation[ReturnValueT, ObjectT]],
                                             ohs: OHS)
 
+  /**
+   * A replica response to client operation-performing request.
+   * @param responseCode the response code stating the outcome of the client request.
+   * @param answer the value returned by the operation invocation.
+   * @param authenticatedRh the authenticated replica history returned by the sender replica resulting from operation
+   *                        submission.
+   * @tparam ReturnValueT the type of the value returned by the operation invocation.
+   */
   case class Response[ReturnValueT](responseCode: StatusCode,
                                     answer: ReturnValueT,
                                     authenticatedRh: AuthenticatedReplicaHistory)
 
+  /**
+   * A replica response to replica object-sync-request for retrieving an object version it doesn't store locally.
+   * @param responseCode the response code stating the outcome of the replica request.
+   * @param answer the answer of the receiver replica containing the requested object or not.
+   * @tparam ObjectT the ype of the object replicated by Q/U servers on which operations are to be submitted.
+   */
   case class ObjectSyncResponse[ObjectT](responseCode: StatusCode,
                                          answer: Option[ObjectT])
 

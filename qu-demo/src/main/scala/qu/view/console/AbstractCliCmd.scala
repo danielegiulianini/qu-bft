@@ -1,6 +1,6 @@
 package qu.view.console
 
-import qu.model.ConcreteQuModel.ServerId
+import qu.model.QuorumSystemThresholdQuModel.ServerId
 
 sealed trait AbstractCliCmd {
   def command: String

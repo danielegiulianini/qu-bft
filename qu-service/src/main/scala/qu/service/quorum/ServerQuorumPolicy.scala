@@ -3,7 +3,7 @@ package qu.service.quorum
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.SocketAddress.id
 import qu._
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 import qu.model.{QuorumSystemThresholds, StatusCode}
 import qu.stub.client.JacksonUnauthenticatedAsyncStubFactory
 

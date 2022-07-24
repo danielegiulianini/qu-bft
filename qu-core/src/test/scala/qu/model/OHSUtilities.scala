@@ -1,6 +1,6 @@
 package qu.model
 
-import qu.model.ConcreteQuModel.{Candidate, Key, OHS, OHSRepresentation, OperationRepresentation, ReplicaHistory, ServerId, authenticateRh, emptyCandidate, emptyLT, emptyOhs, represent, ConcreteLogicalTimestamp => LT}
+import qu.model.QuorumSystemThresholdQuModel.{Candidate, Key, OHS, OHSRepresentation, OperationRepresentation, ReplicaHistory, ServerId, authenticateRh, emptyCandidate, emptyLT, emptyOhs, represent, ConcreteLogicalTimestamp => LT}
 
 import qu.model.examples.Commands.Increment
 import scala.collection.immutable.{List => RH}

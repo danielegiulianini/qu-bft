@@ -2,8 +2,8 @@ package qu.service
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.SocketAddress.id
-import qu.model.ConcreteQuModel.{Key, ServerId}
-import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
+import qu.model.QuorumSystemThresholdQuModel.{Key, ServerId}
+import qu.model.{QuorumSystemThresholdQuModel, QuorumSystemThresholds}
 import qu.{SocketAddress, Shutdownable, Startable}
 
 import java.util.logging.{Level, Logger}
@@ -45,11 +45,11 @@ class LocalQuServerClusterImpl(override val servers: Map[ServerId, QuServer])
 
   override def isShutdown: Boolean = servers.values.forall(_.isShutdown)
 
-  override def shutdownServer(serverId: ConcreteQuModel.ServerId): Future[Unit] = {
+  override def shutdownServer(serverId: QuorumSystemThresholdQuModel.ServerId): Future[Unit] = {
     servers(serverId).shutdown()
   }
 
-  override def serversStatuses(): Map[ConcreteQuModel.ServerId, Boolean] = servers.view.mapValues(_.isShutdown).toMap
+  override def serversStatuses(): Map[QuorumSystemThresholdQuModel.ServerId, Boolean] = servers.view.mapValues(_.isShutdown).toMap
 
 }
 

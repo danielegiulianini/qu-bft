@@ -1,6 +1,6 @@
 package qu.model
 
-import qu.model.ConcreteQuModel.ServerId
+import qu.model.QuorumSystemThresholdQuModel.ServerId
 
 import scala.concurrent.Future
 import scala.util.Try

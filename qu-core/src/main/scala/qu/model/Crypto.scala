@@ -1,7 +1,9 @@
 package qu.model
 
 
-
+/**
+ * A module containing cryptographic utilities used for [[ReplicaHistory]] validation.
+ */
 trait CryptoMd5Authenticator {
   self: QuModel with LessAbstractQuModel => //needs the ordering defined by SortedSet
 

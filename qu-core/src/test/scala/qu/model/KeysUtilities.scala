@@ -1,6 +1,6 @@
 package qu.model
 
-import qu.model.ConcreteQuModel.ServerId
+import qu.model.QuorumSystemThresholdQuModel.ServerId
 
 //commands shared between test suites
 trait KeysUtilities {

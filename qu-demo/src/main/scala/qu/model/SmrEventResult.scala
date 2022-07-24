@@ -1,6 +1,6 @@
 package qu.model
 
-import qu.model.ConcreteQuModel.{Operation, ServerId}
+import qu.model.QuorumSystemThresholdQuModel.{Operation, ServerId}
 import qu.model.examples.Commands.Increment
 
 

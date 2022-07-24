@@ -8,7 +8,7 @@ import qu.model.QuorumSystemThresholds
 import scala.concurrent.{ExecutionContext, Future}
 
 //import that declares specific dependency
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 
 /**
  * An abstract, technology-unaware, Q/U-protocol client for single-object update (see Q/U paper).

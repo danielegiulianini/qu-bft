@@ -1,7 +1,7 @@
 package qu.service
 
 import io.grpc.stub.StreamObserver
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 
 import scala.reflect.runtime.universe._
 

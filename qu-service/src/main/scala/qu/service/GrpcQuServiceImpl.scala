@@ -7,8 +7,8 @@ import qu.QuServiceDescriptors.{OPERATION_REQUEST_METHOD_NAME, SERVICE_NAME}
 import qu.SocketAddress.id
 import qu.auth.common.Constants
 import qu.{AbstractSocketAddress, Shutdownable, SocketAddress}
-import qu.model.ConcreteQuModel.hmac
-import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
+import qu.model.QuorumSystemThresholdQuModel.hmac
+import qu.model.{QuorumSystemThresholdQuModel, QuorumSystemThresholds, StatusCode}
 //import qu.service.AbstractQuService.ServerInfo
 import qu.service.quorum.ServerQuorumPolicy
 import qu.service.quorum.ServerQuorumPolicy.ServerQuorumPolicyFactory
@@ -23,7 +23,7 @@ import scala.reflect.runtime.universe._
 import scala.util.{Failure, Success}
 
 //import that declares specific dependency
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 
 /**
  * A gPRC implementation of a Q/U service, compatible with different (de)serialization, authentication technologies

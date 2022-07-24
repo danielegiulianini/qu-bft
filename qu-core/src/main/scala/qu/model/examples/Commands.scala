@@ -1,6 +1,6 @@
 package qu.model.examples
 
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 
 //some examples of command definition.
 object Commands {

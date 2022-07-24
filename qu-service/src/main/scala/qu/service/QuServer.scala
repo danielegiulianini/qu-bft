@@ -3,7 +3,7 @@ package qu.service
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.{Grpc, InsecureChannelCredentials, InsecureServerCredentials, Server, ServerBuilder, ServerCredentials, ServerInterceptor}
 import qu.{Shutdownable, Startable}
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 import qu.model.QuorumSystemThresholds
 
 import java.util.logging.{Level, Logger}

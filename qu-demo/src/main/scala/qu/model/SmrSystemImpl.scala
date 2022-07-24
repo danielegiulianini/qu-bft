@@ -6,7 +6,7 @@ import qu.SocketAddress.id
 import qu.auth.server.AuthServer
 import qu.client.datastructures.DistributedCounter
 import qu.client.datastructures.Mode.NOT_REGISTERED
-import qu.model.ConcreteQuModel.{Key, ServerId}
+import qu.model.QuorumSystemThresholdQuModel.{Key, ServerId}
 import qu.model.ServerStatus._
 import qu.service.LocalQuServerCluster.buildServersFromRecipientInfoAndKeys
 import qu.service.{LocalQuServerCluster, QuServer, QuServerBuilder}
@@ -77,7 +77,7 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
     thresholds,
     NOT_REGISTERED)
 
-  override def killServer(sid: ConcreteQuModel.ServerId): Try[ServerEventResult] = {
+  override def killServer(sid: QuorumSystemThresholdQuModel.ServerId): Try[ServerEventResult] = {
 
     if (!cluster.servers.contains(sid)) {
       Failure(ServerNotExistingException())
@@ -127,7 +127,7 @@ class SmrSystemImpl extends SmrSystem /*with ServersFixture*/ {
     ServersProfiled(getStatus)
   }
 
-  private def getStatus: Map[ConcreteQuModel.ServerId, ServerStatus] =
+  private def getStatus: Map[QuorumSystemThresholdQuModel.ServerId, ServerStatus] =
     cluster.serversStatuses().view.mapValues(serverStatus => if (serverStatus) SHUTDOWN else ACTIVE).toMap
 }
 

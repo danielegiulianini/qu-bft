@@ -1,7 +1,7 @@
 package qu.storage
 
 import org.scalatest.funspec.AnyFunSpec
-import qu.model.ConcreteQuModel.ConcreteLogicalTimestamp
+import qu.model.QuorumSystemThresholdQuModel.ConcreteLogicalTimestamp
 
 class ImmutableStorageSpec extends AnyFunSpec with StorageFixture {
 

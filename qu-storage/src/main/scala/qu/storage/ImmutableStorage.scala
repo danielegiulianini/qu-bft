@@ -1,6 +1,6 @@
 package qu.storage
 
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 
 import java.util.Objects
 import scala.reflect.runtime.universe._

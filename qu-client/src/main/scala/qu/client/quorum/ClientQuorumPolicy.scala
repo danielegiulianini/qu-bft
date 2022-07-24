@@ -1,14 +1,14 @@
 package qu.client.quorum
 
 
-import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
+import qu.model.{QuorumSystemThresholdQuModel, QuorumSystemThresholds, StatusCode}
 import qu.{SocketAddress, ResponsesGatherer, Shutdownable}
 
 
 import scala.concurrent.{ExecutionContext, Future}
 
 //import that declares specific dependency
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 
 /**
  * Strategy (GoF pattern) responsible for: quorum selection (among all the replicas) and quorum involvement,

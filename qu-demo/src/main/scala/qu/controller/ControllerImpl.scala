@@ -1,7 +1,7 @@
 package qu.controller
 
 import qu.client.datastructures.DistributedCounter
-import qu.model.ConcreteQuModel.{Key, Query, Request, Response, ServerId, emptyAuthenticatedRh, emptyOhs, emptyRh, nullAuthenticator}
+import qu.model.QuorumSystemThresholdQuModel.{Key, Query, Request, Response, ServerId, emptyAuthenticatedRh, emptyOhs, emptyRh, nullAuthenticator}
 import qu.model.{IncResult, QuorumSystemThresholds, ResetResult, SmrEventResult, SmrSystem, SmrSystemImpl, ValueResult}
 import io.grpc.inprocess.InProcessServerBuilder
 import qu.SocketAddress

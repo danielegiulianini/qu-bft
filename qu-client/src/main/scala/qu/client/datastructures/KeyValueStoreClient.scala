@@ -3,7 +3,7 @@ package qu.client.datastructures
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.SocketAddress
 import qu.client.{AuthenticatingClient, QuClient}
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 import qu.model.QuorumSystemThresholds
 
 import scala.collection.mutable.{Map => MutableMap}

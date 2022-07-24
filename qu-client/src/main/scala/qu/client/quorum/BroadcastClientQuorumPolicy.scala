@@ -1,8 +1,8 @@
 package qu.client.quorum
 
 import io.grpc.{Status, StatusRuntimeException}
-import qu.model.ConcreteQuModel.{OHS, Operation, ReplicaHistory, Request, Response, ServerId}
-import qu.model.{ConcreteQuModel, QuorumSystemThresholds, StatusCode}
+import qu.model.QuorumSystemThresholdQuModel.{OHS, Operation, ReplicaHistory, Request, Response, ServerId}
+import qu.model.{QuorumSystemThresholdQuModel, QuorumSystemThresholds, StatusCode}
 import qu.{ExceptionsInspector, ResponsesGatherer}
 import qu.ListUtils.{getMostFrequentElement, getMostFrequentElementWithOccurrences}
 import qu.auth.common.FutureUtilities.mapThrowable
@@ -77,7 +77,7 @@ class BroadcastClientQuorumPolicy[ObjectT, Transportable[_]](private val thresho
   }
 
 
-  override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId,
-    ResponseT]], exceptionsByServerId: MutableMap[ConcreteQuModel.ServerId, Throwable])
+  override protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[QuorumSystemThresholdQuModel.ServerId,
+    ResponseT]], exceptionsByServerId: MutableMap[QuorumSystemThresholdQuModel.ServerId, Throwable])
   : Unit = inspectExceptions[ResponseT](completionPromise, exceptionsByServerId, thresholds)
 }

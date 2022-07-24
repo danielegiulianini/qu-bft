@@ -7,7 +7,7 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatest.{Outcome, TestSuite, TestSuiteMixin}
 import qu.client.backoff.BackOffPolicy
 import qu.client.quorum.JacksonBroadcastClientQuorumPolicy
-import qu.model.ConcreteQuModel.{OHS, Operation, Request, Response}
+import qu.model.QuorumSystemThresholdQuModel.{OHS, Operation, Request, Response}
 import qu.model.FourServersScenario
 
 import scala.concurrent.Future

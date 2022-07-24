@@ -1,6 +1,6 @@
 package qu.storage
 
-import qu.model.ConcreteQuModel.LogicalTimestamp
+import qu.model.QuorumSystemThresholdQuModel.LogicalTimestamp
 import scala.reflect.runtime.universe._
 
 

@@ -3,7 +3,7 @@ package qu.service
 import com.fasterxml.jackson.module.scala.JavaTypeable
 import io.grpc.ServerInterceptor
 import qu.auth.Token
-import qu.model.ConcreteQuModel.{LogicalTimestamp, ObjectSyncResponse, Request, Response}
+import qu.model.QuorumSystemThresholdQuModel.{LogicalTimestamp, ObjectSyncResponse, Request, Response}
 import qu.model.QuorumSystemThresholds
 import qu.service.AbstractGrpcQuService.QuServiceBuilder.ServiceBuilderFactory
 import qu.service.AbstractGrpcQuService.{QuServiceBuilder, ServerInfo}

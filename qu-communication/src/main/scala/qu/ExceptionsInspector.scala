@@ -1,8 +1,8 @@
 package qu
 
 import qu.ListUtils.getMostFrequentElement
-import qu.model.{ConcreteQuModel, QuorumSystemThresholds}
-import qu.model.ConcreteQuModel.ServerId
+import qu.model.{QuorumSystemThresholdQuModel, QuorumSystemThresholds}
+import qu.model.QuorumSystemThresholdQuModel.ServerId
 
 import scala.concurrent.Promise
 import scala.collection.mutable.{Map => MutableMap}
@@ -10,7 +10,7 @@ import scala.collection.mutable.{Map => MutableMap}
 trait ExceptionsInspector[Transportable[_]] {
   self: ResponsesGatherer[Transportable] =>
 
-  protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ConcreteQuModel.ServerId, ResponseT]],
+  protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[QuorumSystemThresholdQuModel.ServerId, ResponseT]],
                                              exceptionsByServerId: MutableMap[ServerId, Throwable],
                                              thresholds: QuorumSystemThresholds): Unit = {
 

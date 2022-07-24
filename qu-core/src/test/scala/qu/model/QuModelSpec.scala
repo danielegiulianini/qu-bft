@@ -1,10 +1,10 @@
 package qu.model
 
 import org.scalatest.funspec.AnyFunSpec
-import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => Lt}
+import qu.model.QuorumSystemThresholdQuModel.{ConcreteLogicalTimestamp => Lt}
 
-import qu.model.ConcreteQuModel._
-import qu.model.ConcreteQuModel.ConcreteOperationTypes._
+import qu.model.QuorumSystemThresholdQuModel._
+import qu.model.QuorumSystemThresholdQuModel.ConcreteOperationTypes._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.matchers.should.Matchers.{convertToAnyShouldWrapper, equal}

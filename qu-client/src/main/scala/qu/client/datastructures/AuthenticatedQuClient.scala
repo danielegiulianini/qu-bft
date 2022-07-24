@@ -4,7 +4,7 @@ import com.fasterxml.jackson.module.scala.JavaTypeable
 import qu.{SocketAddress, Shutdownable}
 import qu.client.datastructures.Mode.{ALREADY_REGISTERED, NOT_REGISTERED}
 import qu.client.{AuthenticatingClient, QuClientImpl}
-import qu.model.ConcreteQuModel.{Operation, Request, Response}
+import qu.model.QuorumSystemThresholdQuModel.{Operation, Request, Response}
 import qu.model.QuorumSystemThresholds
 
 import scala.concurrent.duration.{Duration, DurationInt}

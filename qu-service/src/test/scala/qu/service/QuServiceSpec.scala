@@ -8,7 +8,7 @@ import org.scalatest.matchers.must.Matchers.convertToAnyMustWrapper
 import org.scalatest.matchers.should.Matchers
 import qu.SocketAddress
 import qu.SocketAddress.id
-import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT, _}
+import qu.model.QuorumSystemThresholdQuModel.{ConcreteLogicalTimestamp => LT, _}
 import qu.model.StatusCode.{FAIL, SUCCESS}
 import qu.model.examples.Commands.{GetObj, Increment, IncrementAsObj}
 import qu.model.{OHSUtilities, StatusCode}

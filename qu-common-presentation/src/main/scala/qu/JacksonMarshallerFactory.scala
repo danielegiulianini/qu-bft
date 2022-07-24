@@ -13,7 +13,7 @@ import java.io.{ByteArrayInputStream, InputStream}
 import scala.runtime.BoxedUnit
 
 //import that declares specific dependency
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 
 
 /**

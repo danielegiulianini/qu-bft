@@ -3,7 +3,7 @@ package qu.client.datastructures
 
 import qu.client.datastructures.Mode.ALREADY_REGISTERED
 import qu.{SocketAddress, Shutdownable}
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 import qu.model.QuorumSystemThresholds
 
 import scala.concurrent.duration.{Duration, DurationInt}

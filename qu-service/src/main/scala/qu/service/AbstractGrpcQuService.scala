@@ -17,7 +17,7 @@ import java.util.Objects
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
 
-import qu.model.ConcreteQuModel._
+import qu.model.QuorumSystemThresholdQuModel._
 
 abstract class AbstractGrpcQuService[Transportable[_], ObjectT: TypeTag]()
                                                                         (implicit executor: ExecutionContext)
