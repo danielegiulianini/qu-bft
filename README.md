@@ -54,7 +54,7 @@ deeper overview of the main functionalities.
 
 To ease management and future extensions, the project is organized in the set of inter-dependent subprojects depicted in the following image and described below:
 
-![repository structure in sub-projects](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/raw/demo/.img/subprojectsNew.png)
+![repository structure in sub-projects](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/raw/main/.img/subprojectsNew.png)
 
 1. qu-core: it defines base entities, data structures and algorithms upon which the protocol is built.
 2. qu-presentation: it defines the (de)serialization logic corresponding to layer 5 of ISO-OSI stack for exchanging messages between clients and replicas involved by the protocol.
