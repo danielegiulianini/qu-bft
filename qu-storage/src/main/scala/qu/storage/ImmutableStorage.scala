@@ -51,7 +51,6 @@ case class ImmutableStorage[ObjectT: TypeTag] private(private var storage: Map[T
 object ImmutableStorage {
   //public factory
   def apply[ObjectT: TypeTag]() = new ImmutableStorage[ObjectT](Map())
-
 }
 
 

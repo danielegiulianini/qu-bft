@@ -17,7 +17,7 @@ trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
 
   val ip = "localhost"
   //leveraging ServerSocket with 0 parameter for getting the a free one
-  var port: Int = new ServerSocket(0).getLocalPort
+  var port: Int = 1015//new ServerSocket(0).getLocalPort
 
   override def createAuthenticator(): AuthClient = AuthClient(ip, port)
 
@@ -30,7 +30,7 @@ trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
 
   protected def shutdownAuthenticator(): Unit = {
     authenticator match {
-      case a: AuthClient => Await.ready(a.shutdown(), 5.seconds)
+      case clientAuthenticator: AuthClient => Await.ready(clientAuthenticator.shutdown(), 5.seconds)
     }
     Await.ready(authServer.shutdown(), 3.seconds)
   }
