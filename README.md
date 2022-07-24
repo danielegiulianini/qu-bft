@@ -99,7 +99,7 @@ locally.
 1. publish the library on a local repository:
 
 ```bash
-    sbt publish-local
+    sbt publishLocal
 ```
 
 1. add the dependencies of interest to your build.sbt; for client and service functionalities they are the following:
