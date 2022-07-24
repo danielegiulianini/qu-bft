@@ -16,8 +16,7 @@ trait RemoteAuthenticatorFixture extends AbstractAuthenticatorFixture {
   implicit val exec: ExecutionContextExecutor = ExecutionContext.fromExecutor(Executors.newSingleThreadExecutor)
 
   val ip = "localhost"
-  //leveraging ServerSocket with 0 parameter for getting the a free one
-  var port: Int = 1015//new ServerSocket(0).getLocalPort
+  var port: Int = 1015
 
   override def createAuthenticator(): AuthClient = AuthClient(ip, port)
 
