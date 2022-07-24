@@ -1,60 +1,109 @@
 package qu
 
-import qu.model.ConcreteQuModel.ServerId
+import qu.model.QuorumSystemThresholdQuModel.ServerId
+import qu.model.ValidationUtils
+import qu.stub.client.AbstractAsyncClientStub
 
-import scala.concurrent.ExecutionContext.Implicits.global
+import java.util.logging.{Level, Logger}
 import scala.concurrent.duration.{DurationInt, FiniteDuration}
-import scala.concurrent.{Future, Promise}
-import scala.util.Success
+import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.util.{Failure, Success}
+import scala.collection.mutable.{Map => MutableMap}
 
 
-trait Shutdownable {
-  def shutdown(): Unit
-}
-
-abstract class ResponsesGatherer[Transportable[_]](servers: Map[String, GrpcClientStub[Transportable]],
-                                                   private val retryingTime: FiniteDuration = 3.seconds)
+abstract class ResponsesGatherer[Transportable[_]](servers: Map[ServerId, AbstractAsyncClientStub[Transportable]],
+                                                   private val retryingTime: FiniteDuration = 1.seconds)
+                                                  (implicit ec: ExecutionContext)
   extends Shutdownable {
 
-  private val scheduler = new OneShotAsyncScheduler(2) //concurrency level configurable by user??
-  //is it possible to have overlapping calls to schedule? (only so it's convenient to use >1 threads)?? no, actually!
+  private val logger = Logger.getLogger(classOf[ResponsesGatherer[Transportable]].getName)
+
+  private val scheduler = new OneShotAsyncScheduler(1)
 
   def gatherResponses[RequestT, ResponseT](request: RequestT,
-                                           completionPromise: Promise[Map[ServerId, ResponseT]] = Promise[Map[ServerId, ResponseT]](),
-                                           responseSet: Map[ServerId, ResponseT] = Map[ServerId, ResponseT](),
                                            responsesQuorum: Int,
-                                           filterSuccess: ResponseT => Boolean)
-                                          (implicit transportableRequest: Transportable[RequestT],
-                                           transportableResponse: Transportable[ResponseT]
-                                          ): Future[Map[ServerId, ResponseT]] = {
+                                           successResponseFilter: ResponseT => Boolean)(implicit transportableRequest: Transportable[RequestT],
+                                                                                        transportableResponse: Transportable[ResponseT]):
+  Future[Map[ServerId, ResponseT]] = {
 
-    var currentResponseSet = responseSet
-    val cancelable = scheduler.scheduleOnceAsCallback(retryingTime)(gatherResponses(request,
-      completionPromise,
-      responseSet,
-      responsesQuorum,
-      filterSuccess)) //passing all the servers  the first time
+    def gatherResponsesImpl(request: RequestT,
+                            completionPromise: Promise[Map[ServerId, ResponseT]] = Promise[Map[ServerId, ResponseT]](),
+                            responseSet: Map[ServerId, ResponseT],
+                            exceptionsByServerId: MutableMap[ServerId, Throwable],
+                            responsesQuorum: Int,
+                            successResponseFilter: ResponseT => Boolean)(implicit transportableRequest: Transportable[RequestT],
+                                                                         transportableResponse: Transportable[ResponseT]):
+    Future[Map[ServerId, ResponseT]] = {
+      logger.log(Level.INFO, "broadcasting to: " + servers + ".")
+      var currentResponseSet = responseSet
 
-    (servers -- responseSet.keySet)
-      .map { case (serverId, stubToServer) => (serverId,
-        stubToServer.send[RequestT, ResponseT](toBeSent = request))
-      }
-      .foreach { case (serverId, stubToServer) => stubToServer.onComplete({
-        case Success(response) if filterSuccess(response) =>
-          this.synchronized { //mutex needed because of multithreaded ex context
-            currentResponseSet = currentResponseSet + (serverId -> response)
-            //todo se non tutti sono uguali lancio exception
-            if (currentResponseSet.size == responsesQuorum) {
-              cancelable.cancel()
-              completionPromise success currentResponseSet
-            }
-          }
-        case _ => //can happen exception for which must inform client user? no need to do nothing, only waiting for other servers' responses
+      //not requires lock here as 1. cancelable val is not shared at this moment and 2. scheduler scheduleOnceAsCallback being thread-safe
+      val cancelable = scheduler.scheduleOnceAsCallback(retryingTime)({
+        logger.log(Level.INFO, "timeout is over, some server responses missing (or unsuccessful), so re-broadcasting. ")
+        gatherResponsesImpl(request,
+          completionPromise,
+          responseSet,
+          exceptionsByServerId,
+          responsesQuorum,
+          successResponseFilter)
       })
-      }
-    completionPromise.future
+
+      (servers -- responseSet.keySet)
+        .map { case (serverId, stubToServer) => (serverId,
+          stubToServer.send[RequestT, ResponseT](toBeSent = request))
+        }
+        .foreach { case (serverId, stubToServer) => stubToServer.onComplete({
+          case Success(response) if successResponseFilter(response) =>
+            logger.log(Level.INFO, "received response: " + response)
+            this.synchronized { //mutex needed because of possible multithreaded ex context (user provided)
+              currentResponseSet = currentResponseSet + (serverId -> response)
+              //if a request from the same server arrives 2 times, could complete 2 times if not checking
+              if (currentResponseSet.size == responsesQuorum && !completionPromise.isCompleted) {
+                logger.log(Level.INFO, "quorum obtained, so completing promise.")
+                cancelable.cancel()
+                completionPromise success currentResponseSet
+              }
+            }
+          case Failure(ex) =>
+            logger.log(Level.INFO,"received exception by " + serverId + ".")
+            this.synchronized(
+              inspectExceptions[ResponseT](completionPromise, {
+                exceptionsByServerId.put(serverId, ex);
+                exceptionsByServerId
+              })
+            )
+          case _ => //ignored since not interested in this situation
+        })
+        }
+      completionPromise.future
+    }
+
+    gatherResponsesImpl(request,
+      completionPromise = Promise[Map[ServerId, ResponseT]](),
+      responseSet = Map(),
+      MutableMap[ServerId, Throwable](),
+      responsesQuorum,
+      successResponseFilter)
   }
 
-  override def shutdown(): Unit = servers.values.foreach(_.shutdown())
+  protected def inspectExceptions[ResponseT](completionPromise: Promise[Map[ServerId, ResponseT]],
+                                             exceptionsByServerId: MutableMap[ServerId, Throwable]): Unit
+
+  override def shutdown(): Future[Unit] = {
+    Future.reduceLeft[Unit, Unit](servers.values.toList.map(_.shutdown())
+    )((_, _) => ()).flatMap(_ => scheduler.shutdown())
+  }
+
+  override def isShutdown: Boolean = servers.values.forall(_.isShutdown) && scheduler.isShutdown
 }
 
+
+trait Startable {
+  def start(): Unit
+}
+
+trait Shutdownable {
+  def shutdown(): Future[Unit]
+
+  def isShutdown: Boolean
+}

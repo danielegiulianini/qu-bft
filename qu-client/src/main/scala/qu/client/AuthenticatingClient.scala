@@ -1,34 +1,45 @@
 package qu.client
 
 import com.fasterxml.jackson.module.scala.JavaTypeable
-import qu.auth.AuthClient
+import qu.Shutdownable
+import qu.auth.client.AuthClient
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-import qu.client.AuthenticatedClientBuilder.simpleJacksonQuClientBuilderInFunctionalStyle
-import qu.model.QuorumSystemThresholds
+import scala.concurrent.{ExecutionContext, Future}
+import qu.model.ValidationUtils.requireNonNullAsInvalid
 
-//client for providing username (or registering)
-//now modeled as normal class, then could think of a builder
-case class AuthenticatingClient[U](ip:String,
-                                   port:Int,
-                                   username: String,
-                                   password: String) {
-  //APIs: authorize, register, remove, edit, get, getall
+import java.util.Objects
+
+/**
+ * Provides authentication APIs for a Q/U client, separating them for the actual operations-submission ones.
+ * @param ip the ip address JWT-based auth server is listening on.
+ * @param port the port of JWT-based auth server is listening on.
+ * @param username the username of the Q/U client into the shoes of which requests will be performed.
+ * @param password the password of the Q/U client into the shoes of which requests will be performed.
+ * @tparam ObjectT the type of the object replicated by Q/U servers on which operations are to be submitted.
+ */
+case class AuthenticatingClient[ObjectT](ip: String,
+                                         port: Int,
+                                         username: String,
+                                         password: String)(implicit ec:ExecutionContext) extends Shutdownable {
+  requireNonNullAsInvalid(username)
+  requireNonNullAsInvalid(password)
 
   val authClient = AuthClient(ip, port)
 
   def register(): Future[Unit] = {
     for {
-      _ <- authClient.register(username, password)
-    } yield()
+      _ <- authClient.registerAsync(username, password)
+    } yield ()
   }
 
   def authorize():
-  Future[AuthenticatedClientBuilder[U, JavaTypeable]] = {
-    //se mi da il token correttamente allora ok altrimenti mi da future failed (dovrebbe già tutto essere incapsulato nella chiamata)
+  Future[QuClientBuilder[ObjectT, JavaTypeable]] = {
     for {
-      token <- authClient.authorize(username, password)
-    } yield simpleJacksonQuClientBuilderInFunctionalStyle[U](token = token)
+      token <- authClient.authorizeAsync(username, password)
+    } yield QuClient.defaultBuilder(token = token)
   }
+
+  override def shutdown(): Future[Unit] = authClient.shutdown()
+
+  override def isShutdown: Boolean = authClient.isShutdown
 }

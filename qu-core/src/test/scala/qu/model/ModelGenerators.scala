@@ -1,13 +1,12 @@
 package qu.model
 
 import org.scalacheck.{Arbitrary, Gen}
-import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp, Flag, OHSRepresentation, OperationRepresentation, emptyLT}
+import qu.model.QuorumSystemThresholdQuModel.{ConcreteLogicalTimestamp, Flag, OHSRepresentation, OperationRepresentation, emptyLT}
 
 import scala.math.Ordered.orderingToOrdered
 
-object ModelGenerators {
+trait ModelGenerators {
 
-  //todo: could improve passing only timestamp by (instead of all the params)
   def ltGenerator(timeGen: Gen[Int],
                   barrierGen: Gen[Boolean],
                   clientGen: Gen[Option[String]],
@@ -34,7 +33,7 @@ object ModelGenerators {
       Arbitrary.arbitrary[Option[String]] suchThat (ohsReprPred(_)))
   }
 
-  def nonEmptyLt: Gen[ConcreteLogicalTimestamp] = arbitraryLt.suchThat(_ != emptyLT) //customizableArbitraryLt(timePred = _ != initi)
+  def nonEmptyLt: Gen[ConcreteLogicalTimestamp] = arbitraryLt.suchThat(_ != emptyLT)
 
   def nonEmptyCandidate: Gen[(ConcreteLogicalTimestamp, ConcreteLogicalTimestamp)] = for {
     lt <- nonEmptyLt
@@ -43,22 +42,38 @@ object ModelGenerators {
 
   def truePredicate[T](): T => Flag = (_: T) => true
 
+  //constraining values 1. to ease finding them by scalacheck engine and 2. to respect comparison properties in inner for
   val MaxLtTime = 2000
   val ltTimeGen: Gen[Int] = Gen.choose(0, MaxLtTime)
-  /*val opReprGen: Gen[Some[OperationRepresentation]] = Gen.oneOf(Some(represent[Unit, Int](Some(Increment()))), Some(represent[Int, Int](Some(GetObj()))))
-  val ohsReprGen: Gen[Some[OperationRepresentation]] = Gen.oneOf(Some("ohsRepr1"), Some("ohsRepr2"))
-  val clientIdGen = Gen.const(Some("client1"))*/
 
-  def arbitraryLt: Gen[ConcreteLogicalTimestamp] = {
+  def arbitraryOptionOfStringGen: Gen[Option[String]] = Gen.option(Gen.stringOfN(100, Gen.alphaChar))
+
+  def arbitraryClientIdGen: Gen[Option[String]] = arbitraryOptionOfStringGen
+
+  def arbitraryOpReprGen: Gen[Option[String]] = arbitraryOptionOfStringGen
+
+  def arbitraryOhsReprGen: Gen[Option[String]] = arbitraryOptionOfStringGen //Gen.oneOf(Some("ohsRepr1"), Some("ohsRepr2"))
+
+  def customArbitraryLtWithDefaults(timeGen: Gen[Int] = ltTimeGen, barrierGen: Gen[Boolean] = Arbitrary.arbitrary[Boolean], clientIdGen: Gen[Option[String]] = Gen.option(Gen.stringOfN(100, Gen.alphaChar)), opReprGen: Gen[Option[OperationRepresentation]] = Gen.option(Gen.stringOfN(100, Gen.alphaChar)), ohsReprGen: Gen[Option[OHSRepresentation]] = Gen.option(Gen.stringOfN(100, Gen.alphaChar))): Gen[ConcreteLogicalTimestamp] = {
     //constraining values 1. to ease finding them by scalacheck engine and 2. to respect comparison properties in inner for
     ltGenerator(
       ltTimeGen,
-      Arbitrary.arbitrary[Boolean],
-      Gen.option(Gen.stringOfN(100, Gen.alphaChar)),//clientIdGen,
-      Gen.option(Gen.stringOfN(100, Gen.alphaChar)),//opReprGen suchThat truePredicate(), //Arbitrary.arbitrary[Option[String]] suchThat truePred(), //OR gen.option(
-      Gen.option(Gen.stringOfN(100, Gen.alphaChar))//ohsReprGen suchThat truePredicate() //Arbitrary.arbitrary[Option[String]] suchThat truePred())
+      barrierGen,
+      clientIdGen,
+      opReprGen,
+      ohsReprGen
     )
   }
+
+  def arbitraryLt: Gen[ConcreteLogicalTimestamp] =
+  //constraining values 1. to ease finding them by scalacheck engine and 2. to respect comparison properties in inner for
+    ltGenerator(
+      ltTimeGen,
+      Arbitrary.arbitrary[Boolean],
+      arbitraryClientIdGen,
+      arbitraryOpReprGen,
+      arbitraryOhsReprGen,
+    )
 
   val arbitraryLtInfo: Gen[(Int, Flag, Option[OperationRepresentation], Option[OperationRepresentation], Option[OperationRepresentation])] = for {
     time <- ltTimeGen
@@ -73,14 +88,6 @@ object ModelGenerators {
     Arbitrary.arbitrary[Option[String]],
     Arbitrary.arbitrary[Option[String]],
     Arbitrary.arbitrary[Option[String]])
-
-  def ltWithSameTimeOfAndTrueBarrierFlag(time: Int): Gen[ConcreteLogicalTimestamp] = ltGenerator(
-    Gen.const(time),
-    Gen.const(true),
-    Arbitrary.arbitrary[Option[String]],
-    Arbitrary.arbitrary[Option[String]],
-    Arbitrary.arbitrary[Option[String]])
-
 
   def ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(time: Int, barrier: Boolean, clientId: Option[String]): Gen[ConcreteLogicalTimestamp]
   = ltGenerator(
@@ -104,5 +111,61 @@ object ModelGenerators {
       Gen.const(clientId),
       Gen.const(operationRepresentation),
       Arbitrary.arbitrary[Option[String]] suchThat (_ > ohsRepresentation))
+
+
+  def sameLtForAllButTime(lt: ConcreteLogicalTimestamp): Gen[ConcreteLogicalTimestamp] =
+    customArbitraryLtWithDefaults(
+      timeGen = ltTimeGen.suchThat(_ != lt.time),
+      barrierGen = Gen.const(lt.barrierFlag),
+      clientIdGen = Gen.const(lt.clientId),
+      opReprGen = Gen.const(lt.operation),
+      ohsReprGen = Gen.const(lt.ohs)
+    )
+
+  def sameLtForAllButBarrierFlag(lt: ConcreteLogicalTimestamp): Gen[ConcreteLogicalTimestamp] =
+    customArbitraryLtWithDefaults(
+      timeGen = Gen.const(lt.time),
+      barrierGen = Arbitrary.arbitrary[Boolean].suchThat(_ != lt.barrierFlag),
+      clientIdGen = Gen.const(lt.clientId),
+      opReprGen = Gen.const(lt.operation),
+      ohsReprGen = Gen.const(lt.ohs)
+    )
+
+  def sameLtForAllButOhsRepr(lt: ConcreteLogicalTimestamp): Gen[ConcreteLogicalTimestamp] =
+    customArbitraryLtWithDefaults(
+      timeGen = Gen.const(lt.time),
+      barrierGen = Gen.const(lt.barrierFlag),
+      clientIdGen = arbitraryClientIdGen.suchThat(_ != lt.clientId),
+      opReprGen = Gen.const(lt.operation),
+      ohsReprGen = Gen.const(lt.ohs)
+    )
+
+  def sameLtForAllButOpRepr(lt: ConcreteLogicalTimestamp): Gen[ConcreteLogicalTimestamp] =
+    customArbitraryLtWithDefaults(
+      timeGen = Gen.const(lt.time),
+      barrierGen = Gen.const(lt.barrierFlag),
+      clientIdGen = Gen.const(lt.clientId),
+      opReprGen = arbitraryOpReprGen.suchThat(_ != lt.operation),
+      ohsReprGen = Gen.const(lt.ohs)
+    )
+
+
+  def ltWithSameTimeOfAndTrueBarrierFlag(time: Int): Gen[ConcreteLogicalTimestamp] = ltGenerator(
+    Gen.const(time),
+    Gen.const(true),
+    Arbitrary.arbitrary[Option[String]],
+    Arbitrary.arbitrary[Option[String]],
+    Arbitrary.arbitrary[Option[String]])
+
+
+  def sameLtForAllButClientId(lt: ConcreteLogicalTimestamp): Gen[ConcreteLogicalTimestamp] =
+    customArbitraryLtWithDefaults(
+      timeGen = Gen.const(lt.time),
+      barrierGen = Gen.const(lt.barrierFlag),
+      clientIdGen = Gen.const(lt.clientId),
+      opReprGen = Gen.const(lt.operation),
+      ohsReprGen = arbitraryOhsReprGen.suchThat(_ != lt.ohs)
+    )
+
 
 }

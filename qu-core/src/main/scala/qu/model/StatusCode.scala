@@ -1,12 +1,8 @@
 package qu.model
 
-/*sealed trait StatusCode
-object StatusCode {
-  case object SUCCESS extends StatusCode
-
-  case object FAIL extends StatusCode
-}*/
-
+/**
+ * Defines the status codes modelling some of expected outcomes of protocol interactions.
+ */
 object StatusCode extends Enumeration {
   type StatusCode = Value
   val SUCCESS, FAIL = Value

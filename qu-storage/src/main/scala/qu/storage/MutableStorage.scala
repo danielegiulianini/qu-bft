@@ -1,8 +1,8 @@
 package qu.storage
-import qu.model.ConcreteQuModel
+import qu.model.QuorumSystemThresholdQuModel
 
 import scala.reflect.runtime.universe._
-import qu.model.ConcreteQuModel.LogicalTimestamp
+import qu.model.QuorumSystemThresholdQuModel.LogicalTimestamp
 
 import java.util.Objects
 import scala.collection.mutable
@@ -18,16 +18,12 @@ abstract class MutableStorage[U: TypeTag] {
 
 
   def retrieve[T: TypeTag](logicalTimestamp: LogicalTimestamp): Option[(U, Option[T])] = {
-    println("lo mutable storage is :" + storage)
     storage.get(implicitly[TypeTag[T]]).flatMap(_.get(logicalTimestamp).asInstanceOf[Option[(U, Option[T])]])
   }
 }
 
-
-
-//can also this be the default of qu.storage.StorageWithMutable
 class NonThreadSafeMutableStorage[U:TypeTag] extends MutableStorage[U] {
-  override val storage: mutable.Map[universe.TypeTag[_], mutable.Map[ConcreteQuModel.ConcreteLogicalTimestamp, (U, Option[Any])]] = MutableMap[TypeTag[_], MutableMap[LogicalTimestamp, (U, Option[Any])]]()
+  override val storage: mutable.Map[universe.TypeTag[_], mutable.Map[QuorumSystemThresholdQuModel.ConcreteLogicalTimestamp, (U, Option[Any])]] = MutableMap[TypeTag[_], MutableMap[LogicalTimestamp, (U, Option[Any])]]()
 }
 
 

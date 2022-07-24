@@ -1,13 +1,11 @@
 package qu.model
 
 import org.scalatest.funspec.AnyFunSpec
-import qu.model.ConcreteQuModel._
-import qu.model.ConcreteQuModel.ConcreteOperationTypes._
+import qu.model.QuorumSystemThresholdQuModel.{ConcreteLogicalTimestamp => Lt}
+
+import qu.model.QuorumSystemThresholdQuModel._
+import qu.model.QuorumSystemThresholdQuModel.ConcreteOperationTypes._
 import org.scalacheck.{Arbitrary, Gen}
-import org.scalacheck.Prop.forAll
-import org.scalacheck.Test.Parameters.default.minSuccessfulTests
-import org.scalacheck.util.Pretty.Params
-import org.scalatest.matchers.must.Matchers.be
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.matchers.should.Matchers.{convertToAnyShouldWrapper, equal}
 import org.scalacheck.{Gen, Prop}
@@ -16,25 +14,24 @@ import org.scalatest.prop.TableDrivenPropertyChecks.whenever
 import org.scalatestplus.scalacheck.{Checkers, ScalaCheckPropertyChecks}
 import org.scalatestplus.scalacheck.Checkers.check
 import qu.model.examples.Commands.{GetObj, IncrementAsObj}
-import qu.model.ModelGenerators._
-import qu.model.examples.OHSFixture5
-import qu.model.examples.SharedContainer2.keysForServer
 
 import scala.language.postfixOps
 import scala.math.Ordered.orderingToOrdered
 
-class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers with OHSFixture5 {
+class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checkers*/ with Matchers
+  with OHSUtilities
+  with KeysUtilities
+  with FourServersScenario
+  with OhsGenerators
+  with ModelGenerators {
 
-  //todo can be replaced with a nested generator
-  // val aLt2 = ConcreteLogicalTimestamp(10, false, Some("client1"), Some("query"), Some("ohs")) //time: Int, barrierFlag: Boolean, clientId: Option[ClientId],operation: Option[OperationRepresentation],ohs: Option[OHSRepresentation])
   describe("A ConcreteLogicalTimestamp") {
+
     //test ordering
     describe("when initialized with a logical time") {
       it("should be classified as previous to a ConcreteLogicalTimestamp with a greater logical time") {
         forAll(arbitraryLt) { aLt =>
           forAll(logicalTimestampWithGreaterTimeThan(aLt.time)) { lt =>
-            println("tested couple, alt:" + aLt + ", lt:" + lt)
-            assert(true) // aLt should be < lt //assert(aLt>aLt2)
             lt should be > aLt
           }
         }
@@ -46,52 +43,23 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
             lt should be > aLt
           }
         }
-        /*forAll(ltWithSameTimeOfAndBarrierGreaterThan(aLt2.time, aLt2.barrierFlag)) { lt =>
-          println("tested lt: " + lt)
-          lt should be > aLt2
-        }*/
       }
 
-      //todo verify if actually it generates them
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, same barrier flag but lexicographically greater clientId") {
         forAll(arbitraryLt) { aLt =>
           forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt =>
-            println("testing " + aLt + " vs " + lt)
-            println("RET: " + (lt > aLt))
-            lt should be > aLt //_ < aLt
+            lt should be > aLt
           }
-          /* check {
-             Prop.forAllNoShrink(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt => {
-               //lt should be > aLt //_ < aLt
-               println("testing " + aLt + " vs " + lt)
-               println("RET: " + (lt > aLt))
-
-               lt > aLt
-             }
-             }
-           }*/
-          /*forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId)) { lt =>
-            println("tested lt: " + lt)
-            lt should be > aLt //_ < aLt
-          }*/
         }
-        /*println("hello")
-        forAll(ltWithSameTimeAndBarrierOfAndClientIdGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId)) { lt =>
-          println("tested lt: " + lt)
-          lt < aLt2 //_ < aLt
-        }*/
       }
 
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, barrier flag, clientId, but lexicographically greater OperationRepresentation") {
         forAll(arbitraryLt) { aLt =>
-          forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation)) {
-            _ > aLt
+          forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation)) { lt =>
+            lt should be > aLt
           }
         }
-        /*forAll(ltWithSameTimeAndBarrierAndClientIdOfAndOpGreaterThan(aLt2.time, aLt2.barrierFlag, aLt2.clientId, aLt2.operation)) {
-          _ < aLt2
-        }*/
       }
 
       it("should be classified as previous to a ConcreteLogicalTimestamp with same logical, barrier flag, clientId, OperationRepresentation, but lexicographically greater OHSRepresentation") {
@@ -101,48 +69,61 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
             aLt.barrierFlag,
             aLt.clientId,
             aLt.operation,
-            aLt.ohs)) {
-            _ > aLt
+            aLt.ohs)) { lt =>
+            lt should be > aLt
           }
         }
-        //forAll(ltWithSameTimeAndBarrierAndClientIdAndOpOfAndOhsGreaterThan(aLt.time, aLt.barrierFlag, aLt.clientId, aLt.operation, aLt.ohs)){ _ < aLt }
-        //}
 
       }
 
       //test equals (ordering doesn't affect equals so must check equality too)
       it("should be equal with a ConcreteLogicalTimestamp with same time, same barrierFlag, same clientId, same operation and same ohs") {
         forAll(arbitraryLtInfo) { case (time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) =>
-          ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) == ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation)
+          Lt(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) should be(Lt(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation))
         }
       }
 
-
-      it("should not be equal to a ConcreteLogicalTimestamp with different time") {
-        forAll(arbitraryLtInfo) { case (time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) =>
-          ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation) == ConcreteLogicalTimestamp(time, barrierFlag, clientId, operationRepresentation, ohsRepresentation)
+      it("should not be equal to a ConcreteLogicalTimestamp with all same fields but different time") {
+        forAll(arbitraryLt) { lt =>
+          forAll(sameLtForAllButTime(lt)) {
+            _ should not be lt
+          }
         }
       }
 
-      it("should not be equal to a ConcreteLogicalTimestamp with same time, different barrierFlag") {
-        //assert(initialWorld.currentIteration == 0)
+      it("should not be equal to a ConcreteLogicalTimestamp with all same fields but different barrier flag") {
+        forAll(arbitraryLt) { lt =>
+          forAll(sameLtForAllButBarrierFlag(lt)) {
+            _ should not be lt
+          }
+        }
       }
 
-      it("should not be equal to a ConcreteLogicalTimestamp with same time, different clientId") {
-        //assert(initialWorld.currentIteration == 0)
+      it("should not be equal to a ConcreteLogicalTimestamp with all same fields but different client id") {
+        forAll(arbitraryLt) { lt =>
+          forAll(sameLtForAllButClientId(lt)) {
+            _ should not be lt
+          }
+        }
+      }
+
+      it("should not be equal to a ConcreteLogicalTimestamp with all same fields but different operation") {
+        forAll(arbitraryLt) { lt =>
+          forAll(sameLtForAllButOpRepr(lt)) {
+            _ should not be lt
+          }
+        }
+      }
+
+      it("should not be equal to a ConcreteLogicalTimestamp with all same fields but different ohs") {
+        forAll(arbitraryLt) { lt =>
+          forAll(sameLtForAllButOhsRepr(lt)) {
+            _ should not be lt
+          }
+        }
       }
     }
   }
-
-  //todo can be shared with quClientSpec in ascenario case class
-  val exampleServersIds = (1 to 4 toList).map("s" + _)
-  val exampleServersKeys: Map[ServerId, Map[ConcreteQuModel.ServerId, ServerId]] =
-    exampleServersIds.map(id => id -> keysForServer(id, exampleServersIds.toSet)).toMap
-  val r = 2
-  val q = 3
-  println("la ohs con inline method *******************************")
-  println(ohsWithInlineMethodFor(exampleServersKeys, r))
-  println("++++++++++++++la classify lo sclassifica come: " + classify(ohsWithInlineMethodFor(exampleServersKeys, r), r, q)._1)
 
   //candidate
   describe("A candidate") {
@@ -151,9 +132,9 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
     val operation = Some(IncrementAsObj)
     val clientId = Some("client1")
     describe("when it is set up from a ohs with an established method as latest ") {
-      val ohsClassifiedAsMethod = ohsWithMethodFor(exampleServersKeys)
-      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsMethod, q, r, clientId.get)
-      val (latestLt, _) = latestCandidate(ohsClassifiedAsMethod, false, r).get
+      val ohsClassifiedAsMethod = ohsWithMethodFor(serversKeys)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsMethod, thresholds.q, thresholds.r, clientId.get)
+      val (latestLt, _) = latestCandidate(ohsClassifiedAsMethod, barrierFlag = false, thresholds.r).get
       it("should return a method as operation type") {
         opType should be(METHOD)
       }
@@ -174,9 +155,10 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       "nor an established barrier candidate " +
       "nor a repairable object candidate " +
       "nor a repairable barrier candidate are there") {
-      val ohsClassifiedAsBarrier = ohsWithBarrierFor(exampleServersKeys)
-      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsBarrier, q, r, clientId.get)
-      val (latestLt, _) = latestCandidate(ohsClassifiedAsBarrier, false, r).get
+
+      val ohsClassifiedAsBarrier = ohsWithBarrierFor(serversKeys)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsBarrier, thresholds.q, thresholds.r, clientId.get)
+      val (latestLt, _) = latestCandidate(ohsClassifiedAsBarrier, barrierFlag = false, thresholds.r).get
 
       it("should return a method as operation type") {
         opType should be(BARRIER)
@@ -196,12 +178,10 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
     }
     describe("when it is set up from a ohs with an established barrier as latest ") {
-      val ohsClassifiedAsCopy = ohsWithCopyFor(exampleServersKeys)
-      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsCopy, q, r, clientId.get)
-      val (_, latObj, _) = classify(ohs = ohsClassifiedAsCopy, quorumThreshold = q, repairableThreshold = r)
-      val (latestLt, latestLtCo) = latObj.get
-
-      //previous: val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, false, r).get
+      val ohsClassifiedAsCopy = ohsWithCopyFor(serversKeys)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsCopy, thresholds.q, thresholds.r, clientId.get)
+      val (_, latObj, _) = classify(ohs = ohsClassifiedAsCopy, quorumThreshold = thresholds.q, repairableThreshold = thresholds.r)
+      val (_, latestLtCo) = latObj.get
 
       it("should return a copy as operation type") {
         opType should be(COPY)
@@ -218,26 +198,26 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
       it("should return the latest barrier version lt as the current lt") {
         ltCur should be({
-          val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, true, r).get
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsCopy, barrierFlag = true, thresholds.r).get
           latestLt
         })
       }
     }
     describe("when it is set up from a ohs with a repairable method as latest ") {
-      val ohsClassifiedAsInlineMethod = ohsWithInlineMethodFor(exampleServersKeys, r)
-      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsInlineMethod, q, r, clientId.get)
+      val ohsClassifiedAsInlineMethod = ohsWithInlineMethodFor(serversKeys, thresholds.r)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsInlineMethod, thresholds.q, thresholds.r, clientId.get)
       it("should return a inline method as operation type") {
         opType should be(INLINE_METHOD)
       }
       it("should return the correct lt as the new lt") {
         lt should be({
-          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineMethod, false, r).get
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineMethod, barrierFlag = false, thresholds.r).get
           latestLt
         })
       }
       it("should return the latest object version lt as the ltCo") {
         ltCo should be({
-          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineMethod, false, r).get
+          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineMethod, barrierFlag = false, thresholds.r).get
           latestCo
         })
       }
@@ -246,20 +226,20 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       }
     }
     describe("when it is set up from a ohs with a repairable barrier as latest ") {
-      val ohsClassifiedAsInlineBarrier = ohsWithInlineBarrierFor(exampleServersKeys, r)
-      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsInlineBarrier, q, r, clientId.get)
+      val ohsClassifiedAsInlineBarrier = ohsWithInlineBarrierFor(serversKeys, thresholds.r)
+      val (opType, (lt, ltCo), ltCur) = setup(operation, ohsClassifiedAsInlineBarrier, thresholds.q, thresholds.r, clientId.get)
       it("should return a inline barrier as operation type") {
         opType should be(INLINE_BARRIER)
       }
       it("should return the correct lt as the new lt") {
         lt should be({
-          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineBarrier, true, r).get
+          val (latestLt, _) = latestCandidate(ohsClassifiedAsInlineBarrier, barrierFlag = true, thresholds.r).get
           latestLt
         })
       }
       it("should return the latest object version lt as the ltCo") {
         ltCo should be({
-          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineBarrier, true, r).get
+          val (_, latestCo) = latestCandidate(ohsClassifiedAsInlineBarrier, barrierFlag = true, thresholds.r).get
           latestCo
         })
       }
@@ -267,19 +247,12 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
         ltCur should be(lt)
       }
     }
-
-    //order in ohs
   }
 
 
   //rh
   //empty rh
   describe("A Replica history") {
-    //equals
-    //update
-    //contains
-    //latest time
-
     describe("when it is empty") {
       //contains
       it("should contain the empty Logical timestamp") {
@@ -294,31 +267,13 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
 
       //latest time
       it("should return the empty logical timestamp as its latest time") {
-        assert(latestTime(emptyRh) == emptyLT)
+        latestTime(emptyRh) should be(emptyLT)
       }
     }
   }
 
 
-  //todo can be replaced with a more sophisticated generator approach (using generators so it's already set for it)
-  val ohsWithMethodGen =
-    Gen.oneOf(ohsWithMethodFor(exampleServersKeys), emptyOhs(exampleServersIds.toSet))
-
-  val ohsWithInlineMethodGen: Gen[OHS] = Gen.const(ohsWithInlineMethodFor(exampleServersKeys, r))
-
-  val ohsWithInlineBarrierGen: Gen[OHS] = Gen.const(ohsWithInlineBarrierFor(exampleServersKeys, r))
-
-  val ohsWithBarrierGen: Gen[OHS] = Gen.const(ohsWithBarrierFor(exampleServersKeys))
-
-  val ohsWithCopyGen: Gen[OHS] = Gen.const(ohsWithCopyFor(exampleServersKeys))
-
-  val ohsGen: Gen[OHS] = Gen.oneOf(ohsWithMethodGen,
-    ohsWithInlineMethodGen,
-    ohsWithInlineBarrierGen,
-    ohsWithBarrierGen,
-    ohsWithCopyGen)
-
-  def checkOpType(ohsGen: Gen[OHS], opType2: OperationType) =
+  def checkOpType(ohsGen: Gen[OHS], opTypeToBe: OperationType): Assertion =
   /*without shrinking:
   forAll(ohsGen) { ohs => {
     val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
@@ -327,8 +282,8 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   //for solving bug https://www.47deg.com/blog/a-common-scalacheck-problem/, not using shrinking here:
     check {
       Prop.forAllNoShrink(ohsGen) { ohs => {
-        val (opType, _, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-        opType == opType2
+        val (opType, _, _) = classify(ohs, repairableThreshold = thresholds.r, quorumThreshold = thresholds.q)
+        opType == opTypeToBe
       }
       }
     }
@@ -336,26 +291,24 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
   def checkLatestObjCand(ohsGen: Gen[OHS]): Assertion =
     forAll(ohsGen) {
       ohs => {
-        val (_, latestObjectCandidate, _) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-        assert(latestObjectCandidate == latestCandidate(ohs = ohs, barrierFlag = false, repairableThreshold = r))
+        val (_, latestObjectCandidate, _) = classify(ohs, repairableThreshold = thresholds.r, quorumThreshold = thresholds.q)
+        latestObjectCandidate should be(latestCandidate(ohs = ohs, barrierFlag = false, repairableThreshold = thresholds.r))
       }
     }
 
   def checkLatestBarCand(ohsGen: Gen[OHS]): Assertion = {
     forAll(ohsGen) {
       ohs => {
-        val (_, _, latestBarrierCandidate) = classify(ohs, repairableThreshold = r, quorumThreshold = q)
-        assert(latestBarrierCandidate == latestCandidate(ohs = ohs, barrierFlag = true, repairableThreshold = r))
+        val (_, _, latestBarrierCandidate) = classify(ohs, repairableThreshold = thresholds.r, quorumThreshold = thresholds.q)
+        latestBarrierCandidate should be(latestCandidate(ohs = ohs, barrierFlag = true, repairableThreshold = thresholds.r))
       }
     }
   }
 
 
   //ohs
-  //todo: can also be expressed on functions rather on obj (a <function invocation> (ex.classification) when ... should ...) or a <method> invocation when ... should ... or <method> , when invoked on ..., it should...
   describe("An OHS") {
-    //equals
-    //aggiornamento in base al server
+
     //---classify--- (testing all its branches)
     describe("when a established barrier is latest and performing classification") {
       it("it should trigger a copy") { //or identifies instead of trigger
@@ -424,114 +377,108 @@ class QuModelSpec extends AnyFunSpec with ScalaCheckPropertyChecks /*with Checke
       it("should return its latest barrier candidate as latest barrier candidate") {
         checkLatestBarCand(ohsWithInlineMethodGen)
       }
+    }
 
-      //latest_candidate
-      describe("when queried for its latest object candidate") {
-        it("should return the greatest object candidate it contains") {
-        }
-        it("should return a object candidate and not a barrier candidate") {
-          val barrierFlag = false
-          forAll(ohsGen) { ohs =>
-            for {
-              (lt, ltCo) <- latestCandidate(ohs, barrierFlag, r)
-            } yield assert(lt.barrierFlag == barrierFlag)
-          }
+    def checkGreatestRepairableCandidate(ohsGen: Gen[OHS], barrierFlag: Boolean) = {
+      forAll(ohsGen) { ohs =>
+        val latest = latestCandidate(ohs, barrierFlag, thresholds.r)
+        //elimino quelli che hanno ordine minore di r e dico e verifico che non esiste
+        assert(!ohs
+          .values
+          .flatMap(e => e._1) //candidates here
+          .filter(c => c._1.barrierFlag == barrierFlag)
+          .filter(c => c > latest.getOrElse(c)) //if ohs has not a latestcandidate then test must fail
+          .exists(order(_, ohs) >= thresholds.r))
+      }
+    }
+
+    //latest_candidate
+    describe("when queried for its latest object candidate") {
+      it("should return the greatest, at least repairable, object candidate it contains") {
+        checkGreatestRepairableCandidate(ohsGen, barrierFlag = false)
+      }
+      it("should return a object candidate and not a barrier candidate") {
+        val barrierFlag = false
+        forAll(ohsGen) { ohs =>
+          for {
+            (lt, _) <- latestCandidate(ohs, barrierFlag, thresholds.r)
+          } yield lt.barrierFlag should be(barrierFlag)
         }
       }
+    }
+    describe("when queried for its latest barrier candidate") {
+      it("should return the greatest, at least repairable, barrier candidate it contains") {
+        checkGreatestRepairableCandidate(ohsGen, barrierFlag = true)
+      }
+      it("should return a barrier candidate and not a object candidate") {
+        val barrierFlag = true
+        forAll(ohsGen) { ohs =>
+          for {
+            (lt, _) <- latestCandidate(ohs, barrierFlag, thresholds.r)
+          } yield lt.barrierFlag should be(barrierFlag)
+        }
+      }
+
+    }
+
+
+    describe("An empty OHS") {
+
+      //---classify---
+      describe("when classified") {
+        it("should trigger method") {
+          val (opType, _, _) = classify(emptyOhs(serversIds.toSet),
+            repairableThreshold = thresholds.r,
+            quorumThreshold = thresholds.q)
+          opType should be(METHOD)
+        }
+        it("should return None as it latest barrier candidate") {
+          val (_, _, latestBarrierCandidate) = classify(emptyOhs(serversIds.toSet),
+            repairableThreshold = thresholds.r,
+            quorumThreshold = thresholds.q)
+          latestBarrierCandidate should be(Option.empty[Candidate])
+        }
+        it("should return the empty candidate as it latest object candidate") {
+          val (_, latestObjectCandidate, _) = classify(emptyOhs(serversIds.toSet),
+            repairableThreshold = thresholds.r,
+            quorumThreshold = thresholds.q)
+          latestObjectCandidate should be(Some(emptyCandidate))
+        }
+      }
+      //latest candidate
       describe("when queried for its latest barrier candidate") {
-        it("should return the greatest barrier candidate it contains") {
-          //assert(initialWorld.currentIteration == 0)
+        it("should return None") {
+          latestCandidate(emptyOhs(serversIds.toSet), barrierFlag = true, thresholds.r) should be(Option.empty[Candidate])
         }
-        it("should return a barrier candidate and not a object candidate") {
-          val barrierFlag = true
-          forAll(ohsGen) { ohs =>
-            for {
-              (lt, ltCo) <- latestCandidate(ohs, barrierFlag, r)
-            } yield assert(lt.barrierFlag == barrierFlag)
-          }
-        }
-
-        //def rhWithLatestLtAs(logicalTimestamp: LogicalTimestamp) = emptyRh + logicalTimestamp
-        //latest time
-        describe("when queried for its latest time") {
-          it("should not contain any time greater than the one it returns") {
-
-            import qu.model.ConcreteQuModel.{ConcreteLogicalTimestamp => LT}
-
-            val latestTimestamp = LT(1,
-              false,
-              Some("client1"),
-              aOperationRepresentation,
-              emptyOhsRepresentation(exampleServersIds))
-
-            // val rhWithLatestTime: ReplicaHistory = emptyRh :+ (latestTimestamp -> emptyLT)
-            //val ohsWithLatestTime = generateOhsFromRHsAndKeys(unanimousRhsFor(exampleServersIds, List((emptyLT, latestTimestamp))))
-            //latestTime(ohsWithMethodFor(exampleServersKeys)) should be(latestTimestamp)
-          }
+        it("should return the empty candidate as it latest objet candidate") {
+          latestCandidate(emptyOhs(serversIds.toSet), barrierFlag = false, thresholds.r) should be(Some(emptyCandidate))
         }
       }
-
-
-      describe("An empty OHS") {
-        //comparing (se inserisco 2 volte in diverso ordine sono comunque uguali le ohs ...)
-
-        //---classify---
-        describe("when classified") {
-          it("should trigger method") {
-            val (opType, _, _) = classify(emptyOhs(exampleServersIds.toSet),
-              repairableThreshold = r,
-              quorumThreshold = q)
-            opType should be(METHOD)
-          }
-          it("should None as it latest barrier candidate") {
-            val (_, _, latestBarrierCandidate) = classify(emptyOhs(exampleServersIds.toSet),
-              repairableThreshold = r,
-              quorumThreshold = q)
-            latestBarrierCandidate should be(Option.empty[Candidate])
-          }
-          it("should return the empty candidate as it latest object candidate") {
-            val (_, latestObjectCandidate, _) = classify(emptyOhs(exampleServersIds.toSet),
-              repairableThreshold = r,
-              quorumThreshold = q)
-            latestObjectCandidate should be(Some(emptyCandidate))
-          }
-        }
-        //latest candidate
-        describe("when queried for its latest barrier candidate") {
-          it("should return None") {
-            latestCandidate(emptyOhs(exampleServersIds.toSet), true, r) should be(Option.empty[Candidate])
-          }
-          it("should return the empty candidate as it latest objet candidate") {
-            latestCandidate(emptyOhs(exampleServersIds.toSet), false, r) should be(Some(emptyCandidate))
-          }
-        }
-        //latest_time
-        it("should return the empty Logical timestamp as it latest time") {
-          latestTime(emptyRh) should be(emptyLT)
-        }
+      //latest_time
+      it("should return the empty Logical timestamp as it latest time") {
+        latestTime(emptyRh) should be(emptyLT)
       }
+    }
 
 
-      describe("An OHS representation") {
-        describe("when compared to another representation of it") {
-          it("should be equals to it") {
-            forAll(ohsGen) {
-              ohs => {
-                assert(represent(ohs) == represent(ohs))
-              }
+    describe("An OHS representation") {
+      describe("when compared to another representation of it") {
+        it("should be equals to it") {
+          forAll(ohsGen) {
+            ohs => {
+              represent(ohs) should be(represent(ohs))
             }
           }
         }
       }
+    }
 
-      val opGen = Gen.oneOf(IncrementAsObj, new GetObj)
-      describe("An Operation representation") {
-        describe("when compared to another representation of it") {
-          it("should be equals to it") {
-            forAll(opGen) {
-              op =>
-                assert(represent(Some(op)) == represent(Some(op)))
-            }
+    val opGen = Gen.oneOf(IncrementAsObj, new GetObj)
+    describe("An Operation representation") {
+      describe("when compared to another representation of it") {
+        it("should be equals to it") {
+          forAll(opGen) { op =>
+            represent(Some(op)) should be(represent(Some(op)))
           }
         }
       }
