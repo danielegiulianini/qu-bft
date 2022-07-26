@@ -39,7 +39,7 @@ The paper's provided features covered by the lib are (refer to the paper for the
 
 Additionally, the library features also:
 
-- async ri-visitation of Q/U protocol, by proving a non-blocking client and service APIs leveraging scala's Future
+- async revisiting of Q/U protocol, by proving non-blocking client and service APIs leveraging scala's Future
 - strong type check at compile time by leveraging scala's strong statically typed type-system
 - Json Web Token (JWT) based authentication
 - JSON (de)serialization by Jackson
@@ -108,7 +108,7 @@ locally.
    libraryDependencies ++= Seq(
   "org.unibo" %% "ds-project-giulianini-ay1920" % "1.0.0",
   "org.unibo" %% "quClient" % "1.0.0"
-"org.unibo" %% "quService" % "1.0.0"
+  "org.unibo" %% "quService" % "1.0.0"
 )
 ```
 
@@ -136,13 +136,13 @@ To ease the deployment of command line demo app a Dockerfile is provided. Theref
 1. build the image of the demo app by running:
 
 ```bash
-    docker build -t --name <container-name> qu-cli-demo .
+    docker build -t qu-cli-demo .
 ```
 
 1. run the app with:
 
 ```bash
-    docker run -it qu-cli-demo
+    docker run -it --name <container-name> qu-cli-demo
 ```
 
 1. After exiting the app, remove the container by referring to the name provided before:
@@ -269,7 +269,7 @@ val authenticatedQuClientBuilder = for {
 
 #### Q/U client configuration
 
-Now, set it up the thresholds and each of the replicas by providing the builder with their ip and port. The call to
+Now, set the thresholds and each of the replicas up by providing the builder with their ip and port. The call to
 build will provide a Q/U client after a validation step.
 
 ```scala
@@ -353,7 +353,7 @@ quServer.shutdown()
 
 
 #### Ready-made remote data structures
-Although very prototypical, It's actually possible to leverage some ready-made remote data structures that allows you to avoid mst of the boilerplate. See []() and []() for how to use them.
+Although very prototypical, it's actually possible to leverage some ready-made remote data structures that allows you to avoid most of the boilerplate. See []() and []() for how to use them.
 
 #### gRPC-aware Q/U services
 To:
@@ -410,10 +410,10 @@ Grpc.newServerBuilderForPort(quReplica1Info.port,
 It's also possible to plug a new authorization or serialization technology as well.
 
 For more insight on how to use the library
-see [client specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-client/src/test/scala/qu/client)
-, [service specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-service/src/test/scala/qu/service)
-, [overall system specification](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-system-testing/src/test/scala/qu)
-or [demo code](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/tree/demo/qu-demo/src/main/scala/qu)
+see [client specification](qu-client/src/test/scala/qu/client)
+, [service specification](qu-service/src/test/scala/qu/service)
+, [overall system specification](qu-system-testing/src/test/scala/qu)
+or [demo code](qu-demo/src/main/scala/qu)
 .
 ### Demo
 
