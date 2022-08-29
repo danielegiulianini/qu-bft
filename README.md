@@ -360,7 +360,7 @@ quServer.shutdown()
 
 
 #### Ready-made remote data structures
-Although very prototypical, it's actually possible to leverage some ready-made remote data structures that allow you to avoid most of the boilerplate. See [this example code](qu-system-testing/src/main/scala/qu/UsageExampleCodeDataStructure.scala) and [demo code](qu/demo/src/main/scala/qu/model/SmrSystemImpl.scala) for how to use them.
+Although very prototypical, it's actually possible to leverage some ready-made remote data structures that allow you to avoid most of the boilerplate. See [this example code](qu-system-testing/src/main/scala/qu/UsageExampleCodeDataStructure.scala) and [demo code](qu-demo/src/main/scala/qu/model/SmrSystemImpl.scala) for how to use them.
 
 #### gRPC-aware Q/U services
 To:
@@ -424,7 +424,7 @@ For more insights on how to use the library see [client specification](qu-client
 ### Demo
 
 The demo app allows the user to interact with a distributed counter backed by an already set up cluster made of five Q/U
-replicas (the minimum required to tolerate one server crash) via a predefined set of commands.
+replicas (the minimum required to tolerate one byzantine server) via a predefined set of commands.
 
 On startup, the list of commands, split in counter-related operations and cluster-management ones, is shown.
 
