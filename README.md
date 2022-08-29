@@ -5,22 +5,20 @@
 
 This repository contains an implementation of the Q/U protocol, a tool that enables construction of fault-scalable
 Byzantine fault-tolerant services by an operations-based interface with a focus on fault-scalability, described by
-authors in the
-paper [Fault-Scalable Byzantine Fault-Tolerant Services](https://cs.brown.edu/courses/csci2950-g/papers/qu.pdf).
+authors in the paper [Fault-Scalable Byzantine Fault-Tolerant Services](https://cs.brown.edu/courses/csci2950-g/papers/qu.pdf).
 
 Developed in gRPC and scala with a strongly modular approach, it's available in this repo either as:
 
 - an extensible and reusable scala library, providing an access point to Q/U's client and service functionalities,
-- a console line, demo application implementing a simple Replicated State Machine (RSM) for showcasing its potentialities and acting as an example for the construction of
-  more complex services.
+- a command line, demo application implementing a simple Replicated State Machine (RSM) for showcasing its potentialities and acting as an example for the construction of more complex services.
 
 ## Features
 
 ---------------	
 
-The paper's provided features covered by the lib are (refer to the paper for the terminology):
+The paper's provided features covered by the library are (refer to the above-mentioned paper for the terminology):
 
-- single object-update basic functioning:
+- single-object update basic functioning:
     - clients authentication/authorization
     - query and update submission
     - threshold quorum construction with recursive thresholds quorum constructions
@@ -39,12 +37,12 @@ The paper's provided features covered by the lib are (refer to the paper for the
 
 Additionally, the library features also:
 
-- async revisiting of Q/U protocol, by proving non-blocking client and service APIs leveraging scala's Future
+- async revisiting of Q/U protocol, by providing non-blocking client and service APIs leveraging scala's Future
 - strong type check at compile time by leveraging scala's strong statically typed type-system
-- Json Web Token (JWT) based authentication
-- JSON (de)serialization by Jackson
+- JSON Web Token (JWT) based authentication
+- JSON (de)serialization by [Jackson](https://github.com/FasterXML/jackson-module-scala)
 - prototype implementations of ready-made remote data structures
-- gRPC-complain and -aware Q/U service APIs access for a more custom approach
+- gRPC-compatible and -aware Q/U service APIs access for a more custom approach
 
 Refer to [issues page](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/issues) for a
 deeper overview of the main functionalities.
@@ -54,16 +52,16 @@ deeper overview of the main functionalities.
 
 To ease management and future extensions, the project is organized in the set of inter-dependent subprojects depicted in the following image and described below:
 
-![repository structure in sub-projects](.img/subprojectsNew.png)
+![repository structure in sub-projects](.img/subprojectsNew2.png)
 
 1. qu-core: it defines base entities, data structures and algorithms upon which the protocol is built.
-2. qu-presentation: it defines the (de)serialization logic corresponding to layer 5 of ISO-OSI stack for exchanging messages between clients and replicas involved by the protocol.
-3. auth: a simple and reusable token(jwt)-based authentication and authorization module, generically modelling a user info, its roles and its credentials and exposing client and server side APIs.
+2. qu-presentation: it defines the (de)serialization logic corresponding to layer 6 of ISO-OSI stack for exchanging messages between clients and replicas involved in the protocol.
+3. auth: a simple and reusable token(JWT)-based authentication and authorization module, generically modelling user's info, its roles and its credentials and exposing client and server side APIs.
 4. qu-communication: it contains the common abstractions for communication and interaction between the clients and servers.
 5. qu-client: it contains Q/U client-side configuration and protocol-execution logic. It also hosts a prototype implementation of the client side of some reusable, distributed, data structures.
-6. qu-service: it holds the service-side logic of the protocol, together with the service counterpart of some common remote data structures.
+6. qu-service: it holds the service-side logic of the protocol, together with the service side counterpart of some common remote data structures.
 7. qu-storage: it isolates the storage-specific logic.
-8. qu-demo: it hosts RSM implementation accessible by a command-line interface.
+8. qu-demo: it hosts the RSM implementation accessible by a command line interface.
 9. qu-system-testing: a module for the system testing (or specification) of the protocol in order to validate it.
 
 
@@ -81,8 +79,7 @@ To ease management and future extensions, the project is organized in the set of
 - Sbt 1.6.2
 - Git
 
-At the moment, the library is not available on a public remote repository. So, the steps below show how to public it
-locally.
+At the moment, the library is not available on a public remote repository (like Maven Central, for example). So, the steps below show how to public it locally.
 
 1. clone the repo into the desired folder:
 
@@ -90,19 +87,19 @@ locally.
     git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920
 ```
 
-1. move inside the downloaded folder:
+2. move inside the downloaded folder:
 
 ```bash
     cd ds-project-giulianini-ay1920
 ```
 
-1. publish the library on a local repository:
+3. publish the library on a local repository:
 
 ```bash
     sbt publishLocal
 ```
 
-1. add the dependencies of interest to your build.sbt; for client and service functionalities they are the following:
+4. add the dependencies of interest to your build.sbt; for client and service functionalities they are the following:
 
 ```scala
    libraryDependencies ++= Seq(
@@ -119,7 +116,7 @@ locally.
 - Git
 - Docker
 
-To ease the deployment of command line demo app a Dockerfile is provided. Therefore, to use it:
+To ease the deployment of the command line demo app a Dockerfile is provided. Therefore, to use it:
 
 1. clone the repo into the desired folder:
 
@@ -127,25 +124,25 @@ To ease the deployment of command line demo app a Dockerfile is provided. Theref
     git clone https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920
 ```
 
-1. move inside the downloaded folder:
+2. move inside the downloaded folder:
 
 ```bash    
     cd ds-project-giulianini-ay1920
 ```
 
-1. build the image of the demo app by running:
+3. build the image of the demo app by running:
 
 ```bash
     docker build -t qu-cli-demo .
 ```
 
-1. run the app with:
+4. run the app with:
 
 ```bash
     docker run -it --name <container-name> qu-cli-demo
 ```
 
-1. After exiting the app, remove the container by referring to the name provided before:
+5. After exiting the app, remove the container by referring to the name provided before:
 
 ```bash
     docker rm <container-name>
@@ -155,22 +152,21 @@ To ease the deployment of command line demo app a Dockerfile is provided. Theref
 
 ### Library
 
-To showcase the Q/U library APIs, in the following how to build up a fault-scalable and fault-tolerant service providing
-a remote counter exposing these methods is shown:
+To showcase the Q/U library APIs, in the following how to build up a fault-scalable and fault-tolerant service, providing
+a remote counter exposing these methods, is shown:
 
 1. Value: get the current value of the distributed counter
 1. Increment: increase the d. counter value by one
 1. Decrement: decrease the d. counter value by one
 1. Reset: reset the d. counter to the initial value zero
 
-This remote counter data abstraction is presented here for demonstration purpose, but it has been already implemented in
+This remote counter abstraction is presented here for demonstration purpose, but it has been already implemented in
 the repo so reuse it if actually needed.
 
 #### Replicated State Machine (RSM) Operations definition
 
-As Q/U follows an SMR approach, the first step to build up a service is to declare the operations of the RSM. Queries (
-which does not modify the object state) must extend Query, while updates, Update.
-It's possible to reuse here some ready-made abstractions and utilities available on [Operations](...).
+As Q/U follows an SMR approach, the first step to build up a service is to declare the operations of the RSM. Queries (which does not modify the object state) must extend Query, while updates, Update.
+It's possible to reuse here some ready-made abstractions and utilities available on [Operations](qu-core/src/main/scala/qu/model/Operations.scala).
 
 ```scala
 object Value extends QueryReturningObject[Int]
@@ -224,9 +220,9 @@ key to generate authenticators for Replica History integrity check, the threshol
 Then, plug the relevant info for all the replicas making up the cluster; namely, their:
 
 1. ip/port (or SocketAddress),
-1. the private key for RH integrity validation shared with the one under construction
-   Then, register the outputs of each operation to submit. It's important to register all the operations at all the
-   replicas; otherwise, a client receives a OperationOutputNotRegisteredException when interacting with them.
+1. the private key for RH integrity validation shared with the one under construction.
+
+Then, register the outputs of each operation to submit. It's important to register all the operations at all the replicas; otherwise, a client receives a OperationOutputNotRegisteredException when interacting with them.
 
 ```scala
 import qu.service.QuServerBuilder
@@ -255,11 +251,22 @@ quServer.start()
 #### Q/U client authentication
 
 The library splits authentication APIs from actual operations-submissions interface. So, let's register (if not done
-before) and authenticate by passing to the corresponding factory method the ip, port of the auth server, username and
-password and an implicit ExecutionContext as well. Methods' Future's returns values enable monadic chaining so for
+before) and authenticate your client after passing to the corresponding factory method the ip, port of the auth server, username and password and an implicit ExecutionContext as well. Methods' return values of type Future enable monadic chaining so for
 comprehension can be exploited. Authorization will end up returning a builder for setting up the actual Q/U client.
 
 ```scala
+import qu.client.AuthenticatingClient
+
+val quServer1SocketAddr: SocketAddress = SocketAddress(ip = "localhost", port = 1000)
+val quServer2SocketAddr: SocketAddress = SocketAddress(ip = "localhost", port = 1001)
+//...
+val quServer6SocketAddr: SocketAddress = SocketAddress(ip = "localhost", port = 1003)
+
+val authClient = AuthenticatingClient[Int](
+  authServerSocketAddr.ip,
+  authServerSocketAddr.port,
+  "username",
+  "password")
 val authenticatedQuClientBuilder = for {
   _ <- authClient.register()
   builder <- authClient.authorize()
@@ -353,17 +360,19 @@ quServer.shutdown()
 
 
 #### Ready-made remote data structures
-Although very prototypical, it's actually possible to leverage some ready-made remote data structures that allows you to avoid most of the boilerplate. See []() and []() for how to use them.
+Although very prototypical, it's actually possible to leverage some ready-made remote data structures that allow you to avoid most of the boilerplate. See [this example code](qu-system-testing/src/main/scala/qu/UsageExampleCodeDataStructure.scala) and [demo code](qu/demo/src/main/scala/qu/model/SmrSystemImpl.scala) for how to use them.
 
 #### gRPC-aware Q/U services
 To:
    1. reuse an existing gRPC server
-   2. ease the library APIs understanding by relying in already got know-how on gRPC
+   2. ease the library APIs understanding by relying on already got know-how on gRPC
    3. allow a higher level of customization
 
-you can plug Q/U replicas functionalities into a gRPC server. First, create a Q/U service by providing the builder factory the relevant configuration:
+you can plug Q/U replicas functionalities into a gRPC server. 
 
-1. the MethodDescriptorFactory in charge of (de)serializing client-replicas and replicas-replicas messages. The lib leverages Jackson, but other can be easily used, as long as it is compatible with the one adopted at client side.
+First, create a Q/U service by providing the service builder factory the relevant configuration:
+
+1. the MethodDescriptorFactory in charge of (de)serializing client-replicas and replicas-replicas messages. The lib leverages Jackson, but others can be easily used, as long as it is compatible with the one adopted at client side.
 2. the Higher-Order ServerQuorumPolicy used by the replica when performing object sync. The repo contains one implementation but new can be easily added.
 3. ip assigned to the server the service will be running on
 4. port assigned to the server the service will be running on
@@ -397,33 +406,30 @@ val quService = new QuServiceBuilder(
 Then, inject it in the gRPC server by providing:
 1. the port to be listening on
 2. the ServerCredentials. Currently, only plain communication is implemented, but it's easy to plug other gRPC already-provided mechanisms or even custom ones.
-3. the authorization interceptor in charge of checking the client authentication (a JWT-based is implied but new can be easily added as long as it is compatible with the one adopted by CallCredentials adopted at client side).
+3. the authorization interceptor in charge of checking the client authentication (a JWT-based approach is provided but new can be easily added as long as it is compatible with the one adopted by the CallCredentials used at client side).
 4. the Q/U service just built
 ```scala
 Grpc.newServerBuilderForPort(quReplica1Info.port, 
-  InsecureServerCredentials.create()) //ServerBuilder.forPort(port)
+  InsecureServerCredentials.create()) //ServerBuilder.forPort(quReplica1Info.port)
         .intercept(new JwtAuthorizationServerInterceptor())
         .addService(quService)
         .build
 ```
 
-It's also possible to plug a new authorization or serialization technology as well.
+As already mentioned, it's also possible to plug a new authorization or serialization technology as well.
 
-For more insight on how to use the library
-see [client specification](qu-client/src/test/scala/qu/client)
-, [service specification](qu-service/src/test/scala/qu/service)
-, [overall system specification](qu-system-testing/src/test/scala/qu)
-or [demo code](qu-demo/src/main/scala/qu)
-.
+For more insights on how to use the library see [client specification](qu-client/src/test/scala/qu/client), [service specification](qu-service/src/test/scala/qu/service), [overall system specification](qu-system-testing/src/test/scala/qu) or [demo code](qu-demo/src/main/scala/qu).
+
+
 ### Demo
 
-The demo app allows the user to interact with a distributed counter backed by an already set cluster made of five Q/U
-replicas (the minimum required to tolerate one server crash) by a predefined set of commands.
+The demo app allows the user to interact with a distributed counter backed by an already set up cluster made of five Q/U
+replicas (the minimum required to tolerate one server crash) via a predefined set of commands.
 
 On startup, the list of commands, split in counter-related operations and cluster-management ones, is shown.
 
 ```bash
-$ docker run -it --name burlone qu-cli-demo
+$ docker run -it --name quCliApp qu-cli-demo
 Q/U protocol example SMR System
 commands summary:
 command             argument            description         
@@ -438,7 +444,7 @@ inc                                     increment the value of the distributed c
 ```
 
 Regarding counter-related operations, to increment the value of the remote counter, decrement or reset it, issue
-the `inc`, `dec` and `reset` commands, respectively.
+the `inc`, `dec` or `reset` commands, respectively.
 
 ```bash
 $ inc
