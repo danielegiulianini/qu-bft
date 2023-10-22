@@ -3,8 +3,8 @@
 ## Introduction
 
 
-This repository contains an implementation of the Q/U protocol, a tool that enables construction of fault-scalable
-Byzantine fault-tolerant services by an operations-based interface with a focus on fault-scalability, described by
+This repository contains an implementation of the Query/Update (Q/U) protocol, a tool that enables construction of fault-scalable
+Byzantine fault-tolerant (BFT) services by an operations-based interface with a focus on fault-scalability, described by
 authors in the paper [Fault-Scalable Byzantine Fault-Tolerant Services](https://cs.brown.edu/courses/csci2950-g/papers/qu.pdf).
 
 Developed in gRPC and scala with a strongly modular approach, it's available in this repo either as:
@@ -12,9 +12,14 @@ Developed in gRPC and scala with a strongly modular approach, it's available in 
 - an extensible and reusable scala library, providing an access point to Q/U's client and service functionalities,
 - a command line, demo application implementing a simple Replicated State Machine (RSM) for showcasing its potentialities and acting as an example for the construction of more complex services.
 
+> [!NOTE]  
+This is a mirror of the original, and dismissed, [gitlab repository](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/) containing the issues and pull requests made during the development.
+
 ## Features
 
 ---------------	
+
+### Library
 
 The paper's provided features covered by the library are (refer to the above-mentioned paper for the terminology):
 
@@ -46,6 +51,14 @@ Additionally, the library features also:
 
 Refer to [issues page](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/-/issues) for a
 deeper overview of the main functionalities.
+
+### Demo
+
+The app features:
+- a simple use case of Q/U BFT potentiality
+- docker to ease deployment
+
+
 
 ## Project organization
 
