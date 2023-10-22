@@ -1,7 +1,17 @@
 # BFT Query/Update protocol
 
-## Introduction
+## Table of Contents
 
+  <ol>
+    <li><a href="#introduction">Introduction</a></li>
+    <li><a href="#features">Features</a></li>
+    <li><a href="#documentation">Documentation</a></li>
+    <li><a href="#technologies">Technologies</a></li>
+    <li><a href="#how-to-deploy">How to deploy</a></li>
+    <li><a href="#how-to-use">How to use</a></li>
+  </ol>
+
+## Introduction
 
 This repository contains an implementation of the Query/Update (Q/U) protocol, a tool that enables construction of fault-scalable
 Byzantine fault-tolerant (BFT) services by an operations-based interface with a focus on fault-scalability, described by
@@ -13,32 +23,31 @@ Developed in gRPC and scala with a strongly modular approach, it's available in 
 - a command line, demo application implementing a simple Replicated State Machine (RSM) for showcasing its potentialities and acting as an example for the construction of more complex services.
 
 > [!NOTE]  
-This is a mirror of the original, and dismissed, [gitlab repository](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/) containing the issues and pull requests made during the development.
+> This is a mirror of the original, and dismissed, [gitlab repository](https://gitlab.com/pika-lab/courses/ds/projects/ds-project-giulianini-ay1920/) containing the issues and pull requests made during the development.
 
 ## Features
-
----------------	
 
 ### Library
 
 The paper's provided features covered by the library are (refer to the above-mentioned paper for the terminology):
 
 - single-object update basic functioning:
-    - clients authentication/authorization
-    - query and update submission
-    - threshold quorum construction with recursive thresholds quorum constructions
-    - Replica History integrity check by HMAC
-    - client and service broadcast for quorum construction
-    - client's retry and random exponential backoff policy (repair)
-    - object syncing at server
+
+  - clients authentication/authorization
+  - query and update submission
+  - threshold quorum construction with recursive thresholds quorum constructions
+  - Replica History integrity check by HMAC
+  - client and service broadcast for quorum construction
+  - client's retry and random exponential backoff policy (repair)
+  - object syncing at server
 
 - Optimizations:
-    - compact timestamp
-    - replica history pruning
-    - optimistic query execution
-    - handling repeated request at the server
-    - inline repair
-    - caching of Object History Set
+  - compact timestamp
+  - replica history pruning
+  - optimistic query execution
+  - handling repeated request at the server
+  - inline repair
+  - caching of Object History Set
 
 Additionally, the library features also:
 
@@ -55,9 +64,9 @@ deeper overview of the main functionalities.
 ### Demo
 
 The app features:
+
 - a simple use case of Q/U BFT potentiality
 - docker to ease deployment
-
 
 ## Documentation
 
@@ -67,7 +76,6 @@ Additionally, presentation slides (in Italian language as they were developed fo
 Please note that the Scala documentation has not been published yet and is currently only available within the source code.
 
 ## Project organization
-
 
 To ease management and future extensions, the project is organized in the set of inter-dependent subprojects depicted in the following image and described below:
 
@@ -84,15 +92,14 @@ To ease management and future extensions, the project is organized in the set of
 9. qu-system-testing: a module for the system testing (or specification) of the protocol in order to validate it.
 
 ## Technologies
+
 <div align="center">
-	<code><img width="50" src="https://user-images.githubusercontent.com/25181517/192107855-e669c777-9172-49c5-b7e0-404e29df0fee.png" alt="gRPC" title="gRPC"/></code>
 	<code><img width="50" src="https://user-images.githubusercontent.com/25181517/185062806-7be3b0f6-3373-44a8-be19-21ddd2307a70.png" alt="Scala" title="Scala"/></code>
+  <code><img width="50" src="https://user-images.githubusercontent.com/25181517/192107855-e669c777-9172-49c5-b7e0-404e29df0fee.png" alt="gRPC" title="gRPC"/></code>
 	<code><img width="50" src="https://user-images.githubusercontent.com/25181517/117207330-263ba280-adf4-11eb-9b97-0ac5b40bc3be.png" alt="Docker" title="Docker"/></code>
 </div>
 
-
 ## How to deploy
-
 
 ### Library
 
@@ -152,7 +159,7 @@ To ease the deployment of the command line demo app a Dockerfile is provided. Th
 
 2. move inside the downloaded folder:
 
-```bash    
+```bash
     cd ds-project-giulianini-ay1920
 ```
 
@@ -384,17 +391,19 @@ authServer.shutdown()
 quServer.shutdown()
 ```
 
-
 #### Ready-made remote data structures
+
 Although very prototypical, it's actually possible to leverage some ready-made remote data structures that allow you to avoid most of the boilerplate. See [this example code](qu-system-testing/src/main/scala/qu/UsageExampleCodeDataStructure.scala) and [demo code](qu-demo/src/main/scala/qu/model/SmrSystemImpl.scala) for how to use them.
 
 #### gRPC-aware Q/U services
-To:
-   1. reuse an existing gRPC server
-   2. ease the library APIs understanding by relying on already got know-how on gRPC
-   3. allow a higher level of customization
 
-you can plug Q/U replicas functionalities into a gRPC server. 
+To:
+
+1.  reuse an existing gRPC server
+2.  ease the library APIs understanding by relying on already got know-how on gRPC
+3.  allow a higher level of customization
+
+you can plug Q/U replicas functionalities into a gRPC server.
 
 First, create a Q/U service by providing the service builder factory the relevant configuration:
 
@@ -430,12 +439,14 @@ val quService = new QuServiceBuilder(
 ```
 
 Then, inject it in the gRPC server by providing:
+
 1. the port to be listening on
 2. the ServerCredentials. Currently, only plain communication is implemented, but it's easy to plug other gRPC already-provided mechanisms or even custom ones.
 3. the authorization interceptor in charge of checking the client authentication (a JWT-based approach is provided but new can be easily added as long as it is compatible with the one adopted by the CallCredentials used at client side).
 4. the Q/U service just built
+
 ```scala
-Grpc.newServerBuilderForPort(quReplica1Info.port, 
+Grpc.newServerBuilderForPort(quReplica1Info.port,
   InsecureServerCredentials.create()) //ServerBuilder.forPort(quReplica1Info.port)
         .intercept(new JwtAuthorizationServerInterceptor())
         .addService(quService)
@@ -445,7 +456,6 @@ Grpc.newServerBuilderForPort(quReplica1Info.port,
 As already mentioned, it's also possible to plug a new authorization or serialization technology as well.
 
 For more insights on how to use the library see [client specification](qu-client/src/test/scala/qu/client), [service specification](qu-service/src/test/scala/qu/service), [overall system specification](qu-system-testing/src/test/scala/qu) or [demo code](qu-demo/src/main/scala/qu).
-
 
 ### Demo
 
@@ -458,7 +468,7 @@ On startup, the list of commands, split in counter-related operations and cluste
 $ docker run -it --name quCliApp qu-cli-demo
 Q/U protocol example SMR System
 commands summary:
-command             argument            description         
+command             argument            description
 prof                                    show servers statuses.
 value                                   get the value of the distributed counter.
 help                                    show cli commands list.
@@ -474,15 +484,15 @@ the `inc`, `dec` or `reset` commands, respectively.
 
 ```bash
 $ inc
-operation completed correctly. 
+operation completed correctly.
 $ inc
-operation completed correctly. 
+operation completed correctly.
 $ dec
-operation completed correctly. 
+operation completed correctly.
 $ reset
-operation completed correctly. 
+operation completed correctly.
 $ inc
-operation completed correctly. 
+operation completed correctly.
 ```
 
 To get its current value, digit `value`.
@@ -548,7 +558,7 @@ You can always retrieve commands list by running `help`.
 ```bash
 $ help
 commands summary:
-command             argument            description         
+command             argument            description
 prof                                    show servers statuses.
 value                                   get the value of the distributed counter.
 help                                    show cli commands list.
