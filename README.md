@@ -59,6 +59,12 @@ The app features:
 - docker to ease deployment
 
 
+## Documentation
+
+The reference papers containing the original Query Update BFT Protocol are [this](https://cs.brown.edu/courses/csci2950-g/papers/qu.pdf), along with its attached technical report, [this](https://scholar.google.com/scholar?hl=it&as_sdt=0%2C5&q=Michael+Abd-El-Malek%2C+Gregory+R+Ganger%2C+Garth+R+Goodson%2C+Michael+K+Reiter%2C+and+Jay+J+Wylie.+Correctness+of+the+read%2Fconditional-write+and+query%2Fupdate+pro%02tocols.+Technical+report&btnG=), both written by protocol's authors.
+The report that extensively describes this project, starting from a comprehensive theoretical background on BFT and covering the design and implementation choices made, along with the software-testing approach adopted, is available [here](https://apice.unibo.it/xwiki/bin/download/Courseproject/QuBft/FinalReportGiulianini.pdf?rev=1.1).
+Additionally, presentation slides (in Italian language as they were developed for and University course taught in italian) summarizing the entire project can be found [here](https://apice.unibo.it/xwiki/bin/download/Courseproject/QuBft/presentazioneSD.pdf?rev=1.1).
+Please note that the Scala documentation has not been published yet and is currently only available within the source code.
 
 ## Project organization
 
