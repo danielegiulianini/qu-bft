@@ -459,6 +459,8 @@ For more insights on how to use the library see [client specification](qu-client
 
 ### Demo
 
+The following instructions apply after having deployed the app like explained [before](#how-to-deploy).
+
 The demo app allows the user to interact with a distributed counter backed by an already set up cluster made of five Q/U
 replicas (the minimum required to tolerate one byzantine server) via a predefined set of commands.
 
