@@ -83,6 +83,13 @@ To ease management and future extensions, the project is organized in the set of
 8. qu-demo: it hosts the RSM implementation accessible by a command line interface.
 9. qu-system-testing: a module for the system testing (or specification) of the protocol in order to validate it.
 
+## Technologies
+<div align="center">
+	<code><img width="50" src="https://user-images.githubusercontent.com/25181517/192107855-e669c777-9172-49c5-b7e0-404e29df0fee.png" alt="gRPC" title="gRPC"/></code>
+	<code><img width="50" src="https://user-images.githubusercontent.com/25181517/185062806-7be3b0f6-3373-44a8-be19-21ddd2307a70.png" alt="Scala" title="Scala"/></code>
+	<code><img width="50" src="https://user-images.githubusercontent.com/25181517/117207330-263ba280-adf4-11eb-9b97-0ac5b40bc3be.png" alt="Docker" title="Docker"/></code>
+</div>
+
 
 ## How to deploy
 
