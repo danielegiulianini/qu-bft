@@ -113,7 +113,7 @@ To ease management and future extensions, the project is organized in the set of
 - Sbt 1.6.2
 - Git
 
-At the moment, the library is not available on a public remote repository (like Maven Central, for example). So, the steps below show how to public it locally.
+At the moment, the library is not available on a public remote repository (like Maven Central, for example). So, the steps below show how to publish it locally.
 
 1. clone the repo into the desired folder:
 
